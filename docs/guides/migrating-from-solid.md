@@ -77,8 +77,8 @@ The table follows **Solid 2.0 RC.21**.
 | `merge(a, b)` | [`merge(a, b)`][wybthon.merge] |
 | `omit(props, ...keys)` | [`omit(props, *keys)`][wybthon.omit] |
 | `omit(props, predicate)` | `omit(props, lambda key: ...)` |
-| `children(() => props.children)` | [`children(lambda: props.children)`][wybthon.resolve_children] |
-| `children(...).toArray()` | `children(lambda: props.children).to_array()` |
+| `children(() => props.children)` | [`resolve_children(lambda: props.children)`][wybthon.resolve_children] |
+| `children(...).toArray()` | `resolve_children(lambda: props.children).to_array()` |
 | `flatten(children)` | [`flatten(children)`][wybthon.flatten]: the unmemoized form of `children` |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
 | `renderToString(fn)` | [`render_to_string(view)`][wybthon.server.render_to_string] |
@@ -159,7 +159,7 @@ def Greeting(props: GreetingProps):
 - Event handlers, refs, spreads, and nested `html(t"...")` templates are never wrapped. Prefer a named handler (`onclick={increment}`); Python forbids a bare `lambda` in an interpolation, so an inline one needs parentheses: `onclick={(lambda: set_open(False))}`.
 - A call in a child position is decided when the template is created. A component (`{Card(title=user().name)}`, `{Show(...)}`, `{For(...)}`) is built with a getter for each dynamic argument, exactly like `<Card title={user().name} />`. Any other call (`{badge(user())}`, `{str(total())}`) becomes one reactive hole, as a function call in JSX does.
 - Attributes are HTML names (`class`, `for`, `aria-label`) and take interpolations the same way: `class={row_class(id)}`, `href="/users/{user_id()}"` (one binding for the whole value), `disabled={add.pending()}`.
-- Event handlers are `onclick={handler}`; `onClick` and `on:click` work too. A handler may take no arguments or receive a [`DomEvent`][wybthon.DomEvent] with `e.target`, `e.key`, `e.prevent_default()`, and friends.
+- Event handlers are `onclick={handler}`, the HTML name, where Solid 2.0 binds `onClick`; `on:click` attaches a native listener to the element instead of a delegated one. Other spellings (`onClick`, `on_click`) are compile errors that name the one to use. A handler may take no arguments or receive a [`DomEvent`][wybthon.DomEvent] with `e.target`, `e.key`, `e.prevent_default()`, and friends.
 - A component tag is written `<{Card} title={user().name}>...</{Card}>` (like `<${Card}>` in Solid's `html`), or self-closed as `<{Card} />`. Attributes become keyword props and the content becomes `children`. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (`{Card(title=user().name)}`) is checked statically, and the compiler still passes getters.
 - `Show`, `Loading`, `Errored`, and context providers work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`), which calls each the way its signature takes children.
 - Markup the browser's parser would rewrite is an error instead of a silent change: put `<tr>` in a `<tbody>`, and don't nest a `<div>` in a `<p>`. The compiler reports it as a `SyntaxError` with the file and line.

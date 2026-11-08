@@ -169,7 +169,8 @@ def test_render_to_string_serializes_markup(wyb):
 
 def test_hydration_adopts_server_nodes_and_becomes_interactive(wyb):
     out = render_to_string(Counter(start=3))
-    assert "<p>Count: 3!</p>" in out
+    # A slot's content ends with a `$` comment where the clone has its placeholder.
+    assert "<p>Count: 3<!--$-->!</p>" in out
     result = hydrate_from(wyb, out, Counter(start=3))
     assert result.mismatches == 0
     assert result.created_elements == []
@@ -321,7 +322,8 @@ def test_compiled_expressions_render_and_hydrate(wyb):
 
     out = render_to_string(View())
     assert strip_state(out) == (
-        '<div class="off"><p>4</p><p>0.50</p><p>PLAIN</p><span class="few">Ada: 4</span><button>bump</button></div>'
+        '<div class="off"><p>4</p><p>0.50</p><p>PLAIN</p>'
+        '<span class="few">Ada<!--$-->: 4<!--$--></span><!--$--><button>bump</button></div>'
     )
     result = hydrate_from(wyb, out, View())
     assert result.mismatches == 0
@@ -367,7 +369,7 @@ def test_compiled_expressions_stream_and_hydrate_inside_boundaries(wyb):
 
     chunks, full = asyncio.run(main())
     assert "loading" in chunks[0] and "<h1>Header</h1>" in chunks[0] and "Ada" not in chunks[0]
-    assert '<div class="busy"><span class="many">Ada: 6</span><p>30</p></div>' in chunks[1]
+    assert '<div class="busy"><span class="many">Ada<!--$-->: 6<!--$--></span><!--$--><p>30</p></div>' in chunks[1]
     assert apply_swaps(chunks[:-1]) == strip_state(full)
     result = hydrate_from(wyb, full, view())
     assert result.mismatches == 0
@@ -719,7 +721,7 @@ def test_lazy_components_render_on_the_server(wyb):
         return html(t"<div>{Loading(Lazy(), fallback='wait')}{Counter(start=5)}</div>")
 
     out = render_async(view)
-    assert "lazy page" in out and "Count: 5!" in out
+    assert "lazy page" in out and "Count: 5<!--$-->!" in out
     result = hydrate_from(wyb, out, view())
     assert result.mismatches == 0
     assert texts(result.container) == ["lazy page", "Count: ", "5", "!", "+"]
@@ -961,7 +963,7 @@ def test_no_hydration_renders_static_markup_inside_markers(wyb):
     out = render_to_string(
         html(t"<div>{NoHydration(html(t'<p>legal</p>'), html(t'<span>text</span>'))}<p>after</p></div>")
     )
-    assert strip_state(out) == "<div><!--wyb:nh--><p>legal</p><span>text</span><!--/wyb:nh--><p>after</p></div>"
+    assert strip_state(out) == "<div><!--wyb:nh--><p>legal</p><span>text</span><!--/wyb:nh--><!--$--><p>after</p></div>"
 
 
 def test_no_hydration_keeps_server_dom_static_while_hydrating(wyb):

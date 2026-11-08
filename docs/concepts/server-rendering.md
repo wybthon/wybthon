@@ -213,11 +213,18 @@ hydrate(App(), "#app")
 
 The production bootstrap calls `hydrate` automatically when the page contains server state. `hydrate` mounts the tree exactly as [`render`][wybthon.render] would, except that each node *claims* the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.
 
-Templates need nothing special. A server render and a hydrating client
-expand each template into the same VNodes [`h`][wybthon.vnode.h] would build,
-so the markup and hydration keys match whether a component uses
-templates or `h()`. Once hydration has committed, browser updates use
-the compiled path. See [Templates](templates.md).
+Templates need nothing special, and they hydrate as cheaply as they
+clone. The server writes a template instance in the layout its clone
+has: the template's markup, with each slot's content in front of a
+`<!--$-->` comment where the clone has the slot's placeholder (a text
+slot that shows text is just that text). The browser claims the whole
+instance with one command, registers its nodes as a clone would, and
+fills its slots the way a client render does, so hydrating a row of a
+table costs what rendering it does. A template the server can't write
+in that layout (one with raw text, a `select`, SVG, a spread, or inner
+HTML) expands into the same VNodes [`h`][wybthon.vnode.h] would build on
+both sides and is claimed node by node. Once hydration has committed,
+browser updates use the compiled path. See [Templates](templates.md).
 
 Hydration never breaks the page. When a node doesn't match, the kernel creates the expected node in place, removes server nodes nobody claimed, and logs a console warning for the first few mismatches. `kernel.stats()["hydration_mismatches"]` counts them. A mismatch inside a `Loading` boundary stops at the boundary's end.
 

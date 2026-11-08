@@ -221,18 +221,18 @@ EXPECTED = {
     "inner_html await": '<div><b>raw</b></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "inputs string": '<p><input required checked><input type="checkbox" checked></p><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "inputs await": '<p><input required checked><input type="checkbox" checked></p><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "nested_components string": '<main><section><h3>One</h3><!----><p>first</p><section><h3>Two</h3><!---->a1<!----><!----></section><!----><!----></section>xy<i>z</i>123</main><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "nested_components await": '<main><section><h3>One</h3><!----><p>first</p><section><h3>Two</h3><!---->a1<!----><!----></section><!----><!----></section>xy<i>z</i>123</main><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "flow string": '<div><ul><!----><li data-i="0">a</li><li data-i="1">b</li><!----></ul><ul><!----><li>none</li><!----></ul><ol><!----><li>a</li><li>b</li><!----></ol><!----><b>0</b><b>1</b><b>2</b><!----><!----><p>big</p><!----><!----><!----><!----><em>9</em><!----><!----><p>two</p><!----></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "flow await": '<div><ul><!----><li data-i="0">a</li><li data-i="1">b</li><!----></ul><ul><!----><li>none</li><!----></ul><ol><!----><li>a</li><li>b</li><!----></ol><!----><b>0</b><b>1</b><b>2</b><!----><!----><p>big</p><!----><!----><!----><!----><em>9</em><!----><!----><p>two</p><!----></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "errors_and_boundaries string": '<div><p class="err">boom</p><!----><p class="err">invalid literal for int() with base 10: \'x\'</p><!----><section><h3>fine</h3><!----></section><!----><!----><!--wyb:be02472af1a21-->wait a<!----><!--/wyb:be02472af1a21--><!--wyb:b170e769adff8--><!----><!--/wyb:b170e769adff8--><!----><!--wyb:b93aefde66d5e--><!--wyb:b5f5f3d3889a3-->inner<!----><!--/wyb:b5f5f3d3889a3--><!----><!----><!--/wyb:b93aefde66d5e--></div><script type="application/json" data-wyb-state>{"v":{},"x":{"297f12eeb351":["ValueError","boom"],"d900e2c45550":["ValueError","invalid literal for int() with base 10: \'x\'"]}}</script>',
-    "errors_and_boundaries await": '<div><p class="err">boom</p><!----><p class="err">invalid literal for int() with base 10: \'x\'</p><!----><section><h3>fine</h3><!----></section><!----><!----><!--wyb:be02472af1a21--><b>late</b><!----><!----><!--/wyb:be02472af1a21--><!--wyb:b170e769adff8--><b>ok</b><!----><!----><!--/wyb:b170e769adff8--><!----><!--wyb:b93aefde66d5e--><!--wyb:b5f5f3d3889a3--><i>late</i><!----><!----><!--/wyb:b5f5f3d3889a3--><!----><!----><!--/wyb:b93aefde66d5e--></div><script type="application/json" data-wyb-state>{"v":{},"x":{"297f12eeb351":["ValueError","boom"],"d900e2c45550":["ValueError","invalid literal for int() with base 10: \'x\'"]}}</script>',
-    "misc string": '<div id="wyb-hcf3241877926"><!--wyb:nh--><p>static</p><!--/wyb:nh--><!----><p>server</p><!----><h2>dyn</h2><!----><!----><!----><!---->01.5<!----><b>a</b>b<!----><!---->text &amp; &lt;esc&gt; more</div><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "misc await": '<div id="wyb-hcf3241877926"><!--wyb:nh--><p>static</p><!--/wyb:nh--><!----><p>server</p><!----><h2>dyn</h2><!----><!----><!----><!---->01.5<!----><b>a</b>b<!----><!---->text &amp; &lt;esc&gt; more</div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "nested_components string": '<main><section><h3>One</h3><p>first</p><section><h3>Two</h3>a1<!--$--></section><!--$--></section><!--$-->xy<i>z</i>123<!--$--></main><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "nested_components await": '<main><section><h3>One</h3><p>first</p><section><h3>Two</h3>a1<!--$--></section><!--$--></section><!--$-->xy<i>z</i>123<!--$--></main><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "flow string": '<div><ul><li data-i="0">a</li><li data-i="1">b</li><!--$--></ul><ul><li>none</li><!--$--></ul><ol><li>a</li><li>b</li><!--$--></ol><b>0</b><b>1</b><b>2</b><!--$--><p>big</p><!--$--><!--$--><em>9</em><!--$--><p>two</p><!--$--></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "flow await": '<div><ul><li data-i="0">a</li><li data-i="1">b</li><!--$--></ul><ul><li>none</li><!--$--></ul><ol><li>a</li><li>b</li><!--$--></ol><b>0</b><b>1</b><b>2</b><!--$--><p>big</p><!--$--><!--$--><em>9</em><!--$--><p>two</p><!--$--></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "errors_and_boundaries string": '<div><p class="err">boom</p><!----><!--$--><p class="err">invalid literal for int() with base 10: \'x\'</p><!----><!--$--><section><h3>fine</h3></section><!----><!--$--><!----><!--wyb:b60bdb4acc2ee-->wait a<!----><!--/wyb:b60bdb4acc2ee--><!--wyb:b0b664f7f6e4a--><!----><!--/wyb:b0b664f7f6e4a--><!----><!--$--><!--wyb:b72ae87463562--><!--wyb:b909d7177e8da-->inner<!----><!--/wyb:b909d7177e8da--><!----><!----><!--/wyb:b72ae87463562--><!--$--></div><script type="application/json" data-wyb-state>{"v":{},"x":{"3781fbb550d0":["ValueError","boom"],"19df16db65cc":["ValueError","invalid literal for int() with base 10: \'x\'"]}}</script>',
+    "errors_and_boundaries await": '<div><p class="err">boom</p><!----><!--$--><p class="err">invalid literal for int() with base 10: \'x\'</p><!----><!--$--><section><h3>fine</h3></section><!----><!--$--><!----><!--wyb:b60bdb4acc2ee--><b>late</b><!----><!----><!--/wyb:b60bdb4acc2ee--><!--wyb:b0b664f7f6e4a--><b>ok</b><!----><!----><!--/wyb:b0b664f7f6e4a--><!----><!--$--><!--wyb:b72ae87463562--><!--wyb:b909d7177e8da--><i>late</i><!----><!----><!--/wyb:b909d7177e8da--><!----><!----><!--/wyb:b72ae87463562--><!--$--></div><script type="application/json" data-wyb-state>{"v":{},"x":{"3781fbb550d0":["ValueError","boom"],"19df16db65cc":["ValueError","invalid literal for int() with base 10: \'x\'"]}}</script>',
+    "misc string": '<div id="wyb-hcf3241877926"><!--wyb:nh--><p>static</p><!--/wyb:nh--><!--$--><!----><p>server</p><!----><!--$--><!--$--><h2>dyn</h2><!----><!--$--><!--$--><!--$--><!--$-->0<!--$-->1.5<!--$--><b>a</b>b<!--$-->text &amp; &lt;esc&gt;<!--$--> more</div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "misc await": '<div id="wyb-hcf3241877926"><!--wyb:nh--><p>static</p><!--/wyb:nh--><!--$--><!----><p>server</p><!----><!--$--><!--$--><h2>dyn</h2><!----><!--$--><!--$--><!--$--><!--$-->0<!--$-->1.5<!--$--><b>a</b>b<!--$-->text &amp; &lt;esc&gt;<!--$--> more</div><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "content_props string": '<div><section><b>raw</b></section><article class="s"><i>spread</i></article><aside id="p" data-x="1"><p>shown</p></aside><input id="p" data-x="1" value="&lt;b&gt;raw&lt;/b&gt;"></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "content_props await": '<div><section><b>raw</b></section><article class="s"><i>spread</i></article><aside id="p" data-x="1"><p>shown</p></aside><input id="p" data-x="1" value="&lt;b&gt;raw&lt;/b&gt;"></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
-    "late_errors string": '<div><p class="late">fallback broke</p><!----><i>after</i></div><script type="application/json" data-wyb-state>{"v":{},"x":{"297f12eeb351":["RuntimeError","fallback broke"]}}</script>',
-    "late_errors await": '<div><!--wyb:ba613e30b4b73--><b>data</b><!----><!----><!--/wyb:ba613e30b4b73--><!----><i>after</i></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "late_errors string": '<div><p class="late">fallback broke</p><!----><!--$--><i>after</i></div><script type="application/json" data-wyb-state>{"v":{},"x":{"3781fbb550d0":["RuntimeError","fallback broke"]}}</script>',
+    "late_errors await": '<div><!--wyb:b63e4bd842c92--><b>data</b><!----><!----><!--/wyb:b63e4bd842c92--><!----><!--$--><i>after</i></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
 }
 
 VIEWS = {name.split()[0]: globals()[name.split()[0]] for name in EXPECTED}
@@ -251,3 +251,38 @@ def test_server_output_is_what_hydration_claims(case):
 
         html = asyncio.run(complete())
     assert html == EXPECTED[case]
+
+
+# Views that cover serialization only: content a property replaces (inner
+# HTML) isn't claimed, errors and pending boundaries render differently
+# without awaiting, a portal needs a browser document, and the in-memory
+# parser keeps the newline after `<pre>` that a browser's drops.
+_SERIALIZATION_ONLY = {"inner_html", "content_props", "errors_and_boundaries", "misc", "pre_newline"}
+
+
+@pytest.mark.parametrize("name", sorted({case.split()[0] for case in EXPECTED} - _SERIALIZATION_ONLY))
+def test_server_output_hydrates_without_mismatches(name):
+    """The client claims every node the server wrote, with no mismatches."""
+    from wybthon import kernel
+    from wybthon.dom import Element
+    from wybthon.reconciler import hydrate
+    from wybthon.testing import TestDocument, TestNode, _Parser
+
+    view = VIEWS[name]
+    html = render_to_string(view())
+    container = TestNode(tag="div")
+    parser = _Parser(container)
+    parser.feed(html)
+    parser.close()
+    backend = kernel.PythonBackend(TestDocument())
+    previous = kernel._backend
+    kernel.set_backend(backend)
+    try:
+        root = hydrate(view(), Element(node=container))
+        assert backend.hydration_mismatches == 0, html
+        root.dispose()
+    finally:
+        if previous is None:
+            kernel._backend = None
+        else:
+            kernel.set_backend(previous)

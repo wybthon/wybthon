@@ -90,6 +90,16 @@ OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
 OP_DISPOSE = 27  # [op, id]  (remove one node and release everything registered inside it)
 OP_CLAIM_STATIC = 28  # [op, parent_id, end_marker]  (keep server nodes before the marker as static DOM)
 OP_INTERCEPT = 29  # [op, event_type, on]  (dispatch the type even without handlers; see events.intercept)
+# Hydration of a template instance in one command: claim the server's nodes
+# for the template's skeleton (its root from the parent's cursor), register
+# them as a clone would, and note where each slot's server content starts.
+# `hints` hold each text slot's text, or 0 when the slot holds nodes.
+OP_CLAIM_TPL = 30  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *hints]
+OP_CLAIM_SLOT = 31  # [op, parent_id, slot_id]  (point the parent's cursor at the slot's server content)
+
+# The comment a server render writes after a template slot's content, where
+# a clone has the slot's placeholder (see `wybthon.templates.claim`).
+SLOT_MARK = "$"
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -369,7 +379,7 @@ def kernel_source() -> str:
 class _ClaimState:
     """Per-hydration claim cursors for the reference backend."""
 
-    __slots__ = ("root", "cursors", "touched", "fresh", "mismatches")
+    __slots__ = ("root", "cursors", "touched", "fresh", "mismatches", "slots")
 
     def __init__(self, root: Any) -> None:
         self.root = root
@@ -377,6 +387,133 @@ class _ClaimState:
         self.touched: dict[int, Any] = {}
         self.fresh: set[int] = set()
         self.mismatches = 0
+        # Each claimed slot placeholder's first content node (by the placeholder's id).
+        self.slots: dict[int, Any] = {}
+
+
+class _ClaimWalk:
+    """The reference backend's walk for `OP_CLAIM_TPL`: a template's skeleton against server nodes.
+
+    Ids are numbered in pre-order over the template's own nodes, as a clone
+    numbers them; slot content the server wrote in front of a slot's
+    placeholder takes no ids (its own mounts claim it).
+    """
+
+    __slots__ = ("backend", "op", "first", "id", "texts", "slot", "addressed", "state")
+
+    def __init__(self, backend: Any, op: Any, first: int, texts: tuple[int, ...], addressed: frozenset[int]) -> None:
+        self.backend = backend
+        self.op = op
+        self.first = first
+        self.id = first
+        self.texts = {offset: i for i, offset in enumerate(texts)}
+        self.slot = 0
+        self.addressed = addressed
+        self.state = backend._hydrating
+
+    def take(self, node: Any) -> int:
+        node_id = self.id
+        if node_id - self.first in self.addressed:
+            self.backend._reg(node_id, node)
+        self.id = node_id + 1
+        return node_id
+
+    def claim(self, proto: Any, node: Any) -> None:
+        """Claim `node` for `proto`, then its children."""
+        state = self.state
+        backend = self.backend
+        state.fresh.add(id(node))
+        self.take(node)
+        c = node.firstChild
+        for p in list(proto.childNodes):
+            offset = self.id - self.first
+            if _is_element(p):
+                if c is not None and _is_element(c) and str(c.tag).lower() == str(p.tag).lower():
+                    claimed, c = c, c.nextSibling
+                    self.claim(p, claimed)
+                else:
+                    backend._mismatch()
+                    created = backend._clone_node(p)
+                    node.insertBefore(created, c)
+                    state.fresh.add(id(created))
+                    self.fresh(created)
+            elif _is_comment(p):
+                c = self.slot_end(node, c)
+            else:
+                slot = self.texts.get(offset)
+                if slot is None:
+                    c = self.text(node, c, str(p.nodeValue or ""))
+                else:
+                    hint = self.op[5 + slot]
+                    if type(hint) is str:
+                        c = self.text(node, c, hint)
+                    else:
+                        c = self.slot_end(node, c)
+        state.touched[id(node)] = node
+        state.cursors[id(node)] = c
+
+    def text(self, parent: Any, c: Any, text: str) -> Any:
+        """Claim the server's text for a text node of the template; returns the next server node."""
+        backend = self.backend
+        if text and c is not None and _is_text(c):
+            data = str(c.nodeValue or "")
+            if data == text:
+                following = c.nextSibling
+            elif data.startswith(text):
+                following = backend._doc.createTextNode(data[len(text) :])
+                parent.insertBefore(following, c.nextSibling)
+                c.nodeValue = text
+            else:
+                backend._mismatch()
+                c.nodeValue = text
+                following = c.nextSibling
+            self.state.fresh.add(id(c))
+            self.take(c)
+            return following
+        if text:
+            backend._mismatch()
+        created = backend._doc.createTextNode(text)
+        parent.insertBefore(created, c)
+        self.state.fresh.add(id(created))
+        self.take(created)
+        return c
+
+    def slot_end(self, parent: Any, c: Any) -> Any:
+        """Claim a slot's placeholder after its server content; returns the next server node."""
+        n = c
+        while n is not None and not (_is_comment(n) and str(n.nodeValue or "") == SLOT_MARK):
+            n = n.nextSibling
+        if n is None:
+            self.backend._mismatch()
+            n = self.backend._doc.createComment("")
+            parent.insertBefore(n, c)
+            self.state.fresh.add(id(n))
+            self.state.slots[id(n)] = n
+            self.take(n)
+            return c
+        # Claimed, the placeholder reads as a clone's would.
+        n.nodeValue = ""
+        self.state.slots[id(n)] = c
+        self.take(n)
+        return n.nextSibling
+
+    def fresh(self, root: Any) -> None:
+        """Register a skeleton created in place of server nodes that didn't match, as a clone would."""
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            offset = self.id - self.first
+            slot = self.texts.get(offset)
+            if slot is not None:
+                hint = self.op[5 + slot]
+                node.nodeValue = hint if type(hint) is str else ""
+                self.state.slots[id(node)] = node
+            elif _is_comment(node):
+                self.state.slots[id(node)] = node
+            self.take(node)
+            kids = node.childNodes
+            for i in range(len(kids) - 1, -1, -1):
+                stack.append(kids[i])
 
 
 def _is_comment(node: Any) -> bool:
@@ -623,10 +760,23 @@ class PythonBackend:
             elif code == OP_CLAIM_STATIC:
                 if self._hydrating is not None:
                     self._claim_static(op[1], op[2])
+            elif code == OP_CLAIM_TPL:
+                self._claim_tpl(op)
+            elif code == OP_CLAIM_SLOT:
+                state = self._hydrating
+                anchor = nodes.get(op[2])
+                if state is not None and anchor is not None:
+                    start = state.slots.get(id(anchor))
+                    parent = getattr(anchor, "parentNode", None)
+                    if start is not None and parent is not None:
+                        state.touched[id(parent)] = parent
+                        state.cursors[id(parent)] = start
             elif code == OP_HOLE_TEXT:
                 node = nodes[op[1]]
                 if getattr(node, "_is_text", False) and not getattr(node, "_is_comment", False):
                     node.nodeValue = op[2]
+                elif self._hydrating is not None and self._adopt_slot_text(op[1], node, op[2]):
+                    pass
                 else:
                     text = doc.createTextNode(op[2])
                     if node.parentNode is not None:
@@ -852,6 +1002,53 @@ class PythonBackend:
         parent.insertBefore(node, c)
         self._set_cursor(parent, c)
         self._reg(node_id, node)
+
+    def _adopt_slot_text(self, node_id: int, anchor: Any, text: str) -> bool:
+        """While hydrating, a slot showing text adopts the server's text in front of its placeholder."""
+        parent = getattr(anchor, "parentNode", None)
+        if parent is None:
+            return False
+        kids = parent.childNodes
+        index = next((i for i, kid in enumerate(kids) if kid is anchor), 0)
+        prev = kids[index - 1] if index > 0 else None
+        if (
+            prev is None
+            or not _is_text(prev)
+            or getattr(prev, "_wyb_id", None) is not None
+            or str(prev.nodeValue or "") != text
+        ):
+            return False
+        parent.removeChild(anchor)
+        self._reg(node_id, prev)
+        return True
+
+    def _claim_tpl(self, op: Any) -> None:
+        """Claim a server-rendered template instance (see `OP_CLAIM_TPL`)."""
+        state = self._hydrating
+        assert state is not None
+        first = op[1]
+        proto, count, texts, listens, addressed = self._tpl_protos[op[2]]
+        parent = self._nodes[op[3]]
+        c = self._cursor(parent)
+        while c is not None and _is_blank(c):
+            c = c.nextSibling
+        walk = _ClaimWalk(self, op, first, texts, addressed)
+        if c is not None and _is_element(c) and str(c.tag).lower() == str(proto.tag).lower():
+            self._set_cursor(parent, c.nextSibling)
+            walk.claim(proto, c)
+        else:
+            self._mismatch()
+            root = self._clone_node(proto)
+            parent.insertBefore(root, c)
+            self._set_cursor(parent, c)
+            state.fresh.add(id(root))
+            walk.fresh(root)
+        if walk.id - first != count:
+            raise RuntimeError(
+                f"wybthon kernel: template node count mismatch (expected {count}, got {walk.id - first})"
+            )
+        for offset, event_type in listens:
+            self._listen_op(first + offset, event_type)
 
     def _claim_static(self, parent_id: int, end_marker: str) -> None:
         state = self._hydrating

@@ -22,6 +22,7 @@ from js import window
 from wybthon import (
     Accessor,
     For,
+    Props,
     Setter,
     component,
     create_projection,
@@ -29,6 +30,7 @@ from wybthon import (
     create_store,
     flush,
     html,
+    untrack,
 )
 
 # ---------------------------------------------------------------------------
@@ -98,6 +100,8 @@ NOUNS = [
 _next_id = 1
 random.seed(42)
 STORE_MODE = "mode=store" in str(window.location.search)
+# Component mode: signal rows, each rendered by a component tag (`BenchRow`).
+COMPONENT_MODE = "mode=component" in str(window.location.search)
 
 Row = dict[str, Any]
 
@@ -243,6 +247,32 @@ def _row(row, _index):
     )
 
 
+class BenchRowProps(Props):
+    row_id: int
+    label: str
+
+
+@component
+def BenchRow(props: BenchRowProps):
+    row_id = untrack(lambda: props.row_id)
+    return html(
+        t"""<tr class={"danger" if is_selected.get(props.row_id) else ""}>
+              <td class="col-md-1">{props.row_id}</td>
+              <td class="col-md-4"><a onclick={(lambda: select(row_id))}>{props.label}</a></td>
+              <td class="col-md-1">
+                <a onclick={(lambda: delete(row_id))}>
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                </a>
+              </td>
+              <td class="col-md-6"></td>
+            </tr>"""
+    )
+
+
+def _component_row(row, _index):
+    return html(t"<{BenchRow} row_id={row['id']} label={row['label']} />")
+
+
 def _control(label, element_id, handler):
     return html(
         t"""<div class="col-sm-6 smallpad">
@@ -271,7 +301,7 @@ def App():
                 </div>
               </div>
               <table class="table table-hover table-striped test-data">
-                <tbody id="tbody">{For(data(), _row)}</tbody>
+                <tbody id="tbody">{For(data(), _component_row if COMPONENT_MODE else _row)}</tbody>
               </table>
             </div>"""
     )

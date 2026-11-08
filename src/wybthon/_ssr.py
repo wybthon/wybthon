@@ -50,6 +50,10 @@ __all__ = ["Boundary", "render", "join"]
 
 # The marker a hole, region, or fragment leaves in the DOM.
 _MARK = "<!---->"
+# The marker after a claimed template slot's content (see `Renderer.claimed`).
+_SLOT_MARK = "<!--$-->"
+# A `NoHydration` region's marker (see `wybthon.flow`).
+_NO_HYDRATION = "wyb:nh"
 
 _NOT_READY = object()
 _FAILED = object()
@@ -290,9 +294,12 @@ def _attributes(tag: str, props: dict[str, Any], select: _Select | None) -> tupl
 class _Renderer:
     """One server render: walks the tree and appends HTML parts."""
 
-    __slots__ = ("boundaries", "errored")
+    __slots__ = ("boundaries", "errored", "static")
 
     def __init__(self) -> None:
+        # Depth of `NoHydration` regions: the browser never claims what's
+        # inside, so templates there are written without slot placeholders.
+        self.static = 0
         # Boundaries waiting to be resolved, in creation order.
         self.boundaries: list[Boundary] = []
         # Every `Errored` boundary rendered, in case one catches an error late.
@@ -300,8 +307,15 @@ class _Renderer:
 
     # -- dispatch -------------------------------------------------------------
 
-    def node(self, v: Any, out: list[Any], ns: str | None, raw: bool, select: _Select | None) -> None:
-        """Render one normalized child: a VNode or a template element."""
+    def node(
+        self, v: Any, out: list[Any], ns: str | None, raw: bool, select: _Select | None, anchored: bool = False
+    ) -> None:
+        """Render one normalized child: a VNode or a template element.
+
+        `anchored`: `v` is a hole's whole content, so a list, branch, or
+        fragment writes no markers of its own (the hole's marker ends it),
+        as the client mounts it.
+        """
         if type(v) is _TplElement:
             self.template_element(v.node, v.values, out, v.pk, ns, select)
             return
@@ -312,14 +326,16 @@ class _Renderer:
             _core._current_owner = owner
             _core._current_observer = None
             try:
-                self.dispatch(v, out, ns, raw, select)
+                self.dispatch(v, out, ns, raw, select, anchored)
             finally:
                 _core._current_owner = prev_owner
                 _core._current_observer = prev_obs
             return
-        self.dispatch(v, out, ns, raw, select)
+        self.dispatch(v, out, ns, raw, select, anchored)
 
-    def dispatch(self, v: VNode, out: list[Any], ns: str | None, raw: bool, select: _Select | None) -> None:
+    def dispatch(
+        self, v: VNode, out: list[Any], ns: str | None, raw: bool, select: _Select | None, anchored: bool = False
+    ) -> None:
         tag = v.tag
         if tag == "_text":
             text = v.props.get("nodeValue", "")
@@ -327,17 +343,28 @@ class _Renderer:
         elif tag == "_tpl":
             compiled: Any = v.props
             values: Any = v.children
-            self.template_element(compiled.root, values, out, getattr(v, "pk", None), ns, select)
+            if ns is None and compiled.claimable and not self.static:
+                self.claimed(compiled, values, out, getattr(v, "pk", None) or _core._position)
+            else:
+                self.template_element(compiled.root, values, out, getattr(v, "pk", None), ns, select)
         elif tag == "_hole":
             self.hole(v.props.get("getter"), out, getattr(v, "pk", None), ns, raw, select)
         elif tag == "_list":
-            self.list_region(v, out, ns, select)
+            self.list_region(v, out, ns, select, anchored)
         elif tag == "_branch":
-            self.branch_region(v, out, ns, select)
+            self.branch_region(v, out, ns, select, anchored)
         elif tag == "_fragment":
             marker = v.props.get("marker")
+            if anchored and not marker and v.key is None:
+                self.children(v.children, getattr(v, "pk", None), out, ns, raw, select)
+                return
             out.append(_open_marker(marker))
-            self.children(v.children, getattr(v, "pk", None), out, ns, raw, select)
+            static = marker == _NO_HYDRATION
+            self.static += static
+            try:
+                self.children(v.children, getattr(v, "pk", None), out, ns, raw, select)
+            finally:
+                self.static -= static
             out.append(_close_marker(marker))
         elif tag == "_ssr_boundary":
             self.loading(v, out, ns, select)
@@ -476,6 +503,106 @@ class _Renderer:
             self.template_children(node, values, pk, out)
             out.append(plan[2])
 
+    # -- claimed templates ----------------------------------------------------
+
+    def claimed(self, compiled: Any, values: tuple[Any, ...], out: list[Any], pk: str) -> None:
+        """Render a template instance in the layout its clone has, so hydration claims it in one command.
+
+        Each child or component slot's content goes in front of a `$`
+        comment, where the clone has the slot's placeholder; a text slot
+        showing text is that text alone. The content of slot `k` is
+        positioned at `<pk>.<k>`, as `wybthon.templates.claim` positions it.
+        """
+        slots = compiled.slot_of
+        if slots is None:
+            slots = compiled.slot_of = {}
+            for k, slot in enumerate(compiled.plan):
+                if slot[0] == templates._S_CHILD:
+                    slots[("c", slot[2])] = k
+                elif slot[0] == templates._S_COMPONENT:
+                    slots[("t", id(slot[2]))] = k
+        self.claimed_element(compiled.root, compiled, values, out, pk)
+
+    def claimed_element(self, node: Any, compiled: Any, values: tuple[Any, ...], out: list[Any], pk: str) -> None:
+        plan = _plans.get(node)
+        if plan is None:
+            plan = _plans[node] = _plan(node)
+        if plan[0] == _STATIC_SUBTREE:
+            out.append(plan[1])
+            return
+        if plan[0] == _STATIC_OPEN:
+            out.append(plan[1])
+            if plan[2] is not None:
+                self.claimed_children(node, compiled, values, out, pk)
+                out.append(plan[2])
+            return
+        attrs = _attributes(node.tag.lower(), templates._expand_props(node.attrs, values), None)[0]
+        out.append(f"<{node.tag}{attrs}>")
+        if plan[1]:
+            return
+        self.claimed_children(node, compiled, values, out, pk)
+        out.append(f"</{node.tag}>")
+
+    def claimed_children(self, node: Any, compiled: Any, values: tuple[Any, ...], out: list[Any], pk: str) -> None:
+        slots = compiled.slot_of
+        for child in node.children:
+            t = type(child)
+            if t is str:
+                out.append(_escape_text(child))
+            elif t is templates._Element:
+                self.claimed_element(child, compiled, values, out, pk)
+            elif t is templates._Slot:
+                k = slots[("c", child.index)]
+                self.claimed_slot(values[child.index], compiled.plan[k][4] >= 0, out, f"{pk}.{k}")
+            elif t is tuple:
+                out.append(_escape_text(child[1]))
+            else:
+                k = slots[("t", id(child))]
+                position = f"{pk}.{k}"
+                previous = _core._enter_position(position)
+                try:
+                    node_ = templates._component(child, values)
+                finally:
+                    _core._restore_position(previous)
+                self.content(node_, out, position, None, None)
+                out.append(_SLOT_MARK)
+
+    def claimed_slot(self, value: Any, text_slot: bool, out: list[Any], position: str) -> None:
+        """A child slot's content and placeholder, as `wybthon.templates._child_slot` mounts it."""
+        if type(value) is list and len(value) == 1:
+            value = value[0]
+        vt = type(value)
+        if vt is str or vt is int or vt is float:
+            out.append(_escape_text(value if vt is str else str(value)))
+            if not text_slot:
+                out.append(_SLOT_MARK)
+            return
+        if value is None or value is True or value is False:
+            if not text_slot:
+                out.append(_SLOT_MARK)
+            return
+        if is_accessor(value):
+            fn = value.fn if vt is _Getter else value
+            # A text slot's expression is a text binding; any other slot's is a hole's.
+            result = _evaluate(fn, position if text_slot else position + "h")
+            if result is _NOT_READY or result is _FAILED:
+                if not text_slot:
+                    out.append(_SLOT_MARK)
+                return
+            rt = type(result)
+            if rt is str or rt is int or rt is float:
+                out.append(_escape_text(result if rt is str else str(result)))
+                if not text_slot:
+                    out.append(_SLOT_MARK)
+                return
+            if result is None or result is True or result is False:
+                if not text_slot:
+                    out.append(_SLOT_MARK)
+                return
+            value = result
+        self.content(value, out, position, None, None)
+        out.append(_SLOT_MARK)
+
     def template_children(self, node: Any, values: tuple[Any, ...], pk: str | None, out: list[Any]) -> None:
         """A template element's children, in an HTML element with no namespace or select."""
         base = pk or _core._position
@@ -579,7 +706,7 @@ class _Renderer:
         _core._current_owner = scope
         _core._current_observer = None
         try:
-            self.node(node, out, ns, False, select)
+            self.node(node, out, ns, False, select, True)
         except Exception as exc:
             _dispatch(exc, "Reactive hole update")
         finally:
@@ -596,13 +723,14 @@ class _Renderer:
             parent._add_child(scope)
         return scope
 
-    def list_region(self, v: VNode, out: list[Any], ns: str | None, select: Any) -> None:
+    def list_region(self, v: VNode, out: list[Any], ns: str | None, select: Any, anchored: bool = False) -> None:
         global _regions
         if _regions is None:
             from . import _regions as regions
 
             _regions = regions
-        out.append(_MARK)
+        if not anchored:
+            out.append(_MARK)
         scope = self._scope(v)
         region = _regions._ListRegion(v, 0)
         value = _evaluate(region.prepare, None)
@@ -632,15 +760,17 @@ class _Renderer:
                         self.node(node, out, ns, False, select)
                     except Exception as exc:
                         _dispatch(exc, "List fallback")
-        out.append(_MARK)
+        if not anchored:
+            out.append(_MARK)
 
-    def branch_region(self, v: VNode, out: list[Any], ns: str | None, select: Any) -> None:
+    def branch_region(self, v: VNode, out: list[Any], ns: str | None, select: Any, anchored: bool = False) -> None:
         global _regions
         if _regions is None:
             from . import _regions as regions
 
             _regions = regions
-        out.append(_MARK)
+        if not anchored:
+            out.append(_MARK)
         scope = self._scope(v)
         region = _regions._BranchRegion(v, 0)
         selection = _evaluate(region.choose, None)
@@ -663,7 +793,8 @@ class _Renderer:
                     self.node(node, out, ns, False, select)
                 except Exception as exc:
                     _dispatch(exc, "Branch")
-        out.append(_MARK)
+        if not anchored:
+            out.append(_MARK)
 
     # -- components -----------------------------------------------------------
 

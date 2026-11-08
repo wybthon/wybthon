@@ -33,7 +33,7 @@ Each browser scenario restores its baseline, performs one warmup, then records t
 | Append | 10,000 rows | 11,000 rows |
 | Clear | 10,000 rows | Empty |
 
-The JSON includes runtime/browser metadata, individual samples, operation counters, and registry counts. Signal mode uses per-row label signals; store mode uses entity-preserving draft edits. Arbitrary replacement signal arrays still need list matching. Store edit records let the mounted list skip that scan for local updates.
+The JSON includes runtime/browser metadata, individual samples, operation counters, and registry counts. Signal mode uses per-row label signals; store mode uses entity-preserving draft edits; component mode uses the signal rows, each rendered by a component tag (`BenchRow`) instead of inline markup. Arbitrary replacement signal arrays still need list matching. Store edit records let the mounted list skip that scan for local updates.
 
 `check_work.py` gates deterministic work in a store-mode report. Selection and swap create no rows, scan no list, and send at most two commands. Appending 1,000 rows sends one command per row in a single commit, and every row must be a template clone (`template_clones` is 1,000). Clearing 10,000 rows is at most two commands. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
 
@@ -66,6 +66,13 @@ uv run python benchmarks/row_bench.py src --reps 5 > rows-after.json
 ```
 
 Rows are `html` t-string templates, so the checkout needs templates (v0.38.0 or later). With the compiler (RFC 0004), the row module is compiled the way an application's modules are, and the row is written with plain expressions: `class={"danger" if is_sel(iid) else ""}` and `{d["label"]}`. A checkout without the compiler runs the row in its own idiom, with the selection class wrapped in a lambda, and the report's `compiled` field says which one ran. Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare the rendering engines alone. Alternate the two checkouts across several fresh processes and compare minimums when the machine is busy.
+
+`component_bench.py` measures what components, control flow, and hydration cost natively. It mounts 1,000 rows showing the same markup four ways (inline, inline with a `Show`, as a component tag, and as a component tag whose body has a `Show`) and reports, for each, the time to create and to clear the rows, the commands and Python calls per row, and the bytes a row retains. It also renders the inline and component tables on the server and hydrates them into an in-memory document, reporting the commands per row and the mismatches:
+
+```bash
+uv run python benchmarks/component_bench.py /tmp/wybthon-before/src --reps 7 > components-before.json
+uv run python benchmarks/component_bench.py src --reps 7 > components-after.json
+```
 
 `bench_runner.py` measures the collection operations natively:
 
@@ -107,6 +114,8 @@ Each page in `results/` is a summary of one evaluation: its tables are the recor
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v9 evaluation](results/engine-v9.md) records components mounted straight into their slots, marker-free regions, and one-command hydration against v0.44.0.
 
 The [engine v8 evaluation](results/engine-v8.md) records the leaner reactive core, SVG templates on the clone path, and lighter hydration against v0.43.0.
 

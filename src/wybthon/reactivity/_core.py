@@ -1652,6 +1652,36 @@ class Signal[T](Accessor[T]):
             )
         if callable(value):
             value = value(self._latest())
+        if (
+            _applying is None
+            and _in_action is None
+            and not _held
+            and not _optimistic_depth
+            and self._equals is _DEFAULT_EQUALS
+            and (_current_observer is None or not _flushing)
+        ):
+            # A plain write (an event handler, a test, an effect's apply
+            # stage outside any transition): `_set` with the origin it
+            # would compute (normal) and default equality, inlined.
+            if self._staged:
+                self._pending = value
+                return value
+            old = self._value
+            if value is old:
+                return value
+            try:
+                if value == old:
+                    return value
+            except Exception:
+                pass
+            self._pending = value
+            self._write_tx = None
+            self._staged = True
+            self._origin = _O_NORMAL
+            _staged.append(self)
+            if not (_flush_scheduled or _flushing):
+                _schedule_flush()
+            return value
         self._set(value)
         return value
 
@@ -1702,7 +1732,15 @@ class Signal[T](Accessor[T]):
         tx, self._write_tx = self._write_tx, None
         self._origin = _O_NORMAL
         old = self._value
-        if not _changed(self._equals, old, new):
+        if self._equals is _DEFAULT_EQUALS:
+            if new is old:
+                return
+            try:
+                if new == old:
+                    return
+            except Exception:
+                pass
+        elif not _changed(self._equals, old, new):
             return
         self._value = new
         if _track:
@@ -1826,6 +1864,13 @@ def _read(value: Any) -> Any:
     through it, as a binding of the same expression does.
     """
     for _ in range(8):
+        t = type(value)
+        if t in _SYNC_RESULT_TYPES:
+            return value
+        if t is _Getter:
+            # A compiler getter (`Show(count() > 2, ...)`): its expression.
+            value = value.fn()
+            continue
         if not is_accessor(value):
             return value
         value = value()
@@ -2624,6 +2669,37 @@ class Computation(Owner):
         apply = self._apply
         if apply is None:
             return
+        if (
+            self._apply_arity == _APPLY_METHOD
+            and self._ext is None
+            and self._provisional is None
+            and value is not _SKIP_APPLY
+            and type(value) is not _Failure
+        ):
+            # A template binding with nothing to publish or clean up: its
+            # module apply stage, run under the binding itself.
+            global _current_owner, _current_observer, _applying
+            prev_owner = _current_owner
+            prev_obs = _current_observer
+            prev_applying = _applying
+            _current_observer = None
+            _current_owner = self
+            _applying = self
+            try:
+                previous = self._applied_value
+                self._applied_value = value
+                result = apply(self._apply_data, value, previous)
+            except Exception as exc:
+                if not self._handle_error(exc):
+                    raise
+                return
+            finally:
+                _current_observer = prev_obs
+                _current_owner = prev_owner
+                _applying = prev_applying
+            if result is not None and callable(result):
+                self._x().apply_cleanup = result
+            return
         preparation = (
             _pending_preparation(self._provisional) if self._provisional is not None and not self._eager else None
         )
@@ -2658,7 +2734,6 @@ class Computation(Owner):
             apply_owner._parent = self
             if self._provisional is not None:
                 apply_owner._provisional = self._provisional
-        global _current_owner, _current_observer, _applying
         prev_owner = _current_owner
         prev_obs = _current_observer
         prev_applying = _applying
@@ -3447,11 +3522,25 @@ def _probe_target(fn: Any) -> Any:
     global _probed_value
     if _session is not None:
         return fn
+    code = fn.__code__ if type(fn) is FunctionType else None
+    if code is not None and code in _escaped_code:
+        # This expression read something reactive before (another instance
+        # of the same template): it needs a computation, so don't probe.
+        return fn
     for _ in range(8):
         value = _probe(fn)
+        t = type(value)
+        if t in _SYNC_RESULT_TYPES:
+            # Text, numbers, lists, None: never an accessor.
+            _probed_value = value
+            return _STATIC
         if value is _ESCAPED:
+            if code is not None:
+                if len(_escaped_code) >= _ESCAPED_CODE_MAX:
+                    _escaped_code.clear()
+                _escaped_code.add(code)
             return fn
-        if type(value) is Signal:
+        if t is Signal:
             return value
         if is_accessor(value):
             fn = value.fn if type(value) is _Getter else value
@@ -3465,6 +3554,15 @@ def _probe_target(fn: Any) -> Any:
 # and that expression's value.
 _STATIC: Final = object()
 _probed_value: Any = None
+
+# Code objects of expressions whose probe read something reactive. A
+# template's expression is one code object for every instance, so a row's
+# `{row["label"]}` over a store is probed once, not once per row: the probe
+# reads the field, escapes with an exception, and the binding reads it again.
+# Skipping the probe only gives a binding a computation it might not have
+# needed. Bounded, since code objects can come and go (`exec`).
+_escaped_code: set[Any] = set()
+_ESCAPED_CODE_MAX: Final = 4096
 
 
 def _bind(
@@ -3592,6 +3690,12 @@ def _bind(
         comp._mark_pending()
         return comp
     rtype = type(value)
+    if rtype not in _SYNC_RESULT_TYPES and (rtype is Signal or isinstance(value, Accessor)) and _escaped_code:
+        # It handed over an accessor without reading it: probing binds such
+        # an expression to the accessor directly, so probe it again.
+        code = getattr(fn, "__code__", None)
+        if code is not None:
+            _escaped_code.discard(code)
     if rtype not in _SYNC_RESULT_TYPES and (
         hasattr(rtype, "__await__") or (hasattr(rtype, "__anext__") and inspect.isasyncgen(value))
     ):
@@ -3637,6 +3741,11 @@ def _bind(
     if comp._sources is None and not comp._children and not comp._cleanups and comp._ext is None:
         # Read nothing, own nothing: it can never run again.
         comp._disposed = True
+        if _escaped_code:
+            # Static this time: probe it again (see `_escaped_code`).
+            code = getattr(fn, "__code__", None)
+            if code is not None:
+                _escaped_code.discard(code)
         return comp
     if owner is not None:
         owner._add_child(comp)

@@ -63,6 +63,7 @@ from .events import _handlers, remove_handlers_for
 from .kernel import (
     OP_CLAIM_COMMENT,
     OP_CLAIM_ELEMENT,
+    OP_CLAIM_SLOT,
     OP_CLAIM_STATIC,
     OP_CLAIM_TEXT,
     OP_CREATE_COMMENT,
@@ -88,8 +89,6 @@ from .reactivity._core import (
     Owner,
     _bind,
     _ComponentContext,
-    _enter_component_setup,
-    _exit_component_setup,
     _Getter,
     _probe_target,
     flush,
@@ -345,10 +344,22 @@ def _new_root(container_el: Element, node: VNode, *, release: bool) -> Root:
 # ---------------------------------------------------------------------------
 
 
+# Region tags: a fragment, list, branch, or static region spans a run of
+# siblings between a start marker (`el`) and an end marker (`_frag_end`). A
+# region that is a hole's whole content is *anchored*: it has no markers of
+# its own, its end is the hole's anchor, and `el` is that same anchor.
+_REGIONS = frozenset({"_fragment", "_list", "_branch", "_static"})
+
+
 def _first_dom_id(vnode: VNode) -> int | None:
-    """Return the id of the first DOM node belonging to this vnode."""
+    """Return the id of the first DOM node belonging to this vnode.
+
+    For an empty anchored region, that's the anchor it shares with its hole:
+    whatever goes in front of the region goes in front of the anchor.
+    """
     while True:
-        if vnode.tag == "_hole":
+        tag = vnode.tag
+        if tag == "_hole":
             if vnode.subtree is not None:
                 first = _first_dom_id(vnode.subtree)
                 if first is not None:
@@ -357,15 +368,43 @@ def _first_dom_id(vnode: VNode) -> int | None:
         if vnode.subtree is not None:
             vnode = vnode.subtree
             continue
-        return vnode.el
+        el = vnode.el
+        if el is not None and el == vnode._frag_end and tag in _REGIONS:
+            for child in vnode.children:
+                if type(child) is VNode:
+                    first = _first_dom_id(child)
+                    if first is not None:
+                        return first
+        return el
+
+
+def _last_dom_id(vnode: VNode) -> int | None:
+    """Return the id of the last DOM node belonging to this vnode (None for an empty anchored region)."""
+    while True:
+        tag = vnode.tag
+        if tag == "_hole":
+            return vnode._frag_end
+        if vnode.subtree is not None:
+            vnode = vnode.subtree
+            continue
+        end = vnode._frag_end
+        if end is None:
+            return vnode.el
+        if vnode.el == end and tag in _REGIONS:
+            for child in reversed(vnode.children):
+                if type(child) is VNode:
+                    last = _last_dom_id(child)
+                    if last is not None:
+                        return last
+            return None
+        return end
 
 
 def _range_bounds(vnode: VNode) -> tuple[int | None, int | None]:
-    first = _first_dom_id(vnode)
-    while vnode.subtree is not None and vnode.tag != "_hole":
-        vnode = vnode.subtree
-    last = vnode._frag_end if vnode._frag_end is not None else vnode.el
-    return first, last
+    last = _last_dom_id(vnode)
+    if last is None:
+        return None, None
+    return _first_dom_id(vnode), last
 
 
 def _move_range(vnode: VNode, parent_id: int, anchor: int | None) -> None:
@@ -385,13 +424,14 @@ def _dom_node_ids(vnode: VNode) -> list[int]:
         return nodes
     if vnode.subtree is not None:
         return _dom_node_ids(vnode.subtree)
-    if vnode.tag in ("_fragment", "_list", "_branch", "_static"):
+    if vnode.tag in _REGIONS:
         if vnode.el is None:
             return []
-        frag_nodes: list[int] = [vnode.el]
+        anchored = vnode.el == vnode._frag_end
+        frag_nodes: list[int] = [] if anchored else [vnode.el]
         for child in vnode.children:
             frag_nodes.extend(_dom_node_ids(child))
-        if vnode._frag_end is not None:
+        if vnode._frag_end is not None and not anchored:
             frag_nodes.append(vnode._frag_end)
         return frag_nodes
     if vnode.el is not None:
@@ -502,6 +542,11 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
     tag = vnode.tag
     vnode.ns = ns
 
+    if type(tag) is not str:
+        if callable(tag):
+            _mount_component(vnode, parent_id, anchor_id, ns)
+            return
+
     if tag == "_text":
         nid = _alloc_id()
         vnode.el = nid
@@ -518,15 +563,23 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
             and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
             and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
         ):
-            templates.mount(vnode, parent_id, anchor_id, ns)
+            if diagnostics._active is not None:
+                diagnostics._active.counts["template_clones"] += 1
+            vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
             if final:
                 # Never patched (a row, a component's output): the values
                 # were only kept to diff against a re-rendered instance.
                 vnode.children = ()  # type: ignore[assignment]
             return
-        # Hydration, backends without native templates, and SVG or MathML
-        # names the HTML parser would change mount the tree the template
-        # stands for.
+        if kernel.claiming and ns is None and vnode.props.claimable:  # type: ignore[attr-defined]
+            # Hydration: claim the server's instance with one command.
+            templates.claim(vnode, parent_id, anchor_id)
+            if final:
+                vnode.children = ()  # type: ignore[assignment]
+            return
+        # Hydration of a template the server writes by the general path,
+        # backends without native templates, and SVG or MathML names the
+        # HTML parser would change mount the tree the template stands for.
         sub_tree = templates.expand(vnode)
         pk = getattr(vnode, "pk", None)
         if pk is not None:
@@ -630,6 +683,14 @@ def _open_fragment(vnode: VNode, parent_id: int, anchor_id: int | None) -> bool:
     prop becomes the markers' comment data (`Loading` boundaries use it
     for streaming and to resynchronize hydration).
     """
+    global _anchoring
+    if vnode is _anchoring:
+        # A hole's whole content (see `_mount_in_region`): the hole's anchor
+        # ends it, and it has no markers of its own.
+        _anchoring = None
+        vnode.el = anchor_id
+        vnode._frag_end = anchor_id
+        return False
     marker = vnode.props.get("marker")
     start_id = _alloc_id()
     vnode.el = start_id
@@ -665,6 +726,10 @@ def _coerce_result(value: Any) -> VNode:
     if isinstance(value, VNode):
         return value
     if isinstance(value, (list, tuple)):
+        if len(value) == 1:
+            # One node needs no fragment and no markers around it: most
+            # `children` are a list of one.
+            return _coerce_result(value[0])
         return Fragment(*value)
     if value is None or value is True or value is False:
         return to_text_vnode("")
@@ -718,11 +783,40 @@ def _region_set(
         _patchable = previous
 
 
+def _mount_in_region(node: VNode, parent_id: int, end_id: int, ns: str | None) -> None:
+    """Mount a hole's content in front of its anchor.
+
+    A list, branch, or unkeyed fragment that is the whole content shares
+    the anchor as its end and creates no markers (it's *anchored*): a
+    `Show` or `For` in a template slot costs no DOM nodes of its own. (A
+    keyed fragment keeps its markers, as it does among an element's
+    children.)
+    """
+    global _anchoring
+    tag = node.tag
+    if tag == "_branch" or tag == "_list" or (tag == "_fragment" and node.key is None and not node.props.get("marker")):
+        _anchoring = node
+        try:
+            mount(node, parent_id, end_id, ns)
+        finally:
+            _anchoring = None
+        return
+    mount(node, parent_id, end_id, ns)
+
+
+# The region `_mount_in_region` is mounting anchored, until `_open_fragment` takes it.
+_anchoring: VNode | None = None
+
+
 def _region_commit(prev: VNode | None, new_node: VNode, parent_id: int, end_id: int, ns: str | None) -> None:
     """Mount a region's new content in front of its anchor, or patch its previous content."""
     try:
         if prev is None:
-            mount(new_node, parent_id, end_id, ns)
+            if kernel.claiming:
+                # A claimed template's slot: its server content starts where
+                # the kernel noted when it claimed the template.
+                _emit((OP_CLAIM_SLOT, parent_id, end_id))
+            _mount_in_region(new_node, parent_id, end_id, ns)
         else:
             patch(prev, new_node, parent_id, ns)
     except Exception as exc:
@@ -772,7 +866,7 @@ def _hole_apply(
 
         def claim_content() -> None:
             try:
-                mount(new_node, parent_id, end_id, ns)
+                _mount_in_region(new_node, parent_id, end_id, ns)
             except Exception as exc:
                 if not _dispatch_to_error_boundary(exc):
                     log_error(f"Reactive hole update failed: {exc}", exc)
@@ -964,10 +1058,30 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     if keyed:
         position = f"{getattr(vnode, 'pk', None) or _core._position}:{component_name(comp)}"
         previous_position = _core._enter_position(position)
-    saved = _enter_component_setup(ctx)
+    # `_enter_component_setup`, inlined.
+    saved_owner = _core._current_owner
+    saved_obs = _core._current_observer
+    saved_component = _core._setup_component
+    _core._current_owner = ctx
+    _core._current_observer = None
+    _core._setup_depth += 1
+    _core._setup_component = comp
     try:
         try:
-            if isinstance(comp, Component):
+            if type(comp) is Component:
+                # `Component._render`, inlined: this runs once per instance.
+                cls = comp._props_class if comp._resolved else comp._resolve()
+                if cls is None:
+                    result = comp.fn()
+                else:
+                    props = cls.__new__(cls)
+                    props._raw = vnode.props
+                    props._sig = None
+                    props._patchable = _patchable
+                    props._defaults = None
+                    ctx._props = props
+                    result = comp.fn(props)
+            elif isinstance(comp, Component):
                 result, ctx._props = comp._render(vnode.props, _patchable)
             else:
                 # A plain function used as a tag receives the props dict.
@@ -979,11 +1093,14 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
                 log_error(f"Render failed in component {component_name(comp)}", exc)
                 raise
     finally:
-        _exit_component_setup(saved)
+        _core._current_owner = saved_owner
+        _core._current_observer = saved_obs
+        _core._setup_component = saved_component
+        _core._setup_depth -= 1
         if keyed:
             _core._restore_position(previous_position)
 
-    sub_tree = _coerce_result(result)
+    sub_tree = result if type(result) is VNode else _coerce_result(result)
     vnode.subtree = sub_tree
     if keyed:
         sub_tree.pk = position + "/"
@@ -999,8 +1116,22 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     try:
         try:
             # A component's output is never patched: only its props update.
-            mount(sub_tree, parent_id, anchor_id, ns, True)
-            vnode.el = _first_dom_id(sub_tree)
+            if (
+                sub_tree.tag == "_tpl"
+                and sub_tree.owner_scope is None
+                and not kernel.claiming
+                and kernel.html_templates
+                and sub_tree.props.clones[ns is not None]  # type: ignore[attr-defined]
+            ):
+                # The common case: the body returned one template instance.
+                if diagnostics._active is not None:
+                    diagnostics._active.counts["template_clones"] += 1
+                sub_tree.props.mount(sub_tree, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
+                sub_tree.children = ()  # type: ignore[assignment]
+                vnode.el = sub_tree.el
+            else:
+                mount(sub_tree, parent_id, anchor_id, ns, True)
+                vnode.el = _first_dom_id(sub_tree)
         except Exception as exc:
             if _dispatch_to_error_boundary(exc):
                 placeholder = to_text_vnode("")
