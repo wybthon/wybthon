@@ -2968,6 +2968,8 @@
       
         
       
+        
+      
     
     
     
@@ -3291,6 +3293,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -4184,8 +4214,9 @@ its own:</p>
 <h2 id="fragments">Fragments<a class="headerlink" href="#fragments" title="Permanent link">&para;</a></h2>
 <p>A template with several top-level nodes returns a fragment, so you
 rarely need a wrapper element. The reconciler mounts a fragment's
-children directly in the parent between two empty comment markers, so
-fragments never disturb CSS selectors or layout.</p>
+children directly in the parent (between two empty comment markers, or,
+when the fragment fills a slot by itself, in front of the slot's
+placeholder), so fragments never disturb CSS selectors or layout.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>

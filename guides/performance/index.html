@@ -2818,6 +2818,8 @@
       
         
       
+        
+      
     
     
     
@@ -3141,6 +3143,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -3532,8 +3562,11 @@
 <li><strong>Text slots stay text.</strong> A child slot whose expression returns text writes it into the slot's placeholder, filling the clone command on the first run. It becomes a hole region, able to hold nodes, only if the expression ever returns something other than text.</li>
 <li><strong>Disposal frees memory at once.</strong> Unmounting breaks every reference cycle the engine creates (a row and its node, a hole and its binding, a region and its node), so a removed subtree is freed by reference counting immediately instead of waiting for Python's cycle collector. Fewer live objects, and no cyclic garbage, mean less work for the collector, which matters most in Pyodide.</li>
 <li><strong>The collector runs when the page is idle.</strong> A flush or mount pauses Python's cyclic garbage collector, as allocating thousands of long-lived nodes would otherwise trigger collections in the middle of the work. In the browser, the collection that the paused work owes runs from <code>requestIdleCallback</code>, after the committed DOM has painted, and large disposals are freed there too, instead of inside the event handler that caused them.</li>
-<li><strong>Components cost what their markup costs.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.</li>
-<li><strong>Native control flow.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.</li>
+<li><strong>Components mount straight into their slot.</strong> A component tag in a template builds its node directly, runs its body once under one owner, and mounts the template it returns in front of the slot's placeholder: one clone command for the component and one for its children, with no hole region, fragment, or markers of its own. In a template that's never re-rendered (a component's output, a list row), a child slot holding a list of one node mounts that node without a fragment; a component that returns a list, <code>props.children</code> included, still mounts it as a fragment between two markers. Natively, a list row that's a component costs about twice the same markup inlined, where it used to cost three times as much and six times the commands (see <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v9.md"><code>engine-v9.md</code></a>).</li>
+<li><strong>Constant props are free.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.</li>
+<li><strong>Native control flow.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. One that fills a slot or a hole by itself ends at the slot's placeholder, so it creates no DOM nodes of its own. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.</li>
+<li><strong>Hydration costs what a clone does.</strong> A server-rendered template instance is claimed with one command, as a client render clones it with one; only slots that hold nodes add a command each. See <a href="../../concepts/server-rendering/#hydration">Server rendering</a>.</li>
+<li><strong>Probes learn.</strong> A template expression that read something reactive once (<code>{row["label"]}</code> over a store) isn't probed again for later instances of the template: its bindings become computations at once, instead of reading the field twice.</li>
 <li><strong>Rows are cheap.</strong> A list row is its own owner and its own index accessor. Its index is a plain integer until something reads <code>index()</code> in a tracking scope; only then is a signal created for it, so a row that never reads its index allocates nothing for it.</li>
 <li><strong>Keyed matching skips what didn't change.</strong> Matching a new list against the mounted rows first skips the common prefix and suffix by identity, without calling into each row. A replacement that only swapped two rows is detected the way Solid's <code>reconcileArrays</code> detects it, and becomes two native moves. Only what's left goes through a key table.</li>
 <li><strong>Native disposal.</strong> Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python releases its own registrations (handlers, reactive bindings, refs) without visiting every node. Clearing a <code>For</code> list is one range removal plus disposal of each row's owner; when the list is all its parent holds, the kernel empties the parent at once.</li>

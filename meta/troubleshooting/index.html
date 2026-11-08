@@ -2691,6 +2691,8 @@
       
         
       
+        
+      
     
     
     
@@ -3014,6 +3016,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -3740,7 +3770,7 @@
 <p><strong>Symptoms:</strong> no console log, no state change.</p>
 <p><strong>Likely causes:</strong></p>
 <ul>
-<li>The name is misspelled. Templates expect <code>onclick</code>, <code>oninput</code>, <code>onchange</code>, and so on (<code>onClick</code> and <code>on:click</code> also work); <code>h()</code> props and spreads expect <code>on_click</code>, <code>on_input</code>, and <code>on_change</code>.</li>
+<li>The name is misspelled. Templates expect <code>onclick</code>, <code>oninput</code>, <code>onchange</code>, and so on (<code>on:click</code> attaches a native listener instead of a delegated one, and <code>onClick</code> is a compile error); <code>h()</code> props and spreads expect <code>on_click</code>, <code>on_input</code>, and <code>on_change</code>.</li>
 <li>The event type doesn't bubble (<code>focus</code>, <code>blur</code>, <code>mouseenter</code>, <code>scroll</code>); delegation only sees bubbling events.</li>
 <li>The element lives outside every container passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> (for example a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a> mounted into <code>body</code>), so no delegation root receives the event.</li>
 <li>The handler returns a coroutine without scheduling it; nothing happens but no error is raised.</li>

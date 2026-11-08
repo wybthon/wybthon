@@ -2979,6 +2979,8 @@
       
         
       
+        
+      
     
     
     
@@ -3302,6 +3304,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -4017,7 +4047,7 @@ props never change costs about what its markup costs.</p>
 They return region nodes that the reconciler mounts directly, with no
 component context, props object, or wrapper memo:</p>
 <ul>
-<li><strong><code>Show</code> and <code>Switch</code></strong> are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes, between two comment markers.</li>
+<li><strong><code>Show</code> and <code>Switch</code></strong> are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes. In a template slot or a hole, where nearly every <code>Show</code> sits, the region ends at the slot's placeholder and creates no DOM nodes of its own; elsewhere it sits between two comment markers.</li>
 <li><strong><code>For</code> and <code>Repeat</code></strong> are list regions. Each row is its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly. A row's index is a plain integer until something reads <code>index()</code> in a tracking scope, which is when the signal behind it is created.</li>
 </ul>
 <p>Matching a keyed list against its mounted rows skips the common prefix
@@ -4093,7 +4123,7 @@ the removed nodes natively. Python-side registrations (handlers,
 reactive bindings, refs) are found through the template's slot plan.</p>
 <p>Lists benefit most:</p>
 <ul>
-<li>Clearing a <code>For</code> list emits one <code>DISPOSE_RANGE</code>, plus the disposal of each row's owner. When the list is all its parent holds (but for its markers and placeholder), the kernel empties the parent in one native call.</li>
+<li>Clearing a <code>For</code> list emits one <code>DISPOSE_RANGE</code>, plus the disposal of each row's owner. When the list is all its parent holds (but for its slot's placeholder), the kernel empties the parent in one native call.</li>
 <li>When a keyed list reuses no rows (every row replaced), the new rows mount as one splice and the old ones go in one <code>DISPOSE_RANGE</code>, instead of reconciling a thousand unrelated pairs.</li>
 </ul>
 <h2 id="event-delegation">Event delegation<a class="headerlink" href="#event-delegation" title="Permanent link">&para;</a></h2>

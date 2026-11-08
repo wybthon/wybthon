@@ -2857,6 +2857,8 @@
       
         
       
+        
+      
     
     
     
@@ -3180,6 +3182,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -3800,11 +3830,18 @@ bootstrap runs.</p>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">hydrate</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The production bootstrap calls <code>hydrate</code> automatically when the page contains server state. <code>hydrate</code> mounts the tree exactly as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> would, except that each node <em>claims</em> the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.</p>
-<p>Templates need nothing special. A server render and a hydrating client
-expand each template into the same VNodes <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> would build,
-so the markup and hydration keys match whether a component uses
-templates or <code>h()</code>. Once hydration has committed, browser updates use
-the compiled path. See <a href="../templates/">Templates</a>.</p>
+<p>Templates need nothing special, and they hydrate as cheaply as they
+clone. The server writes a template instance in the layout its clone
+has: the template's markup, with each slot's content in front of a
+<code>&lt;!--$--&gt;</code> comment where the clone has the slot's placeholder (a text
+slot that shows text is just that text). The browser claims the whole
+instance with one command, registers its nodes as a clone would, and
+fills its slots the way a client render does, so hydrating a row of a
+table costs what rendering it does. A template the server can't write
+in that layout (one with raw text, a <code>select</code>, SVG, a spread, or inner
+HTML) expands into the same VNodes <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> would build on
+both sides and is claimed node by node. Once hydration has committed,
+browser updates use the compiled path. See <a href="../templates/">Templates</a>.</p>
 <p>Hydration never breaks the page. When a node doesn't match, the kernel creates the expected node in place, removes server nodes nobody claimed, and logs a console warning for the first few mismatches. <code>kernel.stats()["hydration_mismatches"]</code> counts them. A mismatch inside a <code>Loading</code> boundary stops at the boundary's end.</p>
 <p>Mismatches cost extra DOM work, so avoid them. Hydration assumes the browser's first render matches the server's:</p>
 <ul>

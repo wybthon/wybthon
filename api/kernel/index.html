@@ -3245,6 +3245,8 @@
       
         
       
+        
+      
     
     
     
@@ -3568,6 +3570,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -5666,11 +5696,6 @@ hot path; <code>None</code> anchors mean "append".</p>
 <td><code>insertBefore</code> (<code>None</code> anchor appends)</td>
 </tr>
 <tr>
-<td><code>REMOVE</code></td>
-<td><code>id</code></td>
-<td>Detach from the parent; the node stays registered</td>
-</tr>
-<tr>
 <td><code>MOVE_RANGE</code></td>
 <td><code>parent_id, first_id, last_id, anchor_id</code></td>
 <td>Move a contiguous mounted range</td>
@@ -5688,7 +5713,7 @@ hot path; <code>None</code> anchors mean "append".</p>
 <tr>
 <td><code>HOLE_TEXT</code></td>
 <td><code>id, text</code></td>
-<td>Reuse a hole's placeholder as a visible text node</td>
+<td>Reuse a hole's placeholder as a visible text node; while hydrating, adopt the server's text in front of it instead</td>
 </tr>
 <tr>
 <td><code>RELEASE_TPL</code></td>
@@ -5756,6 +5781,16 @@ hot path; <code>None</code> anchors mean "append".</p>
 <td>Keep the server nodes before the marker as static DOM (a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> region)</td>
 </tr>
 <tr>
+<td><code>CLAIM_TPL</code></td>
+<td><code>first_id, tpl_id, parent_id, anchor_id, *hints, writes?</code></td>
+<td>Claim a server-rendered template instance: walk the template's skeleton against the server's nodes, register them under the ids a <code>CLONE</code> would give them, and note where each slot's content starts. A hint is a text slot's text, or <code>0</code> when the slot holds nodes. <code>writes</code>, when present, are the instance's <code>SET_ATTR</code> and <code>SET_STYLE</code> commands, applied where they differ from the server's values; a <code>SET_STYLE</code> with a fourth field set replaces the server's whole style</td>
+</tr>
+<tr>
+<td><code>CLAIM_SLOT</code></td>
+<td><code>parent_id, slot_id</code></td>
+<td>Point the parent's claim cursor at the server content of a claimed template's slot, before that content's own claims</td>
+</tr>
+<tr>
 <td><code>HYDRATE_END</code></td>
 <td>none</td>
 <td>Remove server nodes nobody claimed and stop claiming</td>
@@ -5770,7 +5805,16 @@ kernel releases the removed nodes itself. See
 <a href="../../concepts/vdom/#compiled-templates">Virtual DOM</a> for how compiled
 templates, precompiled mount functions, and lazy node ids fit
 together.</p>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> emits the claim ops; see <a href="../../concepts/server-rendering/">Server rendering</a>. <code>stats()</code> reports node, template, listener, and root counts plus <code>hydration_mismatches</code>, and <code>take_state()</code> and <code>replay_events()</code> read the server state and replay input recorded before hydration.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> emits the claim ops. A template instance
+under an HTML parent hydrates like a clone: one <code>CLAIM_TPL</code> for the
+instance, plus one <code>CLAIM_SLOT</code> for each slot whose content is nodes, so
+a server-rendered row of the benchmark table costs one command, as a
+client-rendered one does. The server writes such an instance in the
+layout its clone has, with each slot's content in front of a <code>&lt;!--$--&gt;</code>
+comment where the clone has the slot's placeholder. Trees built with
+<code>h()</code>, and templates the server writes by its general path (raw text,
+<code>select</code>, SVG, spreads, inner HTML), claim node by node. See
+<a href="../../concepts/server-rendering/">Server rendering</a>. <code>stats()</code> reports node, template, listener, and root counts plus <code>hydration_mismatches</code>, and <code>take_state()</code> and <code>replay_events()</code> read the server state and replay input recorded before hydration.</p>
 <p>Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,
 and calls the Python dispatcher once for the matching bubbling route with a small

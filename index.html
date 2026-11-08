@@ -2802,6 +2802,8 @@
       
         
       
+        
+      
     
     
     
@@ -3125,6 +3127,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -3557,7 +3587,7 @@
 <li><strong>A compiler, as in Solid.</strong> The <a href="concepts/compiler/">compiler</a> rewrites each template before its module runs: an expression that calls something, reads an attribute, or indexes becomes a getter, and a component call in the markup receives getters for its props. You write <code>{count() * 2}</code>, not a lambda.</li>
 <li><strong>Markup compiles ahead of time.</strong> Each template literal is parsed, validated, and turned into a mount function when its module is compiled; every instance clones its native <code>&lt;template&gt;</code> with one kernel command and fills its slots. Production builds never parse a template or generate code at run time.</li>
 <li><strong>Holes are the unit of update.</strong> Each dynamic expression in the markup becomes its own binding. There are no component re-renders to reason about.</li>
-<li><strong>Components cost what their markup costs.</strong> A constant prop subscribes to nothing, a binding that reads nothing reactive allocates no computation, and <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions rather than wrapper components.</li>
+<li><strong>Components and control flow cost little more than their markup.</strong> A component tag mounts the template its body returns straight into its slot, a <code>Show</code> or <code>For</code> that fills a slot creates no DOM nodes of its own, a constant prop subscribes to nothing, and a binding that reads nothing reactive allocates no computation. <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions rather than wrapper components.</li>
 <li><strong>Automatic batching.</strong> Signal writes are staged and applied once per microtask (and at the end of every event handler). There's no <code>batch()</code>; call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="api/wybthon/#wybthon.flush"><code>flush</code></a> only when you need the settled state synchronously.</li>
 <li><strong>Async is part of the graph.</strong> Reading an async memo before it resolves raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>, which the nearest <code>Loading</code> boundary turns into fallback UI. Content stays mounted while pending, and a later refetch runs as a transition: the UI that depends on the change holds on the previous state until the new value lands, so nothing tears.</li>
 <li><strong>A virtual DOM where it pays off.</strong> Every DOM call crosses the Pyodide bridge, so Wybthon emits DOM operations into a buffer and ships them to a JavaScript kernel in one batch per flush. Only reactive holes that return new markup are diffed, and a template from the same literal is patched slot by slot.</li>

@@ -2887,6 +2887,8 @@
       
         
       
+        
+      
     
     
     
@@ -3210,6 +3212,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -4359,9 +4389,13 @@ region.</p>
 <li><strong><code>h()</code> trees.</strong> Element VNodes built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../vnode/#wybthon.vnode.h"><code>h</code></a> mount
   node by node, with one command per node.</li>
 <li><strong>Regions.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions
-  with no component wrapped around them.</li>
-<li><strong>Components and holes.</strong> A component body runs once; a hole runs in
-  its own render effect.</li>
+  with no component wrapped around them. One that fills a slot or a
+  hole by itself creates no markers: it ends at the slot's placeholder.</li>
+<li><strong>Components and holes.</strong> A component body runs once, and the template
+  it returns mounts straight into the slot that holds the component; a
+  hole runs in its own render effect.</li>
+<li><strong>Hydration.</strong> A template instance claims the server's nodes with one
+  <code>CLAIM_TPL</code> command and fills its slots as a clone does.</li>
 </ul>
 <p>See <a href="../../concepts/vdom/#compiled-templates">Virtual DOM</a> for the
 details.</p>

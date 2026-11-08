@@ -2895,6 +2895,8 @@
       
         
       
+        
+      
     
     
     
@@ -3218,6 +3220,34 @@
     
   
     0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0010-engine-v9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Engine v9
   
 
     
@@ -3940,11 +3970,11 @@
 </tr>
 <tr>
 <td><code>children(() =&gt; props.children)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>children(lambda: props.children)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>resolve_children(lambda: props.children)</code></a></td>
 </tr>
 <tr>
 <td><code>children(...).toArray()</code></td>
-<td><code>children(lambda: props.children).to_array()</code></td>
+<td><code>resolve_children(lambda: props.children).to_array()</code></td>
 </tr>
 <tr>
 <td><code>flatten(children)</code></td>
@@ -4161,7 +4191,7 @@
 <li>Event handlers, refs, spreads, and nested <code>html(t"...")</code> templates are never wrapped. Prefer a named handler (<code>onclick={increment}</code>); Python forbids a bare <code>lambda</code> in an interpolation, so an inline one needs parentheses: <code>onclick={(lambda: set_open(False))}</code>.</li>
 <li>A call in a child position is decided when the template is created. A component (<code>{Card(title=user().name)}</code>, <code>{Show(...)}</code>, <code>{For(...)}</code>) is built with a getter for each dynamic argument, exactly like <code>&lt;Card title={user().name} /&gt;</code>. Any other call (<code>{badge(user())}</code>, <code>{str(total())}</code>) becomes one reactive hole, as a function call in JSX does.</li>
 <li>Attributes are HTML names (<code>class</code>, <code>for</code>, <code>aria-label</code>) and take interpolations the same way: <code>class={row_class(id)}</code>, <code>href="/users/{user_id()}"</code> (one binding for the whole value), <code>disabled={add.pending()}</code>.</li>
-<li>Event handlers are <code>onclick={handler}</code>; <code>onClick</code> and <code>on:click</code> work too. A handler may take no arguments or receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../../api/wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> with <code>e.target</code>, <code>e.key</code>, <code>e.prevent_default()</code>, and friends.</li>
+<li>Event handlers are <code>onclick={handler}</code>, the HTML name, where Solid 2.0 binds <code>onClick</code>; <code>on:click</code> attaches a native listener to the element instead of a delegated one. Other spellings (<code>onClick</code>, <code>on_click</code>) are compile errors that name the one to use. A handler may take no arguments or receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../../api/wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> with <code>e.target</code>, <code>e.key</code>, <code>e.prevent_default()</code>, and friends.</li>
 <li>A component tag is written <code>&lt;{Card} title={user().name}&gt;...&lt;/{Card}&gt;</code> (like <code>&lt;${Card}&gt;</code> in Solid's <code>html</code>), or self-closed as <code>&lt;{Card} /&gt;</code>. Attributes become keyword props and the content becomes <code>children</code>. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (<code>{Card(title=user().name)}</code>) is checked statically, and the compiler still passes getters.</li>
 <li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, and context providers work as calls in an interpolation (<code>{Show(ready(), panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready()}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
 <li>Markup the browser's parser would rewrite is an error instead of a silent change: put <code>&lt;tr&gt;</code> in a <code>&lt;tbody&gt;</code>, and don't nest a <code>&lt;div&gt;</code> in a <code>&lt;p&gt;</code>. The compiler reports it as a <code>SyntaxError</code> with the file and line.</li>
