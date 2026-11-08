@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.44.0 (2026-11-08)
+
+### Features
+
+- **reactivity,template**: Add engine v8 and Pythonic API
+  ([#55](https://github.com/wybthon/wybthon/pull/55),
+  [`ef051db`](https://github.com/wybthon/wybthon/commit/ef051db9fa794d26bb02ab09234557a4eebd5cb4))
+
+
 ## v0.43.0 (2026-11-07)
 
 ### Features
