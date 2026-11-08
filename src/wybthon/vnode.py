@@ -1,8 +1,8 @@
 """Virtual node data structure and tree-building helpers.
 
-This module defines [`VNode`][wybthon.VNode] and the functions that
-build trees of them: [`h`][wybthon.h], [`Fragment`][wybthon.Fragment],
-and [`hole`][wybthon.hole]. It has no browser or DOM dependencies, so
+This module defines [`VNode`][wybthon.vnode.VNode] and the functions that
+build trees of them: [`h`][wybthon.vnode.h], [`Fragment`][wybthon.vnode.Fragment],
+and [`hole`][wybthon.vnode.hole]. It has no browser or DOM dependencies, so
 VNode trees can be constructed and inspected anywhere CPython runs.
 
 A **reactive hole** is a `_hole` VNode wrapping a reactive expression

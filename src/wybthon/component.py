@@ -57,7 +57,7 @@ __all__ = ["component", "Component", "builtin"]
 class Component:
     """A run-once component produced by [`component`][wybthon.component].
 
-    Calling it returns a [`VNode`][wybthon.VNode]; the reconciler runs the
+    Calling it returns a [`VNode`][wybthon.vnode.VNode]; the reconciler runs the
     wrapped function once per mount.
     """
 

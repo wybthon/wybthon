@@ -64,7 +64,7 @@ def Errored(
             current error automatically, for example the current route.
 
     Returns:
-        A component [`VNode`][wybthon.VNode] that swaps to the fallback
+        A component [`VNode`][wybthon.vnode.VNode] that swaps to the fallback
         whenever a descendant raises.
     """
     return h(_Errored, {"children": children, "fallback": fallback, "on_error": on_error, "reset_on": reset_on})

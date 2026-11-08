@@ -1029,7 +1029,7 @@ def create_unique_id() -> str:
 
 
 class ChildrenAccessor(Accessor[Any]):
-    """The resolved children returned by [`children`][wybthon.children].
+    """The resolved children returned by [`resolve_children`][wybthon.resolve_children].
 
     Calling it returns the single resolved child, or a list when there
     are several (or none); [`to_array`][wybthon.ChildrenAccessor.to_array]
@@ -1072,7 +1072,7 @@ def flatten(children: Any) -> list[Any]:
 
     Nested lists are flattened, accessors and zero-argument functions are
     called (tracked) and their results resolved, and `None` and booleans
-    are dropped. The unmemoized form of [`children`][wybthon.children];
+    are dropped. The unmemoized form of [`resolve_children`][wybthon.resolve_children];
     matches Solid 2.0's `flatten`.
     """
     out: list[Any] = []

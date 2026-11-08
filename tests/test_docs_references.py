@@ -38,7 +38,9 @@ def _imports() -> list[tuple[str, str, str]]:
 
 def _xrefs() -> list[tuple[str, str]]:
     found = []
-    for page in PAGES:
+    # Docstrings render into the API reference, so their links count too.
+    sources = [*PAGES, *(ROOT / "src").rglob("*.py")]
+    for page in sources:
         for target in XREF.findall(page.read_text(encoding="utf-8")):
             found.append((page.relative_to(ROOT).as_posix(), target))
     return sorted(set(found))

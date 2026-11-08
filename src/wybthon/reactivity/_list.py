@@ -1,6 +1,6 @@
 """Reactive list mapping helpers.
 
-[`map_array`][wybthon.map_array] turns a
+[`map_array`][wybthon.reactivity.map_array] turns a
 reactive list into a memoized list of mapped rows, reusing each row's
 owner scope across updates so per-row state survives reorders.
 """

@@ -24,7 +24,7 @@ Mental model:
 - **Reactive holes** are `_hole` VNodes whose expression runs inside a
   render effect; when its dependencies change, only that region is
   patched. Holes are created for every reactive expression in a child
-  position and explicitly with [`hole`][wybthon.hole].
+  position and explicitly with [`hole`][wybthon.vnode.hole].
 - **Namespaces are inferred.** An `svg` or `math` element switches its
   subtree to the SVG or MathML namespace (`foreignObject` switches back
   to HTML), so SVG works with the same helpers as HTML.

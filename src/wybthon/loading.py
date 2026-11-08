@@ -151,7 +151,7 @@ def Loading(
             refreshes.
 
     Returns:
-        A component [`VNode`][wybthon.VNode] that toggles between
+        A component [`VNode`][wybthon.vnode.VNode] that toggles between
         fallback and children.
 
     Example:
@@ -450,7 +450,7 @@ def Reveal(
             instead of their own fallback, so only one fallback shows.
 
     Returns:
-        A component [`VNode`][wybthon.VNode].
+        A component [`VNode`][wybthon.vnode.VNode].
 
     Example:
         ```python
