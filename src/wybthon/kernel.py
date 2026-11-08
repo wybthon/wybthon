@@ -83,7 +83,7 @@ OP_DISPOSE_RANGE = 19  # [op, first, last]  (remove siblings and release everyth
 OP_RELEASE_TPL = 20  # [op, tpl_id]
 OP_HOLE_TEXT = 21  # [op, anchor_id, text]  (reuse the anchor as visible text)
 OP_HYDRATE = 22  # [op, root_id]  (start claiming server-rendered nodes under root)
-OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None]
+OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None, [[attr, value], ...]?]
 OP_CLAIM_TEXT = 24  # [op, id, parent_id, text]
 OP_CLAIM_COMMENT = 25  # [op, id, parent_id, data]
 OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
@@ -680,7 +680,7 @@ class PythonBackend:
             elif code == OP_HYDRATE:
                 self._hydrating = _ClaimState(nodes[op[1]])
             elif code == OP_CLAIM_ELEMENT:
-                self._claim_element(op[1], op[2], op[3], op[4])
+                self._claim_element(op[1], op[2], op[3], op[4], op[5] if len(op) > 5 else None)
             elif code == OP_CLAIM_TEXT:
                 self._claim_text(op[1], op[2], op[3])
             elif code == OP_CLAIM_COMMENT:
@@ -779,7 +779,9 @@ class PythonBackend:
         assert self._hydrating is not None
         self._hydrating.cursors[id(parent)] = node
 
-    def _claim_element(self, node_id: int, parent_id: int, tag: str, ns: Optional[str]) -> None:
+    def _claim_element(
+        self, node_id: int, parent_id: int, tag: str, ns: Optional[str], statics: Optional[list[Any]] = None
+    ) -> None:
         parent = self._nodes[parent_id]
         c = self._cursor(parent)
         while c is not None and _is_blank(c):
@@ -791,6 +793,9 @@ class PythonBackend:
         self._mismatch()
         create_ns = getattr(self._doc, "createElementNS", None)
         node = create_ns(ns, tag) if ns and create_ns is not None else self._doc.createElement(tag)
+        for name, value in statics or ():
+            # The server's static attributes, which a claimed node already has.
+            node.setAttribute(name, value)
         parent.insertBefore(node, c)
         self._set_cursor(parent, c)
         self._reg(node_id, node)

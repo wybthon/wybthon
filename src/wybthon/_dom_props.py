@@ -129,6 +129,11 @@ def is_event_prop(name: str) -> bool:
     return prop_kind(name) == KIND_EVENT
 
 
+# The key under which a template expanded while hydrating carries its static
+# attributes (`[[name, value], ...]`). The reconciler moves them into the
+# element's claim command; they're never applied as props.
+CLAIM_STATICS = "\0static"
+
 # Prop-name classes. Names are classified once and memoized: every mount
 # of every element asks the same question about the same handful of
 # names, so a dict hit beats re-running the string tests each time.

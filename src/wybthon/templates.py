@@ -61,6 +61,7 @@ from . import _warnings, diagnostics, kernel
 from . import events as _events
 from ._dom_props import (
     _FRESH,
+    CLAIM_STATICS,
     _applier,
     _appliers,
     _apply_single_prop,
@@ -533,6 +534,7 @@ class _Compiled:
         "spreads",
         "foreign",
         "ns_clone",
+        "clones",
         "ns_shapes",
         "strings",
         "probes",
@@ -561,6 +563,9 @@ class _Compiled:
         # Whether the template can also be cloned under an SVG or MathML
         # parent (parsed inside a wrapper), and the shapes registered so.
         self.ns_clone = True
+        # Where it clones, by the parent's namespace: `clones[False]` under an
+        # HTML parent, `clones[True]` under SVG or MathML (set by the builder).
+        self.clones: tuple[bool, bool] = (True, True)
         self.ns_shapes: dict[str, _NsShape] | None = None
         # Indices of values the compiler deferred without a call, whose
         # bindings run a static probe before becoming computations.
@@ -741,6 +746,7 @@ class _Builder:
         c.addressed = sorted(addressed)
         c.refs = tuple(self.refs)
         c.spreads = tuple(self.spreads)
+        c.clones = (not c.foreign, not c.foreign and c.ns_clone)
 
 
 # A compiled template: how `html()` turns values into a node.
@@ -1301,8 +1307,11 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
 
 def _expand_props(attrs: list[tuple[Any, ...]], values: tuple[Any, ...]) -> dict[str, Any]:
     props: dict[str, Any] = {}
-    # While hydrating, the server already wrote every static attribute.
+    # While hydrating, the server already wrote every static attribute: they
+    # ride the claim instead, and the kernel sets them only on an element it
+    # has to create because the server's markup didn't match.
     claiming = kernel.claiming
+    statics: list[list[str]] | None = None
     for attr in attrs:
         kind = attr[0]
         if kind == _A_SPREAD:
@@ -1312,12 +1321,20 @@ def _expand_props(attrs: list[tuple[Any, ...]], values: tuple[Any, ...]) -> dict
             continue
         name = attr[1]
         if kind == _A_STATIC:
-            if not claiming:
+            if claiming:
+                if statics is None:
+                    statics = props[CLAIM_STATICS] = []
+                statics.append([name, "" if attr[2] is True else attr[2]])
+            else:
                 props[name] = attr[2]
             continue
         event = _event_prop(name)
         if event is not None:
-            props[event] = values[attr[2]]
+            handler = values[attr[2]]
+            if name[2] == ":" and callable(handler) and type(handler) is not _events.EventHandler:
+                # `on:click`: a native listener, as on the clone path.
+                handler = _events.event(handler)
+            props[event] = handler
         elif kind == _A_PARTS:
             props[name] = _parts_value(attr[2], values)
         else:
@@ -1380,9 +1397,10 @@ _SLOT_PROPS: Any = MappingProxyType({})
 _KEEP = _core._SKIP_APPLY
 
 
-def _text_hole(nid: int, text: str) -> VNode:
+def _text_hole(nid: int, text: str, ns: str | None = None) -> VNode:
     """Turn a child slot holding text in its placeholder into a hole region."""
     hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+    hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
     hole._hole_text = text
@@ -1401,12 +1419,6 @@ def mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = 
     if diagnostics._active is not None:
         diagnostics._active.counts["template_clones"] += 1
     vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
-
-
-def clonable(vnode: VNode, ns: str | None) -> bool:
-    """Whether a template instance mounts by cloning under a parent in namespace `ns`."""
-    compiled: _Compiled = vnode.props  # type: ignore[assignment]
-    return not compiled.foreign and (ns is None or compiled.ns_clone)
 
 
 def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
@@ -1878,7 +1890,7 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                     # A text binding becomes a hole showing its current text.
                     text = _text_of(hole._applied_value)
                     hole.dispose()
-                    hole = _text_hole(nid, text)
+                    hole = _text_hole(nid, text, old.ns if slot[5] == _INHERIT else slot[5])
                 else:
                     hole = upgraded
             if type(hole) is str:
@@ -1889,7 +1901,7 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                         kernel.emit((kernel.OP_SET_TEXT, nid, text))
                         dyn[k] = text
                     continue
-                hole = _text_hole(nid, hole)
+                hole = _text_hole(nid, hole, old.ns if slot[5] == _INHERIT else slot[5])
             if is_accessor(value) or hole.render_effect is not None:
                 dyn[k] = _replace_hole_getter(hole, first + slot[3], value, index in compiled.probes)
             else:

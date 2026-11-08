@@ -85,12 +85,16 @@ def _reset_warning_dedupe() -> None:
     _seen_warnings.clear()
 
 
-def warn(message: str) -> None:
-    """Issue a development-mode [`WybthonWarning`][wybthon.WybthonWarning] (no-op when dev mode is off)."""
+def warn(message: str, *, stacklevel: int = 1) -> None:
+    """Issue a development-mode [`WybthonWarning`][wybthon.WybthonWarning] (no-op when dev mode is off).
+
+    `stacklevel` counts from the caller of `warn`, as `warnings.warn`'s
+    does from its own caller: 1 attributes the warning to that caller.
+    """
     if DEV_MODE:
         if warning_hook is not None:
             warning_hook(message)
-        warnings.warn(message, WybthonWarning, stacklevel=3)
+        warnings.warn(message, WybthonWarning, stacklevel=stacklevel + 1)
 
 
 def warn_once(category: str, key: Any, message: str) -> None:
@@ -101,7 +105,7 @@ def warn_once(category: str, key: Any, message: str) -> None:
     if cache_key in _seen_warnings:
         return
     _seen_warnings.add(cache_key)
-    warn(message)
+    warn(message, stacklevel=2)
 
 
 def log_error(message: str, error: BaseException | None = None) -> None:

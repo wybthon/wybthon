@@ -46,6 +46,7 @@ from typing import Any
 
 from . import diagnostics, kernel, templates
 from ._dom_props import (
+    CLAIM_STATICS,
     _bindings,
     _ref_cleanups,
     apply_initial_props,
@@ -482,13 +483,8 @@ def _mount_owned(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | 
     _core._current_owner = vnode.owner_scope
     _core._current_observer = None
     try:
-        compiled = vnode.props
         if (
-            vnode.tag == "_tpl"
-            and not kernel.claiming
-            and kernel.html_templates
-            and not compiled.foreign  # type: ignore[attr-defined]
-            and (ns is None or compiled.ns_clone)  # type: ignore[attr-defined]
+            vnode.tag == "_tpl" and not kernel.claiming and kernel.html_templates and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
         ):
             if diagnostics._active is not None:
                 diagnostics._active.counts["template_clones"] += 1
@@ -520,7 +516,7 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
         if (
             not kernel.claiming
             and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
-            and templates.clonable(vnode, ns)
+            and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
         ):
             templates.mount(vnode, parent_id, anchor_id, ns)
             if final:
@@ -574,7 +570,11 @@ def _mount_element(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str 
     el_ns = _element_ns(tag, ns)
     claiming = kernel.claiming
     if claiming:
-        _emit((OP_CLAIM_ELEMENT, nid, parent_id, tag, el_ns))
+        statics = vnode.props.pop(CLAIM_STATICS, None)
+        if statics:
+            _emit((OP_CLAIM_ELEMENT, nid, parent_id, tag, el_ns, statics))
+        else:
+            _emit((OP_CLAIM_ELEMENT, nid, parent_id, tag, el_ns))
     elif el_ns is None:
         _emit((OP_CREATE_ELEMENT, nid, tag))
     else:

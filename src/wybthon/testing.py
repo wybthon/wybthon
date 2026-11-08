@@ -410,7 +410,10 @@ _unhandled: list[BaseException] = []
 
 
 def _collect(error: BaseException | None, message: str) -> None:
-    if any(screen.strict for screen in _screens):
+    # A logged error can't be traced to the view that raised it, so while a
+    # `strict=False` view is mounted, errors are only logged: a failing
+    # view a test mounts on purpose never fails a strict one beside it.
+    if _screens and all(screen.strict for screen in _screens):
         _unhandled.append(error if error is not None else RuntimeError(message))
 
 
@@ -483,17 +486,26 @@ def _role(node: TestNode) -> str | None:
     return _IMPLICIT_ROLES.get(tag)
 
 
-def _accessible_name(node: TestNode, root: TestNode | None = None) -> str:
+def _labels(root: TestNode) -> dict[str, str]:
+    """Each `<label for=...>` under `root`: the id it names, and its text."""
+    found: dict[str, str] = {}
+    for node in _walk(root):
+        if node.is_element and node.tag == "label":
+            target = node.attributes.get("for")
+            if target and target not in found:
+                found[target] = " ".join(node.text_content.split())
+    return found
+
+
+def _accessible_name(node: TestNode, root: TestNode | None = None, labels: dict[str, str] | None = None) -> str:
     """The name assistive technology announces: `aria-label`, a `<label>`, then content."""
     label = node.attributes.get("aria-label")
     if label:
         return label
     if (node.tag or "").lower() in ("input", "textarea", "select"):
         node_id = node.attributes.get("id")
-        if node_id and root is not None:
-            for candidate in _walk(root):
-                if candidate.is_element and candidate.tag == "label" and candidate.attributes.get("for") == node_id:
-                    return " ".join(candidate.text_content.split())
+        if node_id and labels is not None and node_id in labels:
+            return labels[node_id]
         parent = node.parentNode
         while parent is not None and parent is not root:
             if parent.tag == "label":
@@ -611,9 +623,12 @@ class Screen:
     # -- role -------------------------------------------------------------------
 
     def _by_role(self, role: str, name: str | re.Pattern[str] | None) -> list[TestNode]:
+        # Labels are collected once per query, not once per candidate.
+        labels = _labels(self.container) if name is not None else None
         return self._all(
             lambda node: (
-                _role(node) == role and (name is None or _matches(_accessible_name(node, self.container), name, True))
+                _role(node) == role
+                and (name is None or _matches(_accessible_name(node, self.container, labels), name, True))
             )
         )
 
@@ -707,15 +722,18 @@ def render(view: Any, *, strict: bool = True) -> Screen:
     return screen
 
 
-def cleanup() -> None:
+def cleanup(*, check: bool = False) -> None:
     """Unmount every view rendered with [`render`][wybthon.testing.render] that's still mounted.
 
-    Errors the views logged are dropped, not raised: a test that wants them
-    calls [`raise_unhandled`][wybthon.testing.raise_unhandled] first.
+    With `check`, then raise the errors the views logged that no boundary
+    handled, as the pytest plugin does after every test; otherwise they're
+    dropped.
     """
+    pending = list(_unhandled) if check else []
     for screen in list(_screens):
         screen.unmount(check=False)
-    _unhandled.clear()
+    _unhandled[:] = pending
+    raise_unhandled()
 
 
 class _Fire:

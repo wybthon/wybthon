@@ -62,11 +62,13 @@ _install()
 def pytest_runtest_teardown(item: Any) -> None:
     """Unmount views a test rendered with `wybthon.testing.render` and left mounted.
 
-    Only when the test imported `wybthon.testing`, so a test run that never
-    renders never imports Wybthon here.
+    An error those views logged that no boundary handled, and that nothing
+    raised yet, fails the test here. Only when the test imported
+    `wybthon.testing`, so a test run that never renders never imports
+    Wybthon here.
     """
     import sys
 
     testing = sys.modules.get("wybthon.testing")
     if testing is not None:
-        testing.cleanup()
+        testing.cleanup(check=True)

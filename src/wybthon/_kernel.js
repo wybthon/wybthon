@@ -350,7 +350,7 @@
     if (n.nodeType === 3) return `text ${JSON.stringify(n.nodeValue.slice(0, 40))}`;
     return "a comment";
   }
-  function claimElement(id, parentId, tag, ns) {
+  function claimElement(id, parentId, tag, ns, statics) {
     const parent = nodes.get(parentId);
     let c = cursorOf(parent);
     while (c && isBlank(c)) c = c.nextSibling;
@@ -361,6 +361,8 @@
     }
     mismatch(`expected <${tag}>, found ${describe(c)}`);
     const node = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag);
+    // The server's static attributes, which a claimed node already has.
+    if (statics) for (let i = 0; i < statics.length; i++) node.setAttribute(statics[i][0], statics[i][1]);
     parent.insertBefore(node, c || null);
     hydrating.cursors.set(parent, c || null);
     reg(id, node);
@@ -699,7 +701,7 @@
           };
           break;
         case 23: // CLAIM_ELEMENT
-          claimElement(op[1], op[2], op[3], op[4]);
+          claimElement(op[1], op[2], op[3], op[4], op[5]);
           break;
         case 24: // CLAIM_TEXT
           claimText(op[1], op[2], op[3]);

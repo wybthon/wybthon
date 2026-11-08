@@ -2597,14 +2597,21 @@ class Computation(Owner):
             return
         # The first run of a fresh effect and eager effects apply at once.
         # Re-runs inside a flush are collected and applied when the round
-        # decides whether they reveal or wait for the transition. A round
-        # that tracks nothing (no transition open, no async work live) can
-        # hold nothing, so its re-runs apply at once too.
+        # decides whether they reveal or wait for the transition. A render
+        # effect in a round that tracks nothing (no transition open, no async
+        # work live) can be held by nothing, so it applies at once, as Solid's
+        # render effects do; a user effect still waits, so every effect's
+        # compute stage runs before any apply stage.
         if (
             first
             or self._eager
             or not _flushing
-            or (not _track and (x is None or x.publication_tx is None) and not _probed_tentative)
+            or (
+                self._kind == _K_RENDER
+                and not _track
+                and (x is None or x.publication_tx is None)
+                and not _probed_tentative
+            )
         ):
             self._run_apply(value, prev)
         else:

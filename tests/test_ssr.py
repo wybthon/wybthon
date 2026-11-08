@@ -1065,3 +1065,24 @@ def test_commands_emitted_while_rendering_are_discarded(wyb):
     assert kernel._backend is None
     assert list(kernel._ops) == [waiting]
     kernel.reset()
+
+
+def test_an_element_hydration_has_to_create_gets_its_static_attributes(wyb):
+    # The server sent no button: the claim creates one, with the template's
+    # static attributes (a claimed node already has them from the server).
+    out = '<div><p>fresh</p></div><script type="application/json" data-wyb-state>{"v":{}}</script>'
+    result = hydrate_from(wyb, out, html(t'<div><p>fresh</p><button class="primary" type="submit">b</button></div>'))
+    assert result.mismatches > 0
+    button = find(result.container, "button")
+    assert button.attributes["class"] == "primary"
+    assert button.attributes["type"] == "submit"
+
+
+def test_a_hydrated_on_colon_handler_is_a_native_listener(wyb):
+    calls: list[str] = []
+    view = html(t"<div><button on:click={(lambda: calls.append('native'))}>b</button></div>")
+    out = render_to_string(view)
+    result = hydrate_from(wyb, out, view)
+    backend = wyb["kernel"]._backend
+    button = find(result.container, "button")
+    assert backend._listener_options[(button._wyb_id, "click")]["direct"] is True

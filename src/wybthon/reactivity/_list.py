@@ -32,9 +32,6 @@ class _Row:
 
 
 def _run_row[T](owner: Owner, fn: Callable[..., T], *args: Any) -> T:
-    if len(args) == 2 and _core._positional_count(fn) == 1:
-        # `map_array(items, lambda item: ...)`: the index is optional.
-        args = args[:1]
     return _core._run_owned_untracked(owner, fn, *args)
 
 
@@ -92,6 +89,10 @@ def map_array[T, U](
         return (1, id(item))
 
     key_for = keyed if callable(keyed) else identity
+    if _core._positional_count(fn) == 1:
+        # `map_array(items, lambda item: ...)`: the index is optional.
+        mapper = fn
+        fn = lambda item, _index: mapper(item)  # noqa: E731
 
     def compute() -> list[U]:
         nonlocal rows
