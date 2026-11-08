@@ -132,7 +132,7 @@ reactive binding, so the class follows the signal.
 ## How it works: the ownership tree
 
 The provider is a tiny component that stores `value` on its own
-[`Owner`][wybthon.Owner]. `use_context` walks parent pointers until it
+[`Owner`][wybthon.reactivity.Owner]. `use_context` walks parent pointers until it
 finds a scope that carries the context:
 
 ```

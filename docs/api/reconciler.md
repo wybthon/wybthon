@@ -17,7 +17,7 @@ What it mounts:
   node: one fused `CLONE` command copies the template's native
   `<template>`, and the mount function the [compiler](compiler.md)
   emitted fills its slots. No VNodes exist for the static parts.
-- **`h()` trees.** Element VNodes built with [`h`][wybthon.h] mount
+- **`h()` trees.** Element VNodes built with [`h`][wybthon.vnode.h] mount
   node by node, with one command per node.
 - **Regions.** `Show`, `For`, `Repeat`, and `Switch` are native regions
   with no component wrapped around them.
@@ -59,7 +59,7 @@ What happens inside `render`:
 
 1. The container is resolved to a kernel node id and registered as an
    event-delegation root (`ROOT` op).
-2. The tree mounts under a fresh [`Owner`][wybthon.Owner]; component
+2. The tree mounts under a fresh [`Owner`][wybthon.reactivity.Owner]; component
    bodies run once, and holes and reactive props create render effects (a binding that
    reads nothing reactive is applied once and creates none).
 3. `flush()` commits staged writes, runs effects, and sends the op

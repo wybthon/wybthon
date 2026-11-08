@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
-from wybthon import Accessor, For, Props, Show, VNode, action, component, create_signal, create_store, html
+from wybthon import Accessor, For, Props, Show, action, component, create_signal, create_store, html
+from wybthon.vnode import VNode
 
 
 class StrictProps(Props):

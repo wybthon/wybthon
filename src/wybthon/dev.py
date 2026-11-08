@@ -538,6 +538,9 @@ def main(argv: list[str] | None = None) -> int:
     prun = sub.add_parser("run", help="Run a Python script with its templates compiled")
     prun.add_argument("script", help="Path to the script")
     prun.add_argument("args", nargs=argparse.REMAINDER, help="Arguments passed to the script")
+    pcheck = sub.add_parser("check", help="Type-check the project, including component tag props")
+    pcheck.add_argument("paths", nargs="*", default=["."], help="Files and directories to check (default: .)")
+    pcheck.add_argument("--checker", choices=("mypy", "pyright"), default="mypy", help="Type checker to run")
 
     args = parser.parse_args(argv)
     if args.cmd is None:
@@ -545,6 +548,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.cmd == "run":
         return run_script(args.script, args.args)
+    if args.cmd == "check":
+        from ._check import run as run_check
+
+        return run_check(args.paths, checker=args.checker)
     from .build import build_app, init_app, preview
 
     try:

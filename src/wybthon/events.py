@@ -185,17 +185,12 @@ _event_keys: dict[str, str] = {}
 def _event_key(name: str) -> str:
     """Map a handler prop name to its event key (memoized).
 
-    `on_click` and `onClick` become `"click"`; a `_capture` suffix
-    (`on_click_capture`) becomes `"click:capture"`.
+    `on_click` becomes `"click"`; a `_capture` suffix (`on_click_capture`)
+    becomes `"click:capture"`.
     """
     key = _event_keys.get(name)
     if key is None:
-        if name.startswith("on_"):
-            key = name[3:]
-        elif name.startswith("on"):
-            key = name[2:].lower()
-        else:
-            key = name
+        key = name[3:] if name.startswith("on_") else name
         if key.endswith("_capture"):
             key = key[:-8] + ":capture"
         if len(_event_keys) < 4096:
@@ -404,10 +399,13 @@ def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] 
     callback = options.callback if options is not None else handler
     mapping[key] = _Handler(callback, _core._current_owner, options, event_prop_name, key)
     _store(node_id, mapping)
-    if capture or (options is not None and (options.passive or options.once)):
+    if capture or options is not None:
+        # A native listener on the node itself (`event(...)`, or `on:click`).
         passive = options is not None and options.passive
         once = options is not None and options.once
-        kernel.emit((kernel.OP_LISTEN, node_id, key, {"capture": capture, "passive": passive, "once": once}))
+        kernel.emit(
+            (kernel.OP_LISTEN, node_id, key, {"capture": capture, "passive": passive, "once": once, "direct": True})
+        )
     else:
         kernel.emit((kernel.OP_LISTEN, node_id, key))
 

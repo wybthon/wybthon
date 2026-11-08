@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from wybthon import Loading, flush
-from wybthon.router import api_routes, create_router, file_routes, navigate, resolve
+from wybthon.router import api_routes, create_router, file_routes, match_route, navigate
 from wybthon.testing import render, tick
 
 FILES = {
@@ -71,10 +71,10 @@ def test_files_become_a_route_tree(routes_package: str):
     found = {route.path: route for route in tree}
     assert {child.path for child in found["users"].children} == {"", ":id"}
     assert [child.path for child in found["docs"].children] == [":section?"]
-    assert resolve(routes, "/pricing") is not None
-    assert resolve(routes, "/users/7")[1]["params"] == {"id": "7"}
-    assert resolve(routes, "/docs")[1]["params"] == {"section": ""}
-    assert resolve(routes, "/zzz")[0].path == "*404"
+    assert match_route(routes, "/pricing") is not None
+    assert match_route(routes, "/users/7")[1]["params"] == {"id": "7"}
+    assert match_route(routes, "/docs")[1]["params"] == {"section": ""}
+    assert match_route(routes, "/zzz")[0].path == "*404"
 
 
 def test_file_route_pages_load_lazily_and_render(routes_package: str):

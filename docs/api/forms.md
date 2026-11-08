@@ -68,7 +68,7 @@ def Signup():
 
 - The binding helpers return prop mappings: spread them onto a template
   tag (`<input {bind_text(field)}>`) or pass them to
-  [`h()`][wybthon.h] (`h("input", bind_text(field))`).
+  [`h()`][wybthon.vnode.h] (`h("input", bind_text(field))`).
 - A field's `error` accessor returns `None` while the field is valid, so
   `{name.error()}` renders nothing until there's a message.
 - `touched` becomes `True` on the first input, so you can delay showing

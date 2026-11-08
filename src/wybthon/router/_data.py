@@ -253,7 +253,7 @@ def revalidate(keys: str | Query[..., Any] | Iterable[str | Query[..., Any]] | N
         del _entries[full]
     for full, signal in list(_versions.items()):
         if matches(full):
-            signal._set(signal._latest() + 1)
+            signal._write(signal._latest() + 1)
     _core._schedule_flush()
 
 

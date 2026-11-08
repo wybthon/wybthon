@@ -88,7 +88,7 @@ class Action[**P, R]:
             return result
 
         count = self._count
-        count._set(count._latest() + 1, _core._O_REVEAL)
+        count._reveal(count._latest() + 1)
         future: asyncio.Future[Any] = _core._event_loop().create_future()
 
         settled = False
@@ -98,7 +98,7 @@ class Action[**P, R]:
             if settled:
                 return
             settled = True
-            count._set(count._latest() - 1, _core._O_REVEAL)
+            count._reveal(count._latest() - 1)
             tx.root().holds -= 1
             _core._schedule_flush()
 
@@ -246,11 +246,11 @@ class _Optimistic[T](Accessor[T]):
         token = object()
         edits = (*self._edits._latest(), (token, value))
         result = untrack(lambda: self._value(edits))
-        self._edits._set(edits, _core._O_REVEAL)
+        self._edits._reveal(edits)
 
         def revert() -> None:
             remaining = tuple(edit for edit in self._edits._latest() if edit[0] is not token)
-            self._edits._set(remaining, _core._O_REVEAL)
+            self._edits._reveal(remaining)
 
         _register_optimistic_revert(revert)
         return result

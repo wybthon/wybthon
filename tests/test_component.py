@@ -6,13 +6,12 @@ from typing import Any
 import pytest
 from conftest import StubNode, collect_texts
 
-from wybthon import _warnings, h, html
+from wybthon import _warnings, html
 from wybthon.component import Component, component
 from wybthon.reactivity import (
     ChildrenAccessor,
     ParentProps,
     Props,
-    children,
     create_effect,
     create_memo,
     create_reaction,
@@ -22,9 +21,10 @@ from wybthon.reactivity import (
     on_cleanup,
     on_settled,
     prop,
+    resolve_children,
     untrack,
 )
-from wybthon.vnode import VNode
+from wybthon.vnode import VNode, h
 
 
 def texts(node: StubNode) -> list[str]:
@@ -563,7 +563,7 @@ def test_children_helper_resolves_props_children_and_to_array(wyb, root_element)
 
     @component
     def Tabs(props: ParentProps):
-        kids = children(lambda: props.children)
+        kids = resolve_children(lambda: props.children)
         assert isinstance(kids, ChildrenAccessor)
         counts.append(len(untrack(kids.to_array)))
 
@@ -582,7 +582,7 @@ def test_children_helper_resolves_props_children_and_to_array(wyb, root_element)
 
 def test_children_accessor_returns_single_child_or_list(wyb):
     kids, set_kids = create_signal(["a", None, ["b", ["c"]]])
-    resolved = create_root(lambda d: children(kids))
+    resolved = create_root(lambda d: resolve_children(kids))
     assert resolved() == ["a", "b", "c"]
     assert resolved.to_array() == ["a", "b", "c"]
     set_kids("solo")
@@ -816,7 +816,7 @@ def test_same_key_patches_and_new_key_remounts(wyb, root_element):
     assert mounted == ["a", "c"]
 
 
-def test_typed_default_and_bound_method_accessors_render(wyb, root_element):
+def test_typed_default_and_memo_props_render(wyb, root_element):
     name, set_name = create_signal("Ada")
 
     class Model:
@@ -831,7 +831,7 @@ def test_typed_default_and_bound_method_accessors_render(wyb, root_element):
     def Greeting(props: GreetingProps):
         return html(t"<p>{props.name * props.copies}</p>")
 
-    wyb["reconciler"].render(Greeting(name=Model().name), root_element)
+    wyb["reconciler"].render(Greeting(name=create_memo(Model().name)), root_element)
     assert texts(root_element.element) == ["AdaAda"]
     set_name("Grace")
     flush()

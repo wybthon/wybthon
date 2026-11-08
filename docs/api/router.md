@@ -23,7 +23,7 @@ Routing and the data layer, as in Solid Router 2.0. Import it from `wybthon.rout
 | [`preload_route`][wybthon.router.preload_route] | Preload a route's code and data from code. |
 | [`query`][wybthon.router.query], [`revalidate`][wybthon.router.revalidate] | Deduplicated, revalidating reads. |
 | [`form_action`][wybthon.router.form_action], [`use_submissions`][wybthon.router.use_submissions] | Actions a form posts to, and their settled submissions. |
-| [`resolve`][wybthon.router.resolve], [`RouteSpec`][wybthon.router.RouteSpec] | Matching without a browser. |
+| [`match_route`][wybthon.router.match_route], [`RouteSpec`][wybthon.router.RouteSpec] | Matching without a browser. |
 
 Links are plain `<a href>` elements: the router follows same-origin clicks under its base path and leaves modifier-key clicks, `target`, `download`, `rel="external"`, and other origins to the browser.
 

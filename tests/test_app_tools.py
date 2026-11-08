@@ -11,7 +11,7 @@ import pytest
 from wybthon import create_signal, flush
 from wybthon.build import build_app, init_app
 from wybthon.forms import bind_multiselect, bind_number, form_state
-from wybthon.router import RouteSpec, resolve
+from wybthon.router import RouteSpec, match_route
 from wybthon.virtual import create_virtualizer
 
 
@@ -163,10 +163,10 @@ def test_virtual_range_is_bounded_and_clamps_after_shrink(wyb):
 
 def test_route_specificity_and_base_boundaries():
     routes = [RouteSpec("/users/:really_long_parameter"), RouteSpec("/users/new"), RouteSpec("/users/*")]
-    assert resolve(routes, "/users/new")[0] is routes[1]
-    assert resolve(routes, "/users/other")[0] is routes[0]
-    assert resolve(routes, "/application/users/new", "/app") is None
-    assert resolve(routes, "/app/users/new/", "/app")[0] is routes[1]
+    assert match_route(routes, "/users/new")[0] is routes[1]
+    assert match_route(routes, "/users/other")[0] is routes[0]
+    assert match_route(routes, "/application/users/new", "/app") is None
+    assert match_route(routes, "/app/users/new/", "/app")[0] is routes[1]
 
 
 def test_build_validation_failure_preserves_previous_output(tmp_path):

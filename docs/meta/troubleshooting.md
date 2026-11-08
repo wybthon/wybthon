@@ -34,7 +34,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** [RFC 0004](../rfcs/0004-engine-v4.md) removed the element helpers. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. `wybthon.html` is the [`html`][wybthon.html] template function, not a module.
 
-    **Fix:** write markup as templates, `html(t'<div class="card">{props.title}</div>')`; `<svg>` works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use [`h(tag, props, *children)`][wybthon.h]. See [Templates](../concepts/templates.md).
+    **Fix:** write markup as templates, `html(t'<div class="card">{props.title}</div>')`; `<svg>` works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use [`h(tag, props, *children)`][wybthon.vnode.h]. See [Templates](../concepts/templates.md).
 
 ??? bug "Pyodide fails to load"
 
@@ -122,7 +122,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Symptoms:** the rendered element has an attribute named `class_` or `html_for`, and no class or label association.
 
-    **Likely cause:** templates use HTML attribute names. The Python spellings (`class_`, `html_for`, `aria_label`) belong to [`h()`][wybthon.h] props.
+    **Likely cause:** templates use HTML attribute names. The Python spellings (`class_`, `html_for`, `aria_label`) belong to [`h()`][wybthon.vnode.h] props.
 
     **Fix:** write `class`, `for`, and `aria-label` in templates. Event attributes accept `onclick`, `onClick`, and `on:click`. A spread (`<input {attrs}>`) is the exception: its mapping uses `h()`'s Python names, such as `on_input` and `aria_label`.
 

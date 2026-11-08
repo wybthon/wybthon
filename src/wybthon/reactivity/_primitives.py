@@ -52,7 +52,7 @@ __all__ = [
     "is_pending",
     "latest",
     "create_unique_id",
-    "children",
+    "resolve_children",
     "flatten",
     "ChildrenAccessor",
     "create_reaction",
@@ -825,8 +825,12 @@ def is_pending(fn: Callable[[], Any]) -> bool:
       [`refresh`][wybthon.refresh] is silent);
     - a value an in-flight action declared with
       [`affects`][wybthon.affects];
-    - an optimistic value with an active override;
-    - a read that raises [`NotReadyError`][wybthon.NotReadyError].
+    - an optimistic value with an active override.
+
+    A first load isn't a change in flight: while an async value has never
+    resolved, reading it raises [`NotReadyError`][wybthon.NotReadyError]
+    and the nearest [`Loading`][wybthon.Loading] boundary shows its
+    fallback, and `is_pending` is `False`, as in Solid 2.0.
 
     The reads are tracked like any other, so a hole using `is_pending`
     updates as the state changes, but they don't make the hole wait for
@@ -845,7 +849,7 @@ def is_pending(fn: Callable[[], Any]) -> bool:
         try:
             fn()
         except NotReadyError:
-            _core._probe_hit = True
+            pass
         return _core._probe_hit
     finally:
         _core._probe_hit = saved
@@ -1025,7 +1029,7 @@ def create_unique_id() -> str:
 
 
 class ChildrenAccessor(Accessor[Any]):
-    """The resolved children returned by [`children`][wybthon.children].
+    """The resolved children returned by [`resolve_children`][wybthon.resolve_children].
 
     Calling it returns the single resolved child, or a list when there
     are several (or none); [`to_array`][wybthon.ChildrenAccessor.to_array]
@@ -1068,7 +1072,7 @@ def flatten(children: Any) -> list[Any]:
 
     Nested lists are flattened, accessors and zero-argument functions are
     called (tracked) and their results resolved, and `None` and booleans
-    are dropped. The unmemoized form of [`children`][wybthon.children];
+    are dropped. The unmemoized form of [`resolve_children`][wybthon.resolve_children];
     matches Solid 2.0's `flatten`.
     """
     out: list[Any] = []
@@ -1076,7 +1080,7 @@ def flatten(children: Any) -> list[Any]:
     return out
 
 
-def children(fn: Callable[[], Any]) -> ChildrenAccessor:
+def resolve_children(fn: Callable[[], Any]) -> ChildrenAccessor:
     """Resolve a component's children once, so it can inspect or reuse them.
 
     Wraps a getter that returns children (typically `props.children`)
@@ -1086,7 +1090,7 @@ def children(fn: Callable[[], Any]) -> ChildrenAccessor:
     This matches Solid 2.0's `children` helper.
 
     ```python
-    from wybthon import children as resolve_children
+    from wybthon import resolve_children
 
 
     @component

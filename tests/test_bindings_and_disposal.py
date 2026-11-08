@@ -24,8 +24,6 @@ from wybthon import (
     create_root,
     create_signal,
     flush,
-    h,
-    hole,
     html,
     kernel,
     on_cleanup,
@@ -33,6 +31,7 @@ from wybthon import (
 )
 from wybthon.reactivity import _core
 from wybthon.testing import cleanup, render
+from wybthon.vnode import h, hole
 
 
 @pytest.fixture(autouse=True)
@@ -176,7 +175,7 @@ def test_disposing_a_view_releases_a_binding_whose_first_apply_raised(view):
         runs.append(count())
         return runs[-1]
 
-    with render(view(read)):
+    with render(view(read), strict=False):
         pass
     cleanup()
     assert count._observers is None
@@ -188,7 +187,11 @@ def test_disposing_a_view_releases_a_binding_whose_first_apply_raised(view):
 
 def test_a_branch_whose_first_mount_raised_still_recovers_while_mounted():
     on, set_on = create_signal(True)
-    with render(hole(lambda: Show(on, _broken_branch, fallback=lambda: html(t"<p>fallback</p>")))) as screen:
+    view = hole(lambda: Show(on, _broken_branch, fallback=lambda: html(t"<p>fallback</p>")))
+    with pytest.raises(ValueError, match="branch failed"):
+        render(view)
+    cleanup()
+    with render(view, strict=False) as screen:
         set_on(False)
         flush()
         assert screen.html() == "<p>fallback</p>"
@@ -584,7 +587,7 @@ def test_compiled_templates_render_a_values_tuple_and_pick_binders_ahead_of_time
 
 
 def test_the_bytecode_cache_tag_changed_with_the_compiled_output():
-    assert compiler.COMPILER_TAG == "wyb2"
+    assert compiler.COMPILER_TAG == "wyb3"
 
 
 # ---------------------------------------------------------------------------

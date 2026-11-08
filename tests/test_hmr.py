@@ -112,7 +112,7 @@ def test_a_component_keeps_its_identity_for_modules_that_imported_it(wyb, hotapp
 
 def test_a_module_that_renders_on_import_falls_back_to_a_reload(wyb, hotapp: Path, capsys):
     app = importlib.import_module("hotapp.app")
-    with render(app.App()):
+    with render(app.App(), strict=False):
         _edit(hotapp / "app.py", "def label(n):", "from wybthon import render\nrender(App(), 1)\n\n\ndef label(n):")
         assert _hmr.apply(["hotapp.app"]) is False
     assert "Hot update failed, reloading" in capsys.readouterr().err
@@ -120,7 +120,7 @@ def test_a_module_that_renders_on_import_falls_back_to_a_reload(wyb, hotapp: Pat
 
 def test_a_change_that_fails_falls_back_to_a_reload(wyb, hotapp: Path):
     app = importlib.import_module("hotapp.app")
-    with render(app.App()):
+    with render(app.App(), strict=False):
         _edit(hotapp / "app.py", "def label(n):", "def label(n:")
         assert _hmr.apply(["hotapp.app"]) is False
 

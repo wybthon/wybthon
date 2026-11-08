@@ -6,7 +6,6 @@ import pytest
 
 from wybthon.reactivity import (
     Props,
-    children,
     create_effect,
     create_memo,
     create_root,
@@ -19,6 +18,7 @@ from wybthon.reactivity import (
     on_cleanup,
     prop,
     repeat,
+    resolve_children,
     untrack,
 )
 from wybthon.store import create_projection
@@ -43,11 +43,13 @@ def test_prop_field_reads_return_the_value(wyb):
     assert repr(NameProps.name) == "<prop 'name'>"
 
 
-def test_prop_fields_unwrap_accessors_and_zero_arg_callables(wyb):
+def test_prop_fields_read_accessors_and_pass_functions_through(wyb):
     name, set_name = create_signal("Ada")
-    props = NameProps(name=name, greeting=lambda: "hi")
+    greet = lambda: "hi"  # noqa: E731
+    props = NameProps(name=name, greeting=greet)
     assert props.name == "Ada"
-    assert props.greeting == "hi"
+    # A plain function is a value: reading the prop never calls it.
+    assert props.greeting is greet
     set_name("Grace")
     flush()
     assert props.name == "Grace"
@@ -195,7 +197,7 @@ def test_omit_stays_reactive(wyb):
 
 def test_children_flattens_and_drops_none(wyb):
     kids, set_kids = create_signal(["a", None, ["b", ["c"]]])
-    resolved = children(kids)
+    resolved = resolve_children(kids)
     assert resolved() == ["a", "b", "c"]
     set_kids("solo")
     flush()
@@ -210,7 +212,7 @@ def test_children_flattens_and_drops_none(wyb):
 def test_children_resolves_nested_accessors_and_drops_booleans(wyb):
     flag, set_flag = create_signal(False)
     inner, _ = create_signal(["x", None])
-    resolved = children(lambda: [True, "a", inner, lambda: "b" if flag() else False, (("c",),)])
+    resolved = resolve_children(lambda: [True, "a", inner, lambda: "b" if flag() else False, (("c",),)])
     assert resolved.to_array() == ["a", "x", "c"]
     set_flag(True)
     flush()

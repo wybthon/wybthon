@@ -510,9 +510,9 @@ class App:
         return None
 
     def _has_page(self, pathname: str) -> bool:
-        from .router._match import resolve
+        from .router._match import match_route
 
-        return resolve(self._page_routes, pathname) is not None
+        return match_route(self._page_routes, pathname) is not None
 
     async def _api(self, event: RequestEvent, request: Request, route: Any, params: dict[str, str]) -> Response:
         method = "GET" if request.method == "HEAD" else request.method

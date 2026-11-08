@@ -21,12 +21,12 @@ from wybthon import (
     diagnostics,
     event,
     flush,
-    h,
     html,
     kernel,
     templates,
 )
 from wybthon.testing import cleanup, fire, render
+from wybthon.vnode import h
 
 
 @pytest.fixture(autouse=True)
@@ -240,19 +240,29 @@ def test_partial_attributes_render_as_one_binding():
     assert screen.html() == '<button class="btn btn-danger wide">go</button>'
 
 
-def test_events_in_every_spelling_bind_delegated_handlers():
+def test_onclick_delegates_and_on_colon_listens_natively():
     hits: list[str] = []
     view = html(
         t"""<div>
-            <button onclick={(lambda: hits.append("lower"))}>a</button>
-            <button onClick={(lambda e: hits.append(e.type))}>b</button>
+            <button onclick={(lambda e: hits.append(e.type))}>a</button>
             <button on:click={(lambda: hits.append("colon"))}>c</button>
         </div>"""
     )
     screen = render(view)
-    for name in ("a", "b", "c"):
+    for name in ("a", "c"):
         fire.click(screen.get_by_text(name))
-    assert hits == ["lower", "click", "colon"]
+    assert hits == ["click", "colon"]
+    # `on:click` is a listener on the element itself, not a delegated route.
+    backend = kernel._backend
+    button = screen.get_by_text("c")
+    assert backend._listener_options[(button._wyb_id, "click")]["direct"] is True
+
+
+@pytest.mark.parametrize("name", ["onClick", "on_click", "ONCLICK"])
+def test_other_event_spellings_are_rejected_with_the_fix(name):
+    template = Template(f"<button {name}=", Interpolation(lambda: None, "handler"), ">x</button>")
+    with pytest.raises(TemplateError, match="onclick"):
+        html(template)
 
 
 def test_event_options_use_a_direct_listener_and_fire_once():
@@ -453,13 +463,13 @@ def test_component_tags_pass_attributes_and_children():
 
 
 def test_component_tag_content_is_one_child_per_top_level_node():
-    from wybthon import children
+    from wybthon import resolve_children
 
     seen: list[int] = []
 
     @component
     def Counted(props: ParentProps):
-        resolved = children(lambda: props.children)
+        resolved = resolve_children(lambda: props.children)
         seen.append(len(resolved.to_array()))
         return html(t"<div>{props.children}</div>")
 

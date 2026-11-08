@@ -124,7 +124,8 @@ def test_async_projection_readiness_refresh_and_cancel(wyb):
             return {"n": len(runs)}
 
         projection = create_projection(load, {"n": 0})
-        assert is_pending(lambda: projection["n"])
+        # The first run is a first load, not a change in flight.
+        assert not is_pending(lambda: projection["n"])
         gate.set()
         await asyncio.sleep(0)
         flush()

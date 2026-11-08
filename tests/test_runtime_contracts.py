@@ -259,7 +259,7 @@ def test_cancelled_resolve_releases_subscription(wyb):
 
 
 def test_map_array_duplicate_keys_dispose_and_held_lifetimes(wyb):
-    from wybthon import map_array
+    from wybthon.reactivity import map_array
 
     async def main():
         source, write = create_signal([1, 1, 2])

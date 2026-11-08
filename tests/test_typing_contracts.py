@@ -26,7 +26,7 @@ EXPECTED = {
     "missing-prop": {"mypy": 'Missing named argument "name"', "pyright": 'Argument missing for parameter "name"'},
     "wrong-type": {"mypy": 'Argument "name" to "StrictProps" has incompatible type "int"', "pyright": "Literal[42]"},
     "unknown-prop": {"mypy": 'Unexpected keyword argument "typo"', "pyright": 'No parameter named "typo"'},
-    "no-props": {"mypy": 'Unexpected keyword argument "title" for "Bare"', "pyright": 'No parameter named "title"'},
+    "no-props": {"mypy": 'Unexpected keyword argument "title"', "pyright": 'No parameter named "title"'},
     # Fields are plain annotations: passing an accessor to a `str` field is a
     # type error outside templates, and reading a field returns the value.
     "accessor-is-not-value": {

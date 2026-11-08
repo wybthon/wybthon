@@ -83,7 +83,16 @@ For type checking, give a dict store a `TypedDict` type: `create_store(initial)`
 
 A setter receives a draft: a mutable view with the store's own type. Dict drafts implement `MutableMapping` and list drafts implement `MutableSequence`, so assignment, deletion, `update`, `append`, `extend`, `insert`, `pop`, slices, `reverse`, and `sort` all work; list drafts also have `move(start, target, count=1)`. A draft and every nested draft expire when the callback returns. Using one afterward raises `DraftExpiredError`.
 
-A callback that raises leaves the store unchanged: every edit it made is discarded. Return `None` after mutating, or return replacement data to replace the draft's contents; don't accidentally return the result of `pop`. Passing data instead of a callback replaces the store's contents: `set_state(State())`. Async setters are rejected. Await external work in an action, then make a synchronous edit.
+A setter's `edit()` is the same callback written inline, as a `with` block, so a handler that changes several fields needs no nested function. The draft's changes stage together when the block ends:
+
+```python
+def rename(index: int, title: str) -> None:
+    with set_state.edit() as draft:
+        draft.todos[index].title = title
+        draft.todos[index].done = False
+```
+
+A callback or block that raises leaves the store unchanged: every edit it made is discarded. Return `None` after mutating, or return replacement data to replace the draft's contents; don't accidentally return the result of `pop`. Passing data instead of a callback replaces the store's contents: `set_state(State())`. Async setters are rejected. Await external work in an action, then make a synchronous edit.
 
 The store takes ownership of the data you give it, and it never mutates that data: a container is copied the first time a setter edits it. Don't keep mutating an object after you've passed it to `create_store` or written it into a draft.
 

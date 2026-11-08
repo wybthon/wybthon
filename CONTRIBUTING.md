@@ -43,7 +43,7 @@ Unsolicited pull requests for issues that are already assigned or already have a
   - `component.py`: the `@component` decorator and `Component`
   - `compiler.py`: the Wybthon compiler, an AST transform of `html(t"...")` calls: dynamic interpolations become getters, child-position calls are dispatched, and each literal's parse tree and mount functions are emitted into the module (`compile_source`, `transform`)
   - `_compiled.py`: private; the run-time helpers compiled modules call (imported as `__wybthon__`)
-  - `_hook.py`: private; the import hook `import wybthon` installs, which compiles candidate modules and caches them under their own bytecode tag (`*.opt-wyb1.pyc`)
+  - `_hook.py`: private; the import hook `import wybthon` installs, which compiles candidate modules and caches them under their own bytecode tag (`*.opt-wyb3.pyc`)
   - `templates.py`: `html` and `TemplateError`; t-string templates (parsing, validation, the native `<template>` skeleton, mount functions for templates compiled at run time, slot-wise patching, and the dev-mode check for uncompiled templates)
   - `vnode.py`: virtual DOM nodes (`VNode`, `h`, `Fragment`, `hole`) and item syntax; `h()` is the programmatic layer
   - `_dom_props.py`: private; prop normalization and reactive attribute bindings shared by templates and `h()` (emits kernel commands)
@@ -51,7 +51,7 @@ Unsolicited pull requests for issues that are already assigned or already have a
   - `_regions.py`: private; native `Show`, `For`, `Repeat`, and `Switch` regions, and patching them in place when a hole re-renders
   - `_html_rules.py`: private; the HTML parser's content rules (void and raw-text elements, table and paragraph nesting) shared by templates, server rendering, and the test DOM
   - `kernel.py` / `_kernel.js`: the batched DOM command buffer and the JavaScript kernel it drives (including hydration claims), plus the `BrowserBackend` and `PythonBackend` backends
-  - `server.py` / `_server_dom.py`: server rendering (`render_to_string`, `render_to_stream`) over an in-memory DOM
+  - `server.py` / `_ssr.py`: server rendering (`render_to_string`, `render_to_stream`); `_ssr` writes HTML directly
   - `request.py`: `RequestEvent`, `get_request_event`, `http_status`, and `http_header`
   - `dom.py`: `Element` and `Ref` (imperative DOM escape hatch)
   - `events.py`: root-scoped event delegation and the `DomEvent` payload object
@@ -61,13 +61,13 @@ Unsolicited pull requests for issues that are already assigned or already have a
   - `store.py`: draft-first stores over dataclasses, dicts, and lists, projections, optimistic stores, `reconcile`, `snapshot`, and `deep`
   - `context.py`: `create_context` / `use_context` (the `Context` is its own provider)
   - `portal.py`, `lazy.py`: out-of-tree rendering, lazy-loaded components, and `lazy_module`
-  - `router.py`: client-side router, `RouteProps`, and the browser-agnostic matcher (`RouteSpec`, `resolve`)
+  - `router/`: the router (`create_router`, plain `<a>` links, file routes), its data layer (`query`, `form_action`), and the browser-agnostic matcher (`RouteSpec`, `match_route`)
   - `forms.py`: form state, validators, bindings, and a11y helpers
   - `virtual.py` / `scheduling.py`: list virtualization and cooperative scheduling
   - `testing.py`: `render`, `Screen` queries, `fire`, and `cleanup` for testing components in CPython
   - `diagnostics.py`: opt-in profiling counters and graph inspection
   - `_warnings.py`: dev-mode diagnostics and the dev mode flag
-  - `dev.py`: the `wyb` command (`init`, `dev`, `build`, `preview`, `run`)
+  - `dev.py`: the `wyb` command (`init`, `dev`, `build`, `serve`, `preview`, `run`, `check`)
   - `build.py` / `_bootstrap.js` / `assets.py` / `_prerender.py`: production builds (compiled through the compiler into bytecode), the generated bootstrap, lazy chunks, and build-time prerendering
   - `__init__.py`: public exports (`__all__`)
 - `tests/`

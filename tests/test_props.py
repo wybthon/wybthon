@@ -30,8 +30,8 @@ def test_is_event_prop_underscore(browser_stubs):
 
 def test_is_event_prop_camel(browser_stubs):
     props = _load_props()
-    assert props.is_event_prop("onClick") is True
-    assert props.is_event_prop("onInput") is True
+    # One spelling: `onClick` is an ordinary attribute name.
+    assert props.is_event_prop("onClick") is False
 
 
 def test_is_event_prop_non_event(browser_stubs):
@@ -46,12 +46,6 @@ def test_event_name_from_prop_underscore(browser_stubs):
     props = _load_props()
     assert props.event_name_from_prop("on_click") == "click"
     assert props.event_name_from_prop("on_input") == "input"
-
-
-def test_event_name_from_prop_camel(browser_stubs):
-    props = _load_props()
-    assert props.event_name_from_prop("onClick") == "click"
-    assert props.event_name_from_prop("onInput") == "input"
 
 
 def test_event_name_from_prop_passthrough(browser_stubs):
@@ -78,7 +72,7 @@ def test_attr_name_maps_pythonic_names(browser_stubs):
 
 
 def test_h_keeps_pythonic_names_in_vnode_props(browser_stubs):
-    from wybthon import h
+    from wybthon.vnode import h
 
     assert h("div", {"class_": "x"}).props == {"class_": "x"}
     assert h("label", {"html_for": "name"}).props == {"html_for": "name"}

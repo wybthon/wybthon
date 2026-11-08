@@ -216,21 +216,21 @@ class Field[T]:
         if self._validation is not None and not self._validation.done():
             self._validation.cancel()
         self._validation = None
-        self.validating._set(False, _core._O_REVEAL)
+        self.validating._reveal(False)
 
     def set_value(self, value: T | Callable[[T], T]) -> T:
         """Stage a value and invalidate any validation for an earlier edit."""
         self._cancel_validation()
-        self._input_error._set(None)
+        self._input_error._write(None)
         return self.value.set(value)
 
     def reset(self, value: Any = _core._MISSING) -> None:
         """Reset value, errors, and interaction state; optionally set a new baseline."""
         self._cancel_validation()
         if value is not _core._MISSING:
-            self._initial._set(copy.deepcopy(value))
-        self.value._set(copy.deepcopy(self._initial._latest()))
-        self._input_error._set(None)
+            self._initial._write(copy.deepcopy(value))
+        self.value._write(copy.deepcopy(self._initial._latest()))
+        self._input_error._write(None)
         self.set_error(None)
         self.set_touched(False)
 
@@ -240,7 +240,7 @@ class Field[T]:
         revision = self._revision
         value = copy.deepcopy(self.value._latest())
         self.set_touched(True)
-        self.validating._set(True, _core._O_REVEAL)
+        self.validating._reveal(True)
 
         async def run() -> str | None:
             if self._input_error._latest() is not None:
@@ -266,7 +266,7 @@ class Field[T]:
         finally:
             if revision == self._revision:
                 self._validation = None
-                self.validating._set(False, _core._O_REVEAL)
+                self.validating._reveal(False)
 
     def __repr__(self) -> str:
         return f"Field(value={self.value.peek()!r}, error={self.error.peek()!r}, touched={self.touched.peek()!r})"
@@ -292,7 +292,7 @@ class FormState(dict[str, Field[Any]]):
             raise ValueError("Reset values must contain exactly the form's field names")
         for name, field in self.items():
             field.reset(values[name] if values is not None else _core._MISSING)
-        self.submit_error._set(None, _core._O_REVEAL)
+        self.submit_error._reveal(None)
 
     async def submit(
         self, handler: Callable[[dict[str, Any]], Any], *, rules: Mapping[str, list[AsyncValidator]] | None = None
@@ -300,8 +300,8 @@ class FormState(dict[str, Field[Any]]):
         """Validate and submit a value snapshot, exposing pending and failure state."""
         if self.submitting._latest():
             raise RuntimeError("This form already has a submission in flight")
-        self.submitting._set(True, _core._O_REVEAL)
-        self.submit_error._set(None, _core._O_REVEAL)
+        self.submitting._reveal(True)
+        self.submit_error._reveal(None)
         revisions = {name: field._revision for name, field in self.items()}
         try:
             errors = await asyncio.gather(
@@ -315,10 +315,10 @@ class FormState(dict[str, Field[Any]]):
             result = handler(data)
             return await result if inspect.isawaitable(result) else result
         except Exception as exc:
-            self.submit_error._set(exc, _core._O_REVEAL)
+            self.submit_error._reveal(exc)
             raise
         finally:
-            self.submitting._set(False, _core._O_REVEAL)
+            self.submitting._reveal(False)
 
 
 def form_state(initial: Mapping[str, Any]) -> FormState:
@@ -356,7 +356,7 @@ def bind_text(
         except (ValueError, TypeError) as exc:
             field._cancel_validation()
             message = str(exc) or "Enter a valid value"
-            field._input_error._set(message)
+            field._input_error._write(message)
             field.set_error(message)
             field.set_touched(True)
             return

@@ -12,6 +12,12 @@ def Card(props: CardProps):
     return html(t'<section class="tpl-card" data-testid="tpl-card"><h3>{props.title}</h3>{props.children}</section>')
 
 
+@component
+def Dot():
+    # Mounted under an SVG parent: parsed inside an `<svg>` wrapper and cloned.
+    return html(t'<circle data-testid="tpl-dot" r="1"></circle>')
+
+
 def badge(n):
     # Plain values: the hole that calls `badge(count())` re-runs on each
     # change and patches the new instance into the mounted one.
@@ -43,6 +49,9 @@ def Page():
     def heard(which):
         return lambda: set_spellings(lambda s: s + which)
 
+    def svg_row(item):
+        return html(t'<rect data-testid="tpl-svg-row" width="1"></rect>')
+
     def row(item, index):
         # `item["label"][0]` returns the label's signal; the binding
         # re-targets at it, so a relabel updates just that cell.
@@ -71,9 +80,9 @@ def Page():
         <button data-testid="tpl-show" onclick={(lambda: set_shown(lambda v: not v))}>show</button>
         {Show(shown(), html(t'<i data-testid="tpl-shown">shown</i>'), html(t'<i data-testid="tpl-hidden">hidden</i>'))}
         <button data-testid="tpl-lower" onclick={heard("a")}>a</button>
-        <button data-testid="tpl-camel" onClick={heard("b")}>b</button>
         <button data-testid="tpl-colon" on:click={heard("c")}>c</button>
         <span data-testid="tpl-heard">{spellings()}</span>
         <svg data-testid="tpl-svg" viewBox="0 0 10 10"><circle r={count()} cx="5" cy="5" /></svg>
+        <svg data-testid="tpl-svg-parent">{Dot()}<g>{For(rows, svg_row)}</g></svg>
       </div>
     """)

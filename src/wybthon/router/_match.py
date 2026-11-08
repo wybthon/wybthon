@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
-__all__ = ["RouteSpec", "resolve", "join_paths"]
+__all__ = ["RouteSpec", "match_route", "join_paths"]
 
 
 @dataclass
@@ -87,7 +87,7 @@ def strip_base(pathname: str, base: str) -> str | None:
     return "/" + pathname[len(base) :].lstrip("/")
 
 
-def resolve(routes: list[Any], pathname: str, base_path: str = "") -> tuple[Any, dict[str, Any]] | None:
+def match_route(routes: list[Any], pathname: str, base_path: str = "") -> tuple[Any, dict[str, Any]] | None:
     """The best matching route for `pathname`, with its parameters and its chain of parents.
 
     Args:

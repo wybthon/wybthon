@@ -168,7 +168,7 @@ def _update_index(row: _Row, index: int) -> None:
         # Keep its value current for a callback that starts reading it later.
         signal._value = index
     else:
-        signal._commit_now(index)
+        signal._commit_derived(index)
 
 
 class _ListRegion:
@@ -179,6 +179,7 @@ class _ListRegion:
         "rows",
         "keyed",
         "callback",
+        "item_only",
         "fallback",
         "previous",
         "repeat",
@@ -197,9 +198,11 @@ class _ListRegion:
         self.rows: list[_Row] = []
         self.keyed = vnode.props.get("keyed", True)
         self.callback = vnode.props["children"]
+        self.repeat = vnode.props.get("repeat", False)
+        # `For(items, lambda item: ...)`: the row takes no index.
+        self.item_only = not self.repeat and _positional_count(self.callback) == 1
         self.fallback: VNode | None = None
         self.previous: _Input | None = None
-        self.repeat = vnode.props.get("repeat", False)
         self.start: int | None = None
         self.unique = True
 
@@ -244,6 +247,8 @@ class _ListRegion:
                 args = (item, owner)
             else:
                 args = (item_signal, owner)
+            if self.item_only:
+                args = args[:1]
             scope = _REPEAT_SCOPE if self.repeat else _FOR_SCOPE
             session = _core._session
             if session is not None and session.keying:
@@ -267,7 +272,7 @@ class _ListRegion:
     def update_row(self, row: _Row, item: Any, index: int) -> None:
         if row.item is not item:
             if row.value is not None:
-                row.value._commit_now(item)
+                row.value._commit_derived(item)
                 # Equality can retain the previous object. Keep the cached
                 # identity in sync so a later mutation of an equal replacement
                 # still reaches the item accessor.
@@ -741,13 +746,13 @@ def patch_region(old: VNode, new: VNode) -> bool:
             or old.props.get("keyed", True) is not new.props.get("keyed", True)
         ):
             return False
-        region.cell._set(new.props["source"])
+        region.cell._write(new.props["source"])
         new.props["_region"] = region
     else:
         branch = old.props.get("_region")
         if branch is None or branch.cell is None or old.props["select"] is not new.props["select"]:
             return False
-        branch.cell._set(new.props["inputs"])
+        branch.cell._write(new.props["inputs"])
         new.props["_region"] = branch
     new.el = old.el
     new._frag_end = old._frag_end

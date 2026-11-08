@@ -16,19 +16,21 @@ def Button():
     return html(t"<button onclick={clicked}>Click</button>")
 ```
 
-In a template, `onclick`, `onClick`, and `on:click` all bind a `click`
-handler; use whichever reads best to you. The compiler never wraps an
+In a template, an element's handlers use HTML's attribute names:
+`onclick` binds a delegated `click` handler, and `on:click` a native
+listener on the element itself, as in Solid. The compiler never wraps an
 event handler, so `onclick={clicked}` passes the function itself. When
-markup is built by code with [`h`][wybthon.h], the same prop takes a
-Python name, `on_click`:
+markup is built by code with [`h`][wybthon.vnode.h], the same prop takes
+a Python name, `on_click`, as component props do:
 
 ```python
 h("button", {"on_click": clicked}, "Click")
 ```
 
 Both go through the same prop applier, so a handler behaves
-identically in either. Non-callable values are ignored, and passing
-`None` on an update removes the handler.
+identically in either. A handler that isn't callable raises `TypeError`
+(`onclick={set_open(False)}` calls the setter instead of passing a
+handler), and passing `None` on an update removes the handler.
 
 A handler may take the event or no arguments at all. Wybthon checks the
 handler's signature once, when it's registered, so a zero-argument
@@ -140,17 +142,17 @@ Cleanup guarantees:
 
 ## Naming and normalization
 
-Every spelling normalizes to a lowercase DOM event name:
+Markup uses HTML's names and Python code uses Python's, one spelling each:
 
-| Where | Spellings | Event |
+| Where | Spelling | Event |
 | --- | --- | --- |
-| Template | `onclick`, `onClick`, `on:click` | `"click"` |
-| Template | `ondblclick`, `onDblClick`, `on:dblclick` | `"dblclick"` |
-| `h()` props and spreads | `on_click`, `onClick` | `"click"` |
-| `h()` props and spreads | `on_input`, `onInput` | `"input"` |
+| An element in a template | `onclick` (delegated), `on:click` (native listener) | `"click"` |
+| An element in a template | `ondblclick`, `on:dblclick` | `"dblclick"` |
+| `h()` props, spreads, and component props | `on_click` | `"click"` |
+| `h()` props, spreads, and component props | `on_input` | `"input"` |
 
-- A `Capture` suffix listens in the capture phase: `onClickCapture` in a template, `on_click_capture` in `h()` props.
-- Any attribute or prop starting with `on` (`on_` or `on:` included) is treated as an event handler.
+- `onClick` and `on_click` on an element in a template are compile errors that name the spelling to use.
+- To listen in the capture phase, pass `event(handler, capture=True)`, or use `on_click_capture` in `h()` props.
 
 ## Event types that work best with delegation
 

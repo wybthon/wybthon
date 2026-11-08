@@ -60,5 +60,5 @@ component, `use_context` still works inside any reactive scope
 #### See also
 
 - [Concepts: Context](../concepts/context.md)
-- [`Owner`][wybthon.Owner]: where context values are stored
+- [`Owner`][wybthon.reactivity.Owner]: where context values are stored
 - [Router](router.md): `use_params`, `use_search_params`, and `use_route_matches` are context readers in `wybthon.router`

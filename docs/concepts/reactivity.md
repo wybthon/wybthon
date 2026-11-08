@@ -89,6 +89,16 @@ seed = untrack(lambda: props.initial)
 count.peek()
 ```
 
+Without a function, `untrack()` is a context manager, for several reads
+in a row:
+
+```python
+from wybthon import untrack
+
+with untrack():
+    start, step = props.start, props.step
+```
+
 For explicit dependencies prefer the **split effect**: the compute stage
 tracks, and the apply stage runs untracked with the computed value (and
 the previous one when it declares two parameters):
@@ -127,10 +137,10 @@ create_effect(count, lambda n: set_log(lambda l: l + [n]))
 
 ## Reactive list primitives
 
-[`map_array`][wybthon.map_array] maps a reactive list to rows with a
+[`map_array`][wybthon.reactivity.map_array] maps a reactive list to rows with a
 stable scope per row; `keyed=True` (identity, the default), `False`
 (position), or a key function selects the matching strategy and the
-callback shape. [`repeat`][wybthon.repeat] does the same for an integer
+callback shape. [`repeat`][wybthon.reactivity.repeat] does the same for an integer
 range. For selection, a [`create_projection`][wybthon.create_projection]
 keyed by the selected id notifies only the rows whose state changes. See
 [Primitives](primitives.md#map_array) for the shapes.
@@ -139,7 +149,7 @@ keyed by the selected id notifies only the rows whose state changes. See
 
 Every computation belongs to an **ownership tree**:
 
-- [`Owner`][wybthon.Owner] tracks child owners, cleanup callbacks, context values, and an optional error handler.
+- [`Owner`][wybthon.reactivity.Owner] tracks child owners, cleanup callbacks, context values, and an optional error handler.
 - `Computation` (exported from `wybthon.reactivity`) is an `Owner` that also tracks sources; memos and effects are computations.
 
 A new effect or memo registers as a child of the owner active at

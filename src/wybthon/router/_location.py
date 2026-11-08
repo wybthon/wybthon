@@ -75,7 +75,7 @@ def _install_popstate() -> None:
         from pyodide.ffi import create_proxy
 
         def _on_popstate(_evt: Any) -> None:
-            _path._set(_current_url())
+            _path._write(_current_url())
 
             def restore() -> None:
                 if (tx := _core._node_tx.get(_path)) is not None:
@@ -144,7 +144,7 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
         if external:
             return
         canonical = urljoin(_path.peek(), path)
-    _path._set(canonical)
+    _path._write(canonical)
     if scroll:
 
         def after_commit() -> None:

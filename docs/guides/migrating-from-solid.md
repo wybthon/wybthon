@@ -21,14 +21,14 @@ The table follows **Solid 2.0 RC.21**.
 | `createEffect(compute, apply)` | [`create_effect(compute, apply)`][wybthon.create_effect] |
 | `createEffect(fn)` | `create_tracked_effect(fn)` (single function, tracked) |
 | `createRenderEffect(compute, apply)` | [`create_render_effect(compute, apply)`][wybthon.create_render_effect] |
-| `createReaction(effect)` | [`create_reaction(effect)`][wybthon.create_reaction] returns `track(fn)` |
+| `createReaction(effect)` | [`create_reaction(effect)`][wybthon.reactivity.create_reaction] returns `track(fn)` |
 | `onMount(fn)` | [`on_settled(fn)`][wybthon.on_settled] |
 | `onFlush(fn)` | [`on_flush(fn)`][wybthon.on_flush] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
 | `createRoot(dispose => ...)` | [`create_root(lambda dispose: ...)`][wybthon.create_root] |
 | `getOwner()` / `runWithOwner(owner, fn)` | [`get_owner()`][wybthon.get_owner] / [`run_with_owner(owner, fn)`][wybthon.run_with_owner] |
 | `isDisposed(owner)` | [`is_disposed(owner)`][wybthon.is_disposed] (Solid 2.0 RC.21 removed `createOwner`; use `create_root` and `run_with_owner`) |
-| `getObserver()` | [`get_observer()`][wybthon.get_observer] |
+| `getObserver()` | [`get_observer()`][wybthon.reactivity.get_observer] |
 | `untrack(fn)` | [`untrack(fn)`][wybthon.untrack], or `accessor.peek()` for a single read |
 | `batch(fn)` | Nothing to call; every write batches until the next flush. [`flush()`][wybthon.flush] settles synchronously. |
 | `flush()` / `flush(fn)` | [`flush()`][wybthon.flush] / `flush(fn)` |
@@ -51,9 +51,9 @@ The table follows **Solid 2.0 RC.21**.
 | `createProjection(fn, initial)` | [`create_projection(fn, initial)`][wybthon.create_projection] |
 | `createSelector(source)` (removed in 2.0) | A projection: `create_projection(lambda: {} if sel() is None else {sel(): True})`, then `is_selected.get(key)` |
 | `unwrap(store)` | [`snapshot(store)`][wybthon.snapshot] |
-| `mapArray(list, fn, { fallback })` | [`map_array(list, fn, fallback=...)`][wybthon.map_array] |
+| `mapArray(list, fn, { fallback })` | [`map_array(list, fn, fallback=...)`][wybthon.reactivity.map_array] |
 | `indexArray(list, fn)` | `map_array(list, fn, keyed=False)` |
-| `repeat(count, fn, { from, fallback })` | [`repeat(count, fn, start=..., fallback=...)`][wybthon.repeat] |
+| `repeat(count, fn, { from, fallback })` | [`repeat(count, fn, start=..., fallback=...)`][wybthon.reactivity.repeat] |
 | `<Loading fallback>` (was `Suspense`) | [`Loading(children, fallback=...)`][wybthon.Loading] |
 | `<Reveal order collapsed>` (was `SuspenseList`) | [`Reveal(children, order=..., collapsed=...)`][wybthon.Reveal] |
 | `<Errored fallback={(err, reset) => ...}>` | [`Errored(children, fallback=lambda err, reset: ...)`][wybthon.Errored]; `err` is an accessor, so call `err()` |
@@ -77,7 +77,7 @@ The table follows **Solid 2.0 RC.21**.
 | `merge(a, b)` | [`merge(a, b)`][wybthon.merge] |
 | `omit(props, ...keys)` | [`omit(props, *keys)`][wybthon.omit] |
 | `omit(props, predicate)` | `omit(props, lambda key: ...)` |
-| `children(() => props.children)` | [`children(lambda: props.children)`][wybthon.children] |
+| `children(() => props.children)` | [`children(lambda: props.children)`][wybthon.resolve_children] |
 | `children(...).toArray()` | `children(lambda: props.children).to_array()` |
 | `flatten(children)` | [`flatten(children)`][wybthon.flatten]: the unmemoized form of `children` |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
@@ -101,7 +101,7 @@ The table follows **Solid 2.0 RC.21**.
 | `{expr}` | `{expr}`: the compiler makes it a getter when it contains a call, attribute access, or subscript |
 | `<Card title={user().name}>...</Card>` | `<{Card} title={user().name}>...</{Card}>`, or `{Card(title=user().name, children=...)}` |
 | `<div {...attrs}>` | `<div {attrs}>` |
-| `h(tag, props, ...children)` | [`h(tag, props, *children)`][wybthon.h] |
+| `h(tag, props, ...children)` | [`h(tag, props, *children)`][wybthon.vnode.h] |
 | `"use server"` (`@solidjs/web/server-functions`) | [`@server_function`][wybthon.server_function] on a module-level `async def` |
 | `GET(fn)` | `@server_function(method="GET")` |
 | `redirect`, `reload`, `respond` (`@solidjs/web`) | [`redirect`][wybthon.redirect], [`reload`][wybthon.reload], [`respond`][wybthon.respond]: raise or return them |
@@ -164,7 +164,7 @@ def Greeting(props: GreetingProps):
 - `Show`, `Loading`, `Errored`, and context providers work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`), which calls each the way its signature takes children.
 - Markup the browser's parser would rewrite is an error instead of a silent change: put `<tr>` in a `<tbody>`, and don't nest a `<div>` in a `<p>`. The compiler reports it as a `SyntaxError` with the file and line.
 - A template that reaches `html()` without being compiled (a REPL, `exec`) has already evaluated its dynamic expressions once, so dev mode raises [`TemplateError`][wybthon.TemplateError] instead of rendering markup that would never update.
-- [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, the counterpart of Solid's `h`, for markup built by code. Its props take Python names (`class_`, `html_for`, `on_click`) or HTML names. SVG works in a template.
+- [`h(tag, props, *children)`][wybthon.vnode.h] is the programmatic layer, the counterpart of Solid's `h`, for markup built by code. Its props take Python names (`class_`, `html_for`, `on_click`) or HTML names. SVG works in a template.
 
 ## Components and props
 
@@ -305,7 +305,7 @@ These are native regions, not wrapper components: `Show` and `Switch` are one br
 
 ```python
 from wybthon import Errored, Loading, html
-from wybthon.router import current_path
+from wybthon.router import url
 
 
 def failed(err, reset):
@@ -315,7 +315,7 @@ def failed(err, reset):
 Errored(
     Loading(Dashboard(), fallback=html(t"<p>Loading...</p>")),
     fallback=failed,
-    reset_on=current_path,
+    reset_on=url,
 )
 ```
 

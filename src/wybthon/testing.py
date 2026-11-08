@@ -52,8 +52,8 @@ from contextlib import contextmanager
 from html.parser import HTMLParser
 from typing import Any
 
-from . import kernel
-from ._html_rules import VOID_ELEMENTS
+from . import _warnings, kernel
+from ._html_rules import MATHML_ATTR_CASE, SVG_ATTR_CASE, SVG_TAG_CASE, VOID_ELEMENTS, child_ns, element_ns
 from .reactivity import _core
 
 __all__ = [
@@ -61,6 +61,7 @@ __all__ = [
     "Screen",
     "fire",
     "cleanup",
+    "raise_unhandled",
     "TestNode",
     "TestDocument",
     "reactive_scope",
@@ -120,6 +121,8 @@ class TestNode:
     __test__ = False  # not a pytest test class
 
     active_element: TestNode | None = None
+    # SVG and MathML elements' namespace (`None` for HTML).
+    namespaceURI: str | None = None
 
     def __init__(self, tag: str | None = None, text: str | None = None) -> None:
         self.tag = tag
@@ -239,11 +242,25 @@ class _Parser(HTMLParser):
     def __init__(self, root: TestNode) -> None:
         super().__init__(convert_charrefs=True)
         self._stack = [root]
+        # The namespace of each open element's children, as the HTML parser
+        # tracks foreign content (`None` is HTML).
+        self._ns: list[str | None] = [None]
 
     def _element(self, tag: str, attrs: list[tuple[str, str | None]]) -> TestNode:
+        parent_ns = self._ns[-1]
+        if parent_ns is not None:
+            # The parser gives SVG names back in their own case.
+            tag = SVG_TAG_CASE.get(tag, tag)
+        ns = element_ns(tag, parent_ns)
         node = TestNode(tag=tag)
+        if ns is not None:
+            node.namespaceURI = ns
+            node.attributes["xmlns"] = ns
+        self._last_ns = child_ns(tag, ns if parent_ns is None else parent_ns)
         for name, value in attrs:
             value = "" if value is None else value
+            if ns is not None:
+                name = (SVG_ATTR_CASE if ns.endswith("svg") else MATHML_ATTR_CASE).get(name, name)
             node.setAttribute(name, value)
             if name == "class":
                 for cls in value.split():
@@ -258,8 +275,9 @@ class _Parser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         node = self._element(tag, attrs)
-        if tag not in VOID_ELEMENTS:
+        if tag not in VOID_ELEMENTS or self._ns[-1] is not None:
             self._stack.append(node)
+            self._ns.append(self._last_ns)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._element(tag, attrs)
@@ -267,6 +285,7 @@ class _Parser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if len(self._stack) > 1:
             self._stack.pop()
+            self._ns.pop()
 
     def handle_data(self, data: str) -> None:
         if data:
@@ -312,6 +331,7 @@ class TestDocument:
 
     def createElementNS(self, namespace: str, tag: str) -> TestNode:  # noqa: D102 - DOM API
         node = TestNode(tag=tag)
+        node.namespaceURI = namespace
         node.attributes["xmlns"] = namespace
         return node
 
@@ -384,6 +404,35 @@ def _serialize(node: TestNode, out: list[str]) -> None:
 
 _screens: list[Screen] = []
 
+# Errors rendered views logged that no `Errored` boundary handled, raised by
+# the next `render`, `fire`, or `unmount`.
+_unhandled: list[BaseException] = []
+
+
+def _collect(error: BaseException | None, message: str) -> None:
+    # A logged error can't be traced to the view that raised it, so while a
+    # `strict=False` view is mounted, errors are only logged: a failing
+    # view a test mounts on purpose never fails a strict one beside it.
+    if _screens and all(screen.strict for screen in _screens):
+        _unhandled.append(error if error is not None else RuntimeError(message))
+
+
+def raise_unhandled() -> None:
+    """Raise the errors rendered views logged that no `Errored` boundary handled.
+
+    `render`, every `fire` call, and leaving a `render` block call this, so
+    a test fails on an error a component, binding, or effect raised instead
+    of passing against whatever the view managed to show. Several errors
+    are raised together as an `ExceptionGroup`.
+    """
+    if not _unhandled:
+        return
+    errors = list(_unhandled)
+    _unhandled.clear()
+    if len(errors) == 1:
+        raise errors[0]
+    raise ExceptionGroup("Rendered views raised errors no boundary handled", errors)  # type: ignore[type-var]
+
 
 def _ensure_backend() -> Any:
     backend = kernel._backend
@@ -437,12 +486,32 @@ def _role(node: TestNode) -> str | None:
     return _IMPLICIT_ROLES.get(tag)
 
 
-def _accessible_name(node: TestNode) -> str:
+def _labels(root: TestNode) -> dict[str, str]:
+    """Each `<label for=...>` under `root`: the id it names, and its text."""
+    found: dict[str, str] = {}
+    for node in _walk(root):
+        if node.is_element and node.tag == "label":
+            target = node.attributes.get("for")
+            if target and target not in found:
+                found[target] = " ".join(node.text_content.split())
+    return found
+
+
+def _accessible_name(node: TestNode, root: TestNode | None = None, labels: dict[str, str] | None = None) -> str:
+    """The name assistive technology announces: `aria-label`, a `<label>`, then content."""
     label = node.attributes.get("aria-label")
     if label:
         return label
     if (node.tag or "").lower() in ("input", "textarea", "select"):
-        return node.attributes.get("placeholder", "") or node.attributes.get("value", "")
+        node_id = node.attributes.get("id")
+        if node_id and labels is not None and node_id in labels:
+            return labels[node_id]
+        parent = node.parentNode
+        while parent is not None and parent is not root:
+            if parent.tag == "label":
+                return " ".join(parent.text_content.split())
+            parent = parent.parentNode
+        return node.attributes.get("placeholder", "") or node.attributes.get("title", "")
     return " ".join(node.text_content.split())
 
 
@@ -461,24 +530,33 @@ class Screen:
         root: The [`Root`][wybthon.Root] returned by `render`.
     """
 
-    def __init__(self, root: Any, container: TestNode) -> None:
+    def __init__(self, root: Any, container: TestNode, strict: bool = True) -> None:
         self.root = root
         self.container = container
+        self.strict = strict
 
     def __enter__(self) -> Screen:
         return self
 
-    def __exit__(self, *_exc: Any) -> None:
-        self.unmount()
+    def __exit__(self, exc_type: Any, *_exc: Any) -> None:
+        self.unmount(check=exc_type is None)
 
-    def unmount(self) -> None:
-        """Dispose the view and release its container."""
+    def unmount(self, *, check: bool = True) -> None:
+        """Dispose the view and release its container.
+
+        Raises an error a rendered view logged that no `Errored`
+        boundary handled, unless `check` is false.
+        """
         if self in _screens:
             _screens.remove(self)
         if not self.root._disposed:
             self.root.dispose()
             kernel.emit((kernel.OP_RELEASE, [self.root.node_id]))
             kernel.commit()
+        if check and self.strict:
+            raise_unhandled()
+        elif not _screens:
+            _unhandled.clear()
 
     def html(self) -> str:
         """The container's inner HTML, without Wybthon's comment markers."""
@@ -501,19 +579,25 @@ class Screen:
     def _all(self, predicate: Callable[[TestNode], bool]) -> list[TestNode]:
         return [node for node in self._elements() if predicate(node)]
 
-    @staticmethod
-    def _one(found: list[TestNode], what: str) -> TestNode:
+    def _one(self, found: list[TestNode], what: str) -> TestNode:
         if not found:
-            raise LookupError(f"Unable to find an element {what}")
+            raise LookupError(f"Unable to find an element {what} in:\n{self._dump()}")
         if len(found) > 1:
             raise LookupError(f"Found {len(found)} elements {what}; use a get_all_by_* query")
         return found[0]
 
-    @staticmethod
-    def _some(found: list[TestNode], what: str) -> list[TestNode]:
+    def _some(self, found: list[TestNode], what: str) -> list[TestNode]:
         if not found:
-            raise LookupError(f"Unable to find an element {what}")
+            raise LookupError(f"Unable to find an element {what} in:\n{self._dump()}")
         return found
+
+    def _dump(self, limit: int = 4000) -> str:
+        markup = self.html()
+        return markup if len(markup) <= limit else markup[:limit] + f"... ({len(markup) - limit} more characters)"
+
+    def debug(self) -> None:
+        """Print the rendered markup, for a look at what a failing query searched."""
+        print(self._dump(limit=1_000_000))
 
     # -- text -------------------------------------------------------------------
 
@@ -539,8 +623,13 @@ class Screen:
     # -- role -------------------------------------------------------------------
 
     def _by_role(self, role: str, name: str | re.Pattern[str] | None) -> list[TestNode]:
+        # Labels are collected once per query, not once per candidate.
+        labels = _labels(self.container) if name is not None else None
         return self._all(
-            lambda node: _role(node) == role and (name is None or _matches(_accessible_name(node), name, True))
+            lambda node: (
+                _role(node) == role
+                and (name is None or _matches(_accessible_name(node, self.container, labels), name, True))
+            )
         )
 
     def get_by_role(self, role: str, *, name: str | re.Pattern[str] | None = None) -> TestNode:
@@ -596,12 +685,19 @@ class Screen:
         return self._some(self._all(lambda node: node.attributes.get("data-testid") == test_id), f"[{test_id}]")
 
 
-def render(view: Any) -> Screen:
+def render(view: Any, *, strict: bool = True) -> Screen:
     """Mount `view` into a fresh in-memory container and flush it.
+
+    An error a component, binding, or effect raises that no
+    [`Errored`][wybthon.Errored] boundary handles fails the test: it's
+    raised from `render`, from the `fire` call that caused it, or when the
+    `with` block ends.
 
     Args:
         view: Anything `wybthon.render` accepts: a component call, an
             element, a list, or a reactive expression.
+        strict: Pass `False` to only log such errors, for a test about how
+            a view behaves after one.
 
     Returns:
         A [`Screen`][wybthon.testing.Screen] for querying the result.
@@ -614,16 +710,30 @@ def render(view: Any) -> Screen:
     kernel.commit()
     container = backend.get_node(container_id)
     backend._doc.body.appendChild(container)
-    root = render_view(view, container_id)
-    screen = Screen(root, container)
+    _warnings.error_hook = _collect
+    screen = Screen(None, container, strict)
     _screens.append(screen)
+    try:
+        screen.root = render_view(view, container_id)
+    except BaseException:
+        _screens.remove(screen)
+        raise
+    raise_unhandled()
     return screen
 
 
-def cleanup() -> None:
-    """Unmount every view rendered with [`render`][wybthon.testing.render] that's still mounted."""
+def cleanup(*, check: bool = False) -> None:
+    """Unmount every view rendered with [`render`][wybthon.testing.render] that's still mounted.
+
+    With `check`, then raise the errors the views logged that no boundary
+    handled, as the pytest plugin does after every test; otherwise they're
+    dropped.
+    """
+    pending = list(_unhandled) if check else []
     for screen in list(_screens):
-        screen.unmount()
+        screen.unmount(check=False)
+    _unhandled[:] = pending
+    raise_unhandled()
 
 
 class _Fire:
@@ -637,6 +747,7 @@ class _Fire:
         fields = {_camel(name): value for name, value in payload.items()}
         backend.dispatch(event_type, node, payload=fields)
         _core.flush()
+        raise_unhandled()
 
     def click(self, node: TestNode, **payload: Any) -> None:
         """Click `node`."""

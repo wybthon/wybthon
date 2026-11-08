@@ -142,6 +142,7 @@ nav:
     - "0006: Engine v6": rfcs/0006-engine-v6.md
     - "0007: Engine v7": rfcs/0007-engine-v7.md
     - "0008: Full-stack apps": rfcs/0008-full-stack.md
+    - "0009: Engine v8": rfcs/0009-engine-v8.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

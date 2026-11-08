@@ -64,7 +64,7 @@ def Errored(
             current error automatically, for example the current route.
 
     Returns:
-        A component [`VNode`][wybthon.VNode] that swaps to the fallback
+        A component [`VNode`][wybthon.vnode.VNode] that swaps to the fallback
         whenever a descendant raises.
     """
     return h(_Errored, {"children": children, "fallback": fallback, "on_error": on_error, "reset_on": reset_on})
@@ -167,11 +167,11 @@ def _Errored(props: _ErroredProps) -> Any:
     heal_sources: list[Any] = []
 
     def reset() -> None:
-        error._set(None, _core._O_REVEAL)
+        error._reveal(None)
 
     def handle(err: BaseException, comp: Any) -> None:
         heal_sources[:] = _leaf_inputs(comp, owner)
-        error._set(err, _core._O_REVEAL)
+        error._reveal(err)
         if callable(on_error):
             try:
                 on_error(err)
@@ -191,7 +191,7 @@ def _Errored(props: _ErroredProps) -> Any:
         elif token != last_token[0]:
             last_token[0] = token
             if err is not None:
-                error._set(None, _core._O_REVEAL)
+                error._reveal(None)
                 err = None
         if err is not None:
             if heal_sources:

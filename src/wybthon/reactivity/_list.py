@@ -1,6 +1,6 @@
 """Reactive list mapping helpers.
 
-[`map_array`][wybthon.map_array] turns a
+[`map_array`][wybthon.reactivity.map_array] turns a
 reactive list into a memoized list of mapped rows, reusing each row's
 owner scope across updates so per-row state survives reorders.
 """
@@ -89,6 +89,10 @@ def map_array[T, U](
         return (1, id(item))
 
     key_for = keyed if callable(keyed) else identity
+    if _core._positional_count(fn) == 1:
+        # `map_array(items, lambda item: ...)`: the index is optional.
+        mapper = fn
+        fn = lambda item, _index: mapper(item)  # noqa: E731
 
     def compute() -> list[U]:
         nonlocal rows
@@ -109,9 +113,9 @@ def map_array[T, U](
             if row.key != next_key:
                 break
             if row.item is not None:
-                row.item._set(item)
+                row.item._write(item)
             if row.index._value != prefix or row.index._staged:
-                row.index._set(prefix)
+                row.index._write(prefix)
             prefix += 1
         available: dict[Any, deque[_Row]] = defaultdict(deque)
         for row in rows[prefix:]:
@@ -132,9 +136,9 @@ def map_array[T, U](
             if bucket:
                 row = bucket.popleft()
                 if row.item is not None:
-                    row.item._set(item)
+                    row.item._write(item)
                 if row.index._value != index or row.index._staged:
-                    row.index._set(index)
+                    row.index._write(index)
             else:
                 owner = Owner()
                 scope._add_child(owner)

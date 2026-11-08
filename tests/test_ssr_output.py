@@ -15,7 +15,6 @@ import pytest
 from wybthon import (
     Errored,
     For,
-    Fragment,
     Loading,
     Match,
     NoHydration,
@@ -31,10 +30,10 @@ from wybthon import (
     create_signal,
     create_unique_id,
     dynamic,
-    h,
     html,
 )
 from wybthon.server import render_to_stream, render_to_string
+from wybthon.vnode import Fragment, h
 
 
 class CardProps(ParentProps):

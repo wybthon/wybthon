@@ -136,7 +136,7 @@ view = html(t"""
 
 #### See also
 
-- [`map_array`][wybthon.map_array] and [`repeat`][wybthon.repeat]: the reactive mapping behind `For` and `Repeat`
+- [`map_array`][wybthon.reactivity.map_array] and [`repeat`][wybthon.reactivity.repeat]: the reactive mapping behind `For` and `Repeat`
 - [`create_projection`][wybthon.create_projection]: per-row selection that notifies only the changed rows
 - [Concepts: Components](../concepts/components.md)
 - [Guides: Authoring patterns](../guides/authoring-patterns.md)

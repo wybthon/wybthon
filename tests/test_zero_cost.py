@@ -23,13 +23,13 @@ from wybthon import (
     create_signal,
     diagnostics,
     flush,
-    h,
     html,
     kernel,
     on_cleanup,
 )
 from wybthon.reactivity import _core
 from wybthon.testing import cleanup, render
+from wybthon.vnode import h
 
 
 @pytest.fixture(autouse=True)

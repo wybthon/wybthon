@@ -42,7 +42,7 @@ That's the job Solid's compiler does for JSX. A production build never parses a 
 | Child | `<p>{value}</p>` | Text, a node, a list, or `None`. A dynamic expression or an accessor becomes a hole. |
 | Attribute | `<a href={url()}>` | Applied once, or bound when dynamic or an accessor. |
 | Part of an attribute | `<div class="card card-{kind()}">` | The parts form one string; dynamic parts make it one binding. |
-| Event | `<button onclick={save}>` | A delegated handler. `onClick` and `on:click` work too. |
+| Event | `<button onclick={save}>` | A delegated handler; `on:click` is a native listener on the element. |
 | Ref | `<input ref={field}>` | A [`Ref`][wybthon.Ref] or a callback that receives the element. |
 | Spread | `<input {attrs}>` | A mapping of props applied to the element. |
 | Component tag | `<{Card} title="Hi">...</{Card}>` | Calls the component; see [Components in templates](#components-in-templates). |
@@ -174,10 +174,11 @@ Here `{summary()}` is a hole, and it re-runs when `user` changes. While the user
 
 ## Templates and `h()`
 
-[`h(tag, props, *children)`][wybthon.h] is the programmatic layer, the counterpart of Solid's `h`. Use it when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:
+[`h(tag, props, *children)`][wybthon.vnode.h] is the programmatic layer, the counterpart of Solid's `h`. Use it when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:
 
 ```python
-from wybthon import h, html
+from wybthon import html
+from wybthon.vnode import h
 
 
 def heading(level, text):

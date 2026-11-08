@@ -75,7 +75,7 @@ The helpers return prop dicts, which a template applies with a spread
 (`<input {attrs}>`). A spread is evaluated once, when the template is
 created, and each entry that's an accessor (the field's value, the ARIA
 state) becomes its own reactive binding. The keys use Python names
-(`on_input`, `aria_invalid`), the same names [`h`][wybthon.h] props
+(`on_input`, `aria_invalid`), the same names [`h`][wybthon.vnode.h] props
 take, so the dicts also work as `h("input", {"id": "name", **bind_text(name)})`.
 
 ## Fields

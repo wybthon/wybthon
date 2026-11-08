@@ -207,3 +207,17 @@ def offline_stdlib(monkeypatch):
     import wybthon._stdlib
 
     monkeypatch.setattr(wybthon._stdlib, "fetch_stdlib", lambda url: None)
+
+
+@pytest.fixture(autouse=True)
+def warnings_on_stderr(monkeypatch):
+    """Show Wybthon's dev warnings on stderr too, so tests can assert on them with `capsys`.
+
+    They're also issued as `WybthonWarning`s, which `pytest.warns` sees;
+    `pytest.ini` keeps them out of the warning summary.
+    """
+    import wybthon._warnings
+
+    monkeypatch.setattr(
+        wybthon._warnings, "warning_hook", lambda message: print(f"[wybthon] Warning: {message}", file=sys.stderr)
+    )

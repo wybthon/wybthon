@@ -64,7 +64,7 @@ OP_CREATE_TEXT = 2  # [op, id, text]
 OP_CREATE_COMMENT = 3  # [op, id, data?]
 OP_CLONE = 4  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *texts]
 OP_INSERT = 5  # [op, parent_id, id, anchor_id_or_None]
-OP_REMOVE = 6  # [op, id]  (detach only; the node stays registered)
+# 6 is retired (REMOVE: nothing detached a single node without releasing it).
 OP_SET_TEXT = 7  # [op, id, text]
 OP_SET_ATTR = 8  # [op, id, name, value_or_None]  (None removes)
 OP_SET_PROP = 9  # [op, id, name, value]  (DOM property assignment)
@@ -72,7 +72,9 @@ OP_SET_STYLE = 10  # [op, id, {prop: value_or_None}]  (kebab-case, None removes)
 OP_LISTEN = 11  # [op, id, event_key, options?]
 OP_UNLISTEN = 12  # [op, id, event_key]
 OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listeners of detached nodes)
-OP_REGISTER_TPL = 14  # [op, tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets]]
+OP_REGISTER_TPL = (
+    14  # [op, tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets], wrap]
+)
 OP_CREATE_ELEMENT_NS = 15  # [op, id, namespace, tag]  (SVG / MathML)
 OP_ROOT = 16  # [op, id]  (delegate events from this node instead of document)
 OP_UNROOT = 17  # [op, id]
@@ -81,7 +83,7 @@ OP_DISPOSE_RANGE = 19  # [op, first, last]  (remove siblings and release everyth
 OP_RELEASE_TPL = 20  # [op, tpl_id]
 OP_HOLE_TEXT = 21  # [op, anchor_id, text]  (reuse the anchor as visible text)
 OP_HYDRATE = 22  # [op, root_id]  (start claiming server-rendered nodes under root)
-OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None]
+OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None, [[attr, value], ...]?]
 OP_CLAIM_TEXT = 24  # [op, id, parent_id, text]
 OP_CLAIM_COMMENT = 25  # [op, id, parent_id, data]
 OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
@@ -168,9 +170,11 @@ def register_template(shape: Any) -> int:
     _next_tpl_id = tid + 1
     shape.tpl = tid
     _templates[tid] = shape
-    # `addressed` lists the node offsets to register on each clone (all when absent).
+    # `addressed` lists the node offsets to register on each clone (all when
+    # absent); `wrap` names the SVG or MathML element to parse the markup in.
     addressed = getattr(shape, "addressed", None)
-    _ops.append((OP_REGISTER_TPL, tid, shape.html, shape.count, shape.texts, shape.listens, addressed))
+    wrap = getattr(shape, "wrap", None)
+    _ops.append((OP_REGISTER_TPL, tid, shape.html, shape.count, shape.texts, shape.listens, addressed, wrap))
     if len(_templates) > _TEMPLATE_LIMIT:
         retired_id, retired = _templates.popitem(last=False)
         retired.tpl = 0
@@ -580,10 +584,6 @@ class PythonBackend:
                 self._clone(op)
             elif code == OP_INSERT:
                 self._insert(op[1], nodes[op[2]], op[3])
-            elif code == OP_REMOVE:
-                node = nodes.get(op[1])
-                if node is not None and getattr(node, "parentNode", None) is not None:
-                    node.parentNode.removeChild(node)
             elif code == OP_MOVE_RANGE:
                 first, last = nodes.get(op[2]), nodes.get(op[3])
                 anchor = nodes.get(op[4]) if op[4] is not None else None
@@ -666,7 +666,9 @@ class PythonBackend:
             elif code == OP_RELEASE_TPL:
                 self._tpl_protos.pop(op[1], None)
             elif code == OP_REGISTER_TPL:
-                self._register_tpl(op[1], op[2], op[3], op[4], op[5], op[6] if len(op) > 6 else None)
+                self._register_tpl(
+                    op[1], op[2], op[3], op[4], op[5], op[6] if len(op) > 6 else None, op[7] if len(op) > 7 else None
+                )
             elif code == OP_CREATE_ELEMENT_NS:
                 create_ns = getattr(doc, "createElementNS", None)
                 node = create_ns(op[2], op[3]) if create_ns is not None else doc.createElement(op[3])
@@ -678,7 +680,7 @@ class PythonBackend:
             elif code == OP_HYDRATE:
                 self._hydrating = _ClaimState(nodes[op[1]])
             elif code == OP_CLAIM_ELEMENT:
-                self._claim_element(op[1], op[2], op[3], op[4])
+                self._claim_element(op[1], op[2], op[3], op[4], op[5] if len(op) > 5 else None)
             elif code == OP_CLAIM_TEXT:
                 self._claim_text(op[1], op[2], op[3])
             elif code == OP_CLAIM_COMMENT:
@@ -777,7 +779,9 @@ class PythonBackend:
         assert self._hydrating is not None
         self._hydrating.cursors[id(parent)] = node
 
-    def _claim_element(self, node_id: int, parent_id: int, tag: str, ns: Optional[str]) -> None:
+    def _claim_element(
+        self, node_id: int, parent_id: int, tag: str, ns: Optional[str], statics: Optional[list[Any]] = None
+    ) -> None:
         parent = self._nodes[parent_id]
         c = self._cursor(parent)
         while c is not None and _is_blank(c):
@@ -789,6 +793,9 @@ class PythonBackend:
         self._mismatch()
         create_ns = getattr(self._doc, "createElementNS", None)
         node = create_ns(ns, tag) if ns and create_ns is not None else self._doc.createElement(tag)
+        for name, value in statics or ():
+            # The server's static attributes, which a claimed node already has.
+            node.setAttribute(name, value)
         parent.insertBefore(node, c)
         self._set_cursor(parent, c)
         self._reg(node_id, node)
@@ -890,13 +897,21 @@ class PythonBackend:
         texts: list[int],
         listens: list[Any],
         addressed: list[int] | None = None,
+        wrap: str | None = None,
     ) -> None:
         tpl = self._tpl
         if tpl is None:
             raise RuntimeError("PythonBackend: document has no template support")
-        tpl.innerHTML = html
-        root = tpl.content.firstChild
-        tpl.content.removeChild(root)
+        if wrap is None:
+            tpl.innerHTML = html
+            root = tpl.content.firstChild
+            tpl.content.removeChild(root)
+        else:
+            # Parsed inside an SVG or MathML wrapper, as under such a parent.
+            tpl.innerHTML = f"<{wrap}>{html}</{wrap}>"
+            wrapper = tpl.content.firstChild
+            root = wrapper.firstChild
+            wrapper.removeChild(root)
         offsets = frozenset(range(count) if addressed is None else addressed)
         self._tpl_protos[tpl_id] = (root, count, tuple(texts), tuple((o, t) for o, t in listens), offsets)
 
@@ -965,6 +980,9 @@ class PythonBackend:
                 return doc.createComment("" if text is None else text)
             return doc.createTextNode("" if text is None else text)
         clone = doc.createElement(node.tag)
+        namespace = getattr(node, "namespaceURI", None)
+        if namespace is not None:
+            clone.namespaceURI = namespace
         attrs = getattr(node, "attributes", None)
         if attrs:
             for name, value in attrs.items():

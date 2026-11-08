@@ -43,22 +43,6 @@ def test_insert_with_none_anchor_appends(wyb):
     assert child in parent.childNodes
 
 
-def test_remove_op(wyb):
-    """REMOVE deletes the node from its parent."""
-    kernel = wyb["kernel"]
-    parent_id = kernel.alloc_id()
-    child_id = kernel.alloc_id()
-
-    kernel.emit((kernel.OP_CREATE_ELEMENT, parent_id, "div"))
-    kernel.emit((kernel.OP_CREATE_ELEMENT, child_id, "span"))
-    kernel.emit((kernel.OP_INSERT, parent_id, child_id, None))
-
-    kernel.emit((kernel.OP_REMOVE, child_id))
-    parent = kernel.get_node(parent_id)
-    child = kernel.get_node(child_id)
-    assert child not in parent.childNodes
-
-
 def test_create_and_set_text(wyb):
     """CREATE_TEXT and SET_TEXT modify a text node's value."""
     kernel = wyb["kernel"]
@@ -248,16 +232,30 @@ def test_register_template_emits_one_registration(wyb):
     kernel.commit()
     shape = _Shape("<li><a> </a></li>", 3, texts=[2], listens=[(1, "click")])
     tpl_id = kernel.register_template(shape)
-    assert kernel._ops[-1] == (kernel.OP_REGISTER_TPL, tpl_id, "<li><a> </a></li>", 3, [2], [[1, "click"]], None)
+    assert kernel._ops[-1] == (
+        kernel.OP_REGISTER_TPL,
+        tpl_id,
+        "<li><a> </a></li>",
+        3,
+        [2],
+        [[1, "click"]],
+        None,
+        None,
+    )
     shape.addressed = [0, 1, 2]
     kernel._forget_templates()
     tpl_id = kernel.register_template(shape)
-    assert kernel._ops[-1][-1] == [0, 1, 2]
+    assert kernel._ops[-1][6] == [0, 1, 2]
     second = kernel.register_template(_Shape("<p><b></b></p>", 2))
     assert second == tpl_id + 1
     assert not hasattr(kernel, "template_id")
     assert not hasattr(kernel, "OP_CLONE_TPL")
     assert not hasattr(kernel, "OP_REMOVE_RANGE")
+    # A template mounted under an SVG parent names the wrapper to parse it in.
+    shape.wrap = "svg"
+    kernel._forget_templates()
+    kernel.register_template(shape)
+    assert kernel._ops[-1][7] == "svg"
 
 
 def test_clone_inserts_before_anchor_and_fills_every_text_slot(wyb):
