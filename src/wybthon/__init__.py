@@ -223,7 +223,7 @@ def __getattr__(name: str) -> Any:
     return value
 
 
-__version__ = "0.44.0"
+__version__ = "0.45.0"
 
 __all__ = [
     # Components and props

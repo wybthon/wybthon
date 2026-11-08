@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.45.0 (2026-11-08)
+
+### Features
+
+- **template,server**: Add engine v9 ([#56](https://github.com/wybthon/wybthon/pull/56),
+  [`a5aa33d`](https://github.com/wybthon/wybthon/commit/a5aa33d4bea36ffe586a6b2316ba129e188bf86d))
+
+
 ## v0.44.0 (2026-11-08)
 
 ### Features
