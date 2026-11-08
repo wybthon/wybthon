@@ -43,11 +43,10 @@ hot path; `None` anchors mean "append".
 | `REGISTER_TPL` | `tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets]` | Parse a template's or shape's skeleton once via `<template>`, and record its text slots, delegated listeners, and the node offsets Python addresses (all of them when the list is `null`) |
 | `CLONE` | `first_id, tpl_id, parent_id, anchor_id, *texts` | Clone the prototype, register the addressed nodes of a dense pre-order id block, fill the text slots, mark the delegated listeners, and insert before the anchor |
 | `INSERT` | `parent_id, id, anchor_id` | `insertBefore` (`None` anchor appends) |
-| `REMOVE` | `id` | Detach from the parent; the node stays registered |
 | `MOVE_RANGE` | `parent_id, first_id, last_id, anchor_id` | Move a contiguous mounted range |
 | `DISPOSE_RANGE` | `first_id, last_id` | Remove a contiguous range of siblings and release every registered node inside it, walking the removed nodes natively |
 | `DISPOSE` | `id` | Remove one node and release every registered node inside it |
-| `HOLE_TEXT` | `id, text` | Reuse a hole's placeholder as a visible text node |
+| `HOLE_TEXT` | `id, text` | Reuse a hole's placeholder as a visible text node; while hydrating, adopt the server's text in front of it instead |
 | `RELEASE_TPL` | `tpl_id` | Evict a native template prototype |
 | `SET_TEXT` | `id, text` | `nodeValue` assignment |
 | `SET_ATTR` | `id, name, value` | `setAttribute`, or `removeAttribute` when `value` is `None` |
@@ -61,6 +60,8 @@ hot path; `None` anchors mean "append".
 | `CLAIM_TEXT` | `id, parent_id, text` | Adopt the next text node, splitting text the HTML parser merged; empty text is created |
 | `CLAIM_COMMENT` | `id, parent_id, data` | Adopt the next comment; a keyed end marker (`/...`) resynchronizes by searching forward |
 | `CLAIM_STATIC` | `parent_id, end_marker` | Keep the server nodes before the marker as static DOM (a [`NoHydration`][wybthon.NoHydration] region) |
+| `CLAIM_TPL` | `first_id, tpl_id, parent_id, anchor_id, *hints, writes?` | Claim a server-rendered template instance: walk the template's skeleton against the server's nodes, register them under the ids a `CLONE` would give them, and note where each slot's content starts. A hint is a text slot's text, or `0` when the slot holds nodes. `writes`, when present, are the instance's `SET_ATTR` and `SET_STYLE` commands, applied where they differ from the server's values; a `SET_STYLE` with a fourth field set replaces the server's whole style |
+| `CLAIM_SLOT` | `parent_id, slot_id` | Point the parent's claim cursor at the server content of a claimed template's slot, before that content's own claims |
 | `HYDRATE_END` | none | Remove server nodes nobody claimed and stop claiming |
 
 A row of the js-framework-benchmark table costs one command, a `CLONE`
@@ -72,7 +73,16 @@ kernel releases the removed nodes itself. See
 templates, precompiled mount functions, and lazy node ids fit
 together.
 
-[`hydrate`][wybthon.hydrate] emits the claim ops; see [Server rendering](../concepts/server-rendering.md). `stats()` reports node, template, listener, and root counts plus `hydration_mismatches`, and `take_state()` and `replay_events()` read the server state and replay input recorded before hydration.
+[`hydrate`][wybthon.hydrate] emits the claim ops. A template instance
+under an HTML parent hydrates like a clone: one `CLAIM_TPL` for the
+instance, plus one `CLAIM_SLOT` for each slot whose content is nodes, so
+a server-rendered row of the benchmark table costs one command, as a
+client-rendered one does. The server writes such an instance in the
+layout its clone has, with each slot's content in front of a `<!--$-->`
+comment where the clone has the slot's placeholder. Trees built with
+`h()`, and templates the server writes by its general path (raw text,
+`select`, SVG, spreads, inner HTML), claim node by node. See
+[Server rendering](../concepts/server-rendering.md). `stats()` reports node, template, listener, and root counts plus `hydration_mismatches`, and `take_state()` and `replay_events()` read the server state and replay input recorded before hydration.
 
 Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,

@@ -450,8 +450,9 @@ def FancyInput(props: FancyInputProps):
 
 A template with several top-level nodes returns a fragment, so you
 rarely need a wrapper element. The reconciler mounts a fragment's
-children directly in the parent between two empty comment markers, so
-fragments never disturb CSS selectors or layout.
+children directly in the parent (between two empty comment markers, or,
+when the fragment fills a slot by itself, in front of the slot's
+placeholder), so fragments never disturb CSS selectors or layout.
 
 ```python
 from wybthon import component, html

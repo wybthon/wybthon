@@ -187,7 +187,7 @@ def compare(baseline, mode, iterations, warmup, names, cpu_profile):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", type=Path, required=True, help="Isolated baseline checkout")
-    parser.add_argument("--mode", choices=["signal", "store"], default="signal")
+    parser.add_argument("--mode", choices=["signal", "store", "component"], default="signal")
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument(

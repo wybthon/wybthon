@@ -57,7 +57,7 @@ You'll see `"Counter body running"` exactly once, no matter how many clicks. `{c
 
 Markup is an HTML template written as a Python 3.14 [template string](https://peps.python.org/pep-0750/): `html(t"...")`. It's the counterpart of JSX, and Wybthon's [compiler](../concepts/compiler.md) plays the role of the JSX transform: it turns every dynamic expression in the markup into a getter, and turns each literal into a native template ahead of time. Each instance is a clone of that template, so a template costs about what the markup inside it costs. You don't run the compiler yourself: it runs in `wyb dev` and `wyb build`, in an import hook that `import wybthon` installs, and under pytest. See [Templates](../concepts/templates.md) for the full syntax.
 
-- Attribute names are HTML names: `class`, `for`, `aria-label`, `tabindex`. Handlers are `onclick={save}`; `onClick` and `on:click` work too.
+- Attribute names are HTML names: `class`, `for`, `aria-label`, `tabindex`. Handlers are `onclick={save}`, the HTML name; `onClick` is a compile error that names it.
 - `{expression}` works in a child, an attribute, part of an attribute (`class="btn btn-{kind()}"`), an event, a `ref`, and a spread (`<input {attrs}>`).
 - Write expressions as you would in JSX: `{count() * 2}`, `{user().name}`, `class={"on" if active() else ""}`. An expression with a call, an attribute access, or a subscript stays live; a name or a constant is a value. Event handlers are never wrapped.
 - Use a component with a tag, `<{Card} title={user().name}>...</{Card}>`, or call it in an interpolation, `{Card(title=user().name)}`. Either way the component receives a getter for each dynamic prop. The call form is fully type-checked; the tag form's props are checked at run time in dev mode.

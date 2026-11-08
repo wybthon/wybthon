@@ -66,7 +66,7 @@ def run_browser_benchmark(mode: str = "signal") -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Wybthon browser benchmark (Pyodide + Playwright)")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
-    parser.add_argument("--mode", choices=["signal", "store"], default="signal")
+    parser.add_argument("--mode", choices=["signal", "store", "component"], default="signal")
     args = parser.parse_args()
 
     results = run_browser_benchmark(args.mode)

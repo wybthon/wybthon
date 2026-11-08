@@ -70,6 +70,7 @@ from ._dom_props import (
     apply_props,
     attach_ref,
     binding_value,
+    claimed_attribute,
     detach_ref,
     remove_bindings_for,
 )
@@ -82,6 +83,7 @@ from ._html_rules import (
     NO_TEXT_CONTENT,
     NS_SVG,
     RAW_CONTENT_ELEMENTS,
+    RAW_TEXT_ELEMENTS,
     ROOT_SCOPE,
     VOID_ELEMENTS,
     Scope,
@@ -129,12 +131,14 @@ class _Element:
 
 
 class _Component:
-    __slots__ = ("index", "attrs", "children")
+    __slots__ = ("index", "attrs", "children", "props")
 
     def __init__(self, index: int, attrs: list[tuple[Any, ...]]) -> None:
         self.index = index
         self.attrs = attrs
         self.children: list[Any] = []
+        # The attributes with their prop names, built on first use (see `_component`).
+        self.props: tuple[tuple[Any, ...], ...] | None = None
 
 
 class _Slot:
@@ -543,6 +547,8 @@ class _Compiled:
         "bound",
         "addressed",
         "mount",
+        "claimable",
+        "slot_of",
     )
 
     def __init__(self, root: _Element, strings: tuple[str, ...]) -> None:
@@ -584,6 +590,12 @@ class _Compiled:
         self.addressed: list[int] = []
         # Generated on first mount (see ``_generate``).
         self.mount: Callable[[VNode, int, int | None, str | None], None] = _generate_and_mount
+        # Whether an instance under an HTML parent hydrates with one claim
+        # (see `claim`): the server writes it in the layout a clone has.
+        self.claimable = False
+        # Plan index of each child slot (by value index) and component slot
+        # (by node), for the server's claim layout; built on first use.
+        self.slot_of: dict[Any, int] | None = None
 
 
 class _NsShape:
@@ -747,6 +759,28 @@ class _Builder:
         c.refs = tuple(self.refs)
         c.spreads = tuple(self.spreads)
         c.clones = (not c.foreign, not c.foreign and c.ns_clone)
+        c.claimable = not c.foreign and not c.spreads and _claimable(c.root)
+
+
+# Elements a claimed instance can't contain: their content isn't only their
+# children (raw text, a leading newline the parser drops, a controlled
+# select's options), so the server writes them by the general path.
+_UNCLAIMABLE = RAW_TEXT_ELEMENTS | LEADING_NEWLINE_ELEMENTS | {"select", "option", "optgroup", "svg", "math"}
+# Props that replace an element's children with content of their own.
+_CONTENT_PROPS = frozenset({"inner_html", "innerHTML"})
+
+
+def _claimable(node: _Element) -> bool:
+    """Whether every element of a template renders on the server exactly as its clone's skeleton."""
+    if node.tag.lower() in _UNCLAIMABLE:
+        return False
+    for attr in node.attrs:
+        if attr[0] == _A_SPREAD or attr[1] in _CONTENT_PROPS:
+            return False
+    for child in node.children:
+        if type(child) is _Element and not _claimable(child):
+            return False
+    return True
 
 
 # A compiled template: how `html()` turns values into a node.
@@ -1255,19 +1289,24 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
     comp = values[node.index]
     if not callable(comp):
         raise TemplateError(f"A component tag needs a component, got {comp!r}")
+    plan = node.props
+    if plan is None:
+        plan = node.props = tuple(
+            attr if attr[0] == _A_SPREAD else (attr[0], _prop_name(attr[1]), attr[2]) for attr in node.attrs
+        )
     props: dict[str, Any] = {}
-    for attr in node.attrs:
+    for attr in plan:
         kind = attr[0]
-        if kind == _A_SPREAD:
+        if kind == _A_VALUE:
+            props[attr[1]] = values[attr[2]]
+        elif kind == _A_STATIC:
+            props[attr[1]] = attr[2]
+        elif kind == _A_SPREAD:
             spread = values[attr[1]]
             if spread:
                 props.update(spread)
-        elif kind == _A_STATIC:
-            props[_prop_name(attr[1])] = attr[2]
-        elif kind == _A_VALUE:
-            props[_prop_name(attr[1])] = values[attr[2]]
         else:
-            props[_prop_name(attr[1])] = _parts_value(attr[2], values)
+            props[attr[1]] = _parts_value(attr[2], values)
     content: list[Any] = []
     if node.children:
         child = _instantiate(node.children[0], values)
@@ -1281,7 +1320,9 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
     if type(comp) is _component_type:
         if content:
             props["children"] = content
-        return comp(**props)
+        if _warnings.DEV_MODE:
+            return comp(**props)
+        return VNode(comp, props, [], props.get("key"))
     style, leading = _call_style(comp)
     if style == _CALL_POSITIONAL:
         # Parameters before `*children` (a provider's `value`) go first.
@@ -1373,6 +1414,9 @@ def expand(vnode: VNode) -> VNode:
 # A test reloading the reconciler re-executes it into the same module dict,
 # so functions bound here keep working.
 _region_set: Any = None
+_region_commit: Any = None
+_coerce_result: Any = None
+_reconciler: Any = None
 _dispose_tree: Any = None
 _replace_hole_getter: Any = None
 _hole_updater: Any = None
@@ -1380,10 +1424,14 @@ _apply_hole: Any = None
 
 
 def _bind_reconciler() -> None:
-    global _region_set, _dispose_tree, _replace_hole_getter, _hole_updater, _apply_hole
+    global _region_set, _region_commit, _coerce_result, _reconciler, _dispose_tree
+    global _replace_hole_getter, _hole_updater, _apply_hole
     from . import reconciler
 
+    _reconciler = reconciler
     _region_set = reconciler._region_set
+    _region_commit = reconciler._region_commit
+    _coerce_result = reconciler._coerce_result
     _dispose_tree = reconciler._dispose_tree
     _replace_hole_getter = reconciler._replace_hole_getter
     _hole_updater = reconciler._hole_updater
@@ -1407,18 +1455,128 @@ def _text_hole(nid: int, text: str, ns: str | None = None) -> VNode:
     return hole
 
 
-def mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
-    """Mount a template instance with one clone command, then fill its slots.
+_OP_SET_ATTR = kernel.OP_SET_ATTR
+_OP_SET_STYLE = kernel.OP_SET_STYLE
 
-    Each compiled template has a generated mount function (see
-    `_generate`): straight-line code with its offsets and names as
-    constants. A child slot whose value is text keeps it in its
-    placeholder and records the string; any other child slot records the
-    hole region it mounted.
+
+def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
+    """Hydrate an instance: claim the server's nodes with one command, then fill its slots as a mount does.
+
+    The server wrote the instance in the layout its clone has (see
+    `wybthon.server`): the template's markup, with each slot's content in
+    front of a `$` comment where the clone has the slot's placeholder, and
+    a text slot's text in place of its placeholder. `OP_CLAIM_TPL` claims
+    that skeleton under the ids a clone would get; each slot then mounts
+    as it would after a clone. A slot that holds nodes claims them after an
+    `OP_CLAIM_SLOT` (see `reconciler._region_commit`) points the parent's
+    cursor at them; one that holds text adopts the server's. Each slot's
+    content is positioned at `<instance>.<slot>`, as the server positions it.
+    Attribute and style values the first render computed ride in the claim
+    command after its hints, and the kernel writes those that differ from
+    the server's: a value only the browser can compute (stored state, the
+    user's language) is still corrected, without a command of its own. A
+    style replaces the server's declarations, and an attribute the first
+    render leaves out is removed.
     """
+    compiled: _Compiled = vnode.props  # type: ignore[assignment]
+    values: tuple[Any, ...] = vnode.children  # type: ignore[assignment]
     if diagnostics._active is not None:
-        diagnostics._active.counts["template_clones"] += 1
-    vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
+        diagnostics._active.counts["template_claims"] += 1
+    first = kernel.alloc_ids(compiled.count)
+    tpl = compiled.tpl or kernel.register_template(compiled)
+    op: list[Any] = [kernel.OP_CLAIM_TPL, first, tpl, parent_id, anchor_id]
+    op.extend("" for _ in compiled.texts)
+    kernel.push(op)
+    vnode.el = first
+    vnode.tpl = compiled
+    pk = getattr(vnode, "pk", None) or _core._position
+    probes = compiled.probes
+    deferred = compiled.deferred
+    ops = kernel._ops
+    dyn: list[Any] = []
+    writes: list[Any] = []
+    kept: list[Any] = []
+    for k, slot in enumerate(compiled.plan):
+        kind = slot[0]
+        nid = first + slot[1]
+        d: Any = None
+        if kind == _S_PROP or kind == _S_PARTS:
+            mark = len(ops)
+            if kind == _S_PARTS:
+                probe = all(type(p) is str or p in probes for p in slot[2])
+                d = _parts_slot(nid, slot[3], slot[2], values, probe)
+            else:
+                index = slot[2]
+                if index in deferred:
+                    d = _prop_fn(nid, slot[3], values[index], index in probes)
+                else:
+                    d = _prop_slot(nid, slot[3], values[index], index in probes)
+            # Attribute and style values ride in the claim command, which
+            # writes only those that differ from what the server wrote;
+            # property writes go as they are. The first value decides the
+            # attribute whole, as the server's did: a style replaces the
+            # server's declarations, and a value that leaves the attribute
+            # out (`None`, `False`) removes the server's.
+            style: dict[str, Any] | None = None
+            written = False
+            if len(ops) > mark:
+                for o in ops[mark:]:
+                    if o[0] == _OP_SET_STYLE:
+                        style = {**style, **o[2]} if style is not None else dict(o[2])
+                    elif o[0] == _OP_SET_ATTR:
+                        writes.append(o)
+                        written = True
+                    else:
+                        kept.append(o)
+                del ops[mark:]
+                if kept:
+                    ops.extend(kept)
+                    kept = []
+            if style is not None:
+                writes.append((_OP_SET_STYLE, nid, style, True))
+            elif not written and (d is None or d._applied_value is not _FRESH):
+                # Applied (not waiting on an async value), and nothing written.
+                attr = claimed_attribute(slot[3])
+                if attr is not None:
+                    writes.append((_OP_SET_ATTR, nid, attr, None))
+        elif kind == _S_EVENT:
+            v = values[slot[2]]
+            if slot[5] and type(v) is not _events.EventHandler and callable(v):
+                _events.bind_delegated(nid, slot[4], slot[3], v)
+            else:
+                _bind_event(nid, slot, v)
+        elif kind == _S_REF:
+            _ref_slot(nid, values[slot[2]])
+        elif kind == _S_SPREAD:
+            d = _spread_slot(nid, values[slot[2]])
+        else:
+            parent = first + slot[3]
+            if kind == _S_CHILD:
+                index = slot[2]
+                v = values[index]
+                text_slot = slot[4]
+                tv = type(v)
+                if text_slot >= 0 and (tv is str or tv is int or tv is float) and index not in deferred:
+                    op[5 + text_slot] = d = v if tv is str else str(v)
+                    dyn.append(d)
+                    continue
+            previous = _core._enter_position(f"{pk}.{k}")
+            try:
+                if kind == _S_COMPONENT:
+                    d = _component_slot(slot[2], values, parent, nid, None)
+                else:
+                    probe = index in probes
+                    o, at = (op, 5 + text_slot) if text_slot >= 0 else (None, -1)
+                    if index in deferred:
+                        d = _child_fn(v, parent, nid, o, at, probe, None)
+                    else:
+                        d = _child_slot(v, parent, nid, o, at, probe, None)
+            finally:
+                _core._restore_position(previous)
+        dyn.append(d)
+    if writes:
+        op.append(writes)
+    vnode.dyn = tuple(dyn)
 
 
 def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
@@ -1445,7 +1603,7 @@ def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns:
 # While a template mount binds a text slot: `(clone command, index,
 # placeholder id, kernel generation)`. The binding's first text fills that
 # slot of the not-yet-committed clone instead of a separate write.
-_fill: tuple[list[Any], int, int, int] | None = None
+_fill: tuple[list[Any], int, int, int, int] | None = None
 
 
 def _text_of(value: Any) -> str:
@@ -1493,12 +1651,21 @@ def _upgrade_text(nid: int, value: Any, previous: Any, ns: str | None = None) ->
     if _apply_hole is None:
         _bind_reconciler()
     binding = _core._applying
+    fill = _fill
+    parent_id = 0
+    if kernel.claiming and fill is not None and fill[2] == nid and fill[3] == kernel.generation:
+        # The server wrote nodes and a placeholder here, not text; the content
+        # claims under the slot's parent.
+        fill[0][fill[1]] = 0
+        parent_id = fill[4]
     hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
     hole._hole_text = _text_of(previous)
-    hole.dyn = 0  # type: ignore[assignment]
+    # The parent id rides in `dyn`; outside hydration the kernel inserts into
+    # the anchor's live parent, so none is needed.
+    hole.dyn = parent_id  # type: ignore[assignment]
     hole.render_effect = binding
     binding._apply = _apply_hole
     binding._apply_data = hole
@@ -1523,6 +1690,27 @@ def _child_slot(
     """
     if _region_set is None:
         _bind_reconciler()
+    t = type(value)
+    if (t is VNode or t is list) and _core._session is None:
+        # A node, or a list (`children`): mount it in front of the
+        # placeholder. A list mounts as an anchored fragment, so it costs no
+        # markers, and a later list of another length reconciles against
+        # it. In an instance that's never patched (a component's output, a
+        # list row; see `reconciler._patchable`), a list of one node mounts
+        # as that node: no later list will be compared with it.
+        if t is VNode:
+            node = value
+        elif len(value) == 1 and type(value[0]) is VNode and not _reconciler._patchable:
+            node = value[0]
+        else:
+            node = _coerce_result(value)
+        hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+        hole.ns = ns
+        hole.el = nid
+        hole._frag_end = nid
+        hole.subtree = node
+        _region_commit(None, node, parent_id, nid, ns)
+        return hole
     if is_accessor(value):
         fn = value
         if type(value) is _Getter:
@@ -1545,6 +1733,9 @@ def _child_slot(
     hole._frag_end = nid
     if op is not None:
         hole._hole_text = ""
+        if kernel.claiming:
+            # The server wrote nodes and a placeholder here, not text.
+            op[slot] = 0
     _region_set(hole, parent_id, nid, value)
     return hole
 
@@ -1579,7 +1770,7 @@ def _bind_child(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: i
         return hole
     global _fill
     previous = _fill
-    _fill = (op, slot, nid, kernel.generation)
+    _fill = (op, slot, nid, kernel.generation, parent_id)
     try:
         if ns is None:
             comp = _bind(fn, _apply_text, nid, "")
@@ -1617,7 +1808,14 @@ def _component_slot(
     hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
-    _region_set(hole, parent_id, nid, _component(node, values))
+    node_ = _component(node, values)
+    if _core._session is None:
+        # A component tag always gives a node: mount it in front of the
+        # placeholder without the general region update.
+        hole.subtree = node_
+        _region_commit(None, node_, parent_id, nid, ns)
+    else:
+        _region_set(hole, parent_id, nid, node_)
     return hole
 
 

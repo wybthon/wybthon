@@ -165,6 +165,8 @@ def apply(modules: list[str], files: Sequence[str] = ()) -> bool:
             return True
         for name in sorted(names):
             _rerun(sys.modules[name])
+        # Release the replaced code objects the probe cache remembers.
+        _core._escaped_code.clear()
         affected = names | _dependents(names)
         targets = []
         for vnode, ctx, parent_id, ns in list(_live.values()):

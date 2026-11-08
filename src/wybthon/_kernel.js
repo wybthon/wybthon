@@ -420,6 +420,198 @@
     hydrating.cursors.set(parent, c || null);
     reg(id, node);
   }
+  // Claim a server-rendered template instance (CLAIM_TPL): walk the
+  // template's skeleton against the server's nodes, register them with the
+  // pre-order ids a clone would get, and note where each slot's content
+  // starts. A slot's content sits in front of its placeholder, a `$`
+  // comment (a text slot holding text is that text node instead), and
+  // takes no ids: its own mounts claim it after a CLAIM_SLOT.
+  function claimTpl(op) {
+    const first = op[1];
+    const t = templates.get(op[2]);
+    const parent = nodes.get(op[3]);
+    const w = {
+      op, first, id: first, texts: t.texts, slot: 0,
+      nextText: t.texts.length ? t.texts[0] : -1,
+      addressed: t.addressed, next: 0,
+      nextAddressed: t.addressed === null ? 0 : (t.addressed.length ? t.addressed[0] : -1),
+    };
+    let c = cursorOf(parent);
+    while (c && isBlank(c)) c = c.nextSibling;
+    if (c && c.nodeType === 1 && c.localName === t.proto.localName) {
+      hydrating.cursors.set(parent, c.nextSibling);
+      claimTree(w, t.proto, c);
+    } else {
+      mismatch(`expected <${t.proto.localName}>, found ${describe(c)}`);
+      const root = t.proto.cloneNode(true);
+      parent.insertBefore(root, c || null);
+      hydrating.cursors.set(parent, c || null);
+      hydrating.fresh.add(root);
+      freshTree(w, root);
+    }
+    if (w.id - first !== t.count) {
+      throw new Error(`wybthon kernel: template node count mismatch (expected ${t.count}, got ${w.id - first})`);
+    }
+    for (let i = 0; i < t.listens.length; i++) {
+      const entry = t.listens[i];
+      addType(nodes.get(first + entry[0]), entry[1]);
+    }
+    if (op.length > 5 + t.texts.length) claimWrites(op[5 + t.texts.length]);
+  }
+  // The attribute and style values a claimed instance computed (its SET_ATTR
+  // and SET_STYLE commands), written where they differ from the server's. A
+  // SET_STYLE with a fourth field set replaces the server's whole style.
+  function claimWrites(writes) {
+    for (let i = 0; i < writes.length; i++) {
+      const w = writes[i];
+      const n = nodes.get(w[1]);
+      if (n === undefined) continue;
+      if (w[0] === 8) {
+        if (w[3] === null) {
+          if (n.hasAttribute(w[2])) n.removeAttribute(w[2]);
+        } else if (n.getAttribute(w[2]) !== w[3]) n.setAttribute(w[2], w[3]);
+      } else {
+        const style = n.style;
+        const decls = w[2];
+        if (w[3]) {
+          // A whole style: the server's other declarations go.
+          for (let j = style.length - 1; j >= 0; j--) {
+            const k = style.item(j);
+            if (!Object.prototype.hasOwnProperty.call(decls, k)) style.removeProperty(k);
+          }
+        }
+        for (const k in decls) {
+          const v = decls[k];
+          if (v === null) style.removeProperty(k);
+          else if (style.getPropertyValue(k) !== v) style.setProperty(k, v);
+        }
+      }
+    }
+  }
+  function take(w, n) {
+    if (w.addressed === null) reg(w.id, n);
+    else if (w.id - w.first === w.nextAddressed) {
+      reg(w.id, n);
+      w.next++;
+      w.nextAddressed = w.next < w.addressed.length ? w.addressed[w.next] : -1;
+    }
+    w.id++;
+  }
+  function textHint(w) {
+    // The current node is a text slot: its hint (text, or 0 for nodes).
+    const hint = w.op[5 + w.slot];
+    w.slot++;
+    w.nextText = w.slot < w.texts.length ? w.texts[w.slot] : -1;
+    return hint;
+  }
+  function claimTree(w, proto, node) {
+    const fresh = hydrating.fresh;
+    fresh.add(node);
+    take(w, node);
+    let c = node.firstChild;
+    for (let p = proto.firstChild; p; p = p.nextSibling) {
+      if (p.nodeType === 1) {
+        if (c && c.nodeType === 1 && c.localName === p.localName) {
+          const claimed = c;
+          c = c.nextSibling;
+          claimTree(w, p, claimed);
+        } else {
+          mismatch(`expected <${p.localName}>, found ${describe(c)}`);
+          const created = p.cloneNode(true);
+          node.insertBefore(created, c || null);
+          fresh.add(created);
+          freshTree(w, created);
+        }
+      } else if (p.nodeType === 8) {
+        c = slotEnd(w, node, c);
+      } else if (w.id - w.first === w.nextText) {
+        const hint = textHint(w);
+        c = typeof hint === "string" ? claimTplText(w, node, c, hint) : slotEnd(w, node, c);
+      } else {
+        c = claimTplText(w, node, c, p.nodeValue);
+      }
+    }
+    hydrating.touched.add(node);
+    hydrating.cursors.set(node, c || null);
+  }
+  function claimTplText(w, parent, c, text) {
+    if (text !== "" && c && c.nodeType === 3) {
+      const data = c.nodeValue;
+      let following;
+      if (data === text) following = c.nextSibling;
+      else if (data.startsWith(text)) following = c.splitText(text.length);
+      else {
+        mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
+        c.nodeValue = text;
+        following = c.nextSibling;
+      }
+      hydrating.fresh.add(c);
+      take(w, c);
+      return following;
+    }
+    // Empty text never survives HTML parsing, so it's always created.
+    if (text !== "") mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
+    const created = doc.createTextNode(text);
+    parent.insertBefore(created, c || null);
+    hydrating.fresh.add(created);
+    take(w, created);
+    return c;
+  }
+  function slotEnd(w, parent, c) {
+    let n = c;
+    while (n && !(n.nodeType === 8 && n.nodeValue === "$")) n = n.nextSibling;
+    if (!n) {
+      mismatch(`expected a slot's content, found ${describe(c)}`);
+      const created = doc.createComment("");
+      parent.insertBefore(created, c || null);
+      hydrating.fresh.add(created);
+      hydrating.slots.set(created, created);
+      take(w, created);
+      return c;
+    }
+    // Claimed, the placeholder reads as a clone's would.
+    n.nodeValue = "";
+    hydrating.slots.set(n, c);
+    take(w, n);
+    return n.nextSibling;
+  }
+  function freshTree(w, root) {
+    // A skeleton created in place of server nodes that didn't match: register
+    // it as a clone would, with its text slots filled and slots empty.
+    let n = root;
+    while (n) {
+      if (w.id - w.first === w.nextText) {
+        const hint = textHint(w);
+        n.nodeValue = typeof hint === "string" ? hint : "";
+        hydrating.slots.set(n, n);
+      } else if (n.nodeType === 8) {
+        hydrating.slots.set(n, n);
+      }
+      take(w, n);
+      if (n.firstChild) n = n.firstChild;
+      else {
+        while (n !== root && !n.nextSibling) n = n.parentNode;
+        if (n === root) break;
+        n = n.nextSibling;
+      }
+    }
+  }
+  function claimSlot(slotId) {
+    const anchor = nodes.get(slotId);
+    const start = anchor === undefined ? undefined : hydrating.slots.get(anchor);
+    if (start === undefined || anchor.parentNode === null) return;
+    hydrating.touched.add(anchor.parentNode);
+    hydrating.cursors.set(anchor.parentNode, start);
+  }
+  // While hydrating, a slot showing text adopts the server's text in front
+  // of its placeholder instead of replacing the placeholder with new text.
+  function adoptSlotText(id, anchor, text) {
+    const prev = anchor.previousSibling;
+    if (!prev || prev.nodeType !== 3 || prev.__wybId !== undefined || prev.nodeValue !== text) return false;
+    anchor.remove();
+    reg(id, prev);
+    return true;
+  }
   // Keep a server region the client won't hydrate (`NoHydration`) as static
   // DOM: advance the parent's cursor to its end marker, which is claimed next.
   function claimStatic(parentId, endData) {
@@ -688,6 +880,7 @@
         case 21: { // HOLE_TEXT
           const node = nodes.get(op[1]);
           if (node.nodeType === 3) node.nodeValue = op[2];
+          else if (hydrating !== null && adoptSlotText(op[1], node, op[2])) break;
           else {
             const text = doc.createTextNode(op[2]);
             if (node.parentNode) node.parentNode.replaceChild(text, node);
@@ -698,6 +891,7 @@
         case 22: // HYDRATE
           hydrating = {
             root: nodes.get(op[1]), cursors: new Map(), touched: new Set(), fresh: new Set(), mismatches: 0,
+            slots: new Map(),
           };
           break;
         case 23: // CLAIM_ELEMENT
@@ -722,6 +916,12 @@
         }
         case 28: // CLAIM_STATIC
           if (hydrating !== null) claimStatic(op[1], op[2]);
+          break;
+        case 30: // CLAIM_TPL
+          claimTpl(op);
+          break;
+        case 31: // CLAIM_SLOT
+          if (hydrating !== null) claimSlot(op[2]);
           break;
         case 29: // INTERCEPT
           intercept(op[1], !!op[2]);

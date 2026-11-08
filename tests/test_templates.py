@@ -1,5 +1,6 @@
 """Compiled t-string templates (`html`, RFC 0003 and RFC 0004)."""
 
+import re
 from string.templatelib import Interpolation, Template
 from typing import Any
 
@@ -752,7 +753,9 @@ def test_server_rendering_matches_h(wyb):
 
     from_template = strip_state(render_to_string(html(t'<div class="a"><{Card} title="T">x</{Card}>{[1, 2]}</div>')))
     from_h = strip_state(render_to_string(h("div", {"class_": "a"}, Card(title="T")["x"], [1, 2])))
-    assert from_template == from_h
+    # The same markup; a template also marks where each slot's content ends
+    # (`<!--$-->`), so hydration claims it in one command.
+    assert re.sub(r"<!--.*?-->", "", from_template) == re.sub(r"<!--.*?-->", "", from_h)
     assert from_template.startswith('<div class="a"><section class="card plain"><h2>T</h2>')
 
 

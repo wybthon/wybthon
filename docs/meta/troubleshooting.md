@@ -267,7 +267,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely causes:**
 
-    - The name is misspelled. Templates expect `onclick`, `oninput`, `onchange`, and so on (`onClick` and `on:click` also work); `h()` props and spreads expect `on_click`, `on_input`, and `on_change`.
+    - The name is misspelled. Templates expect `onclick`, `oninput`, `onchange`, and so on (`on:click` attaches a native listener instead of a delegated one, and `onClick` is a compile error); `h()` props and spreads expect `on_click`, `on_input`, and `on_change`.
     - The event type doesn't bubble (`focus`, `blur`, `mouseenter`, `scroll`); delegation only sees bubbling events.
     - The element lives outside every container passed to [`render`][wybthon.render] (for example a [`Portal`][wybthon.Portal] mounted into `body`), so no delegation root receives the event.
     - The handler returns a coroutine without scheduling it; nothing happens but no error is raised.

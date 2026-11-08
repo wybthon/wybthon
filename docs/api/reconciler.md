@@ -20,9 +20,13 @@ What it mounts:
 - **`h()` trees.** Element VNodes built with [`h`][wybthon.vnode.h] mount
   node by node, with one command per node.
 - **Regions.** `Show`, `For`, `Repeat`, and `Switch` are native regions
-  with no component wrapped around them.
-- **Components and holes.** A component body runs once; a hole runs in
-  its own render effect.
+  with no component wrapped around them. One that fills a slot or a
+  hole by itself creates no markers: it ends at the slot's placeholder.
+- **Components and holes.** A component body runs once, and the template
+  it returns mounts straight into the slot that holds the component; a
+  hole runs in its own render effect.
+- **Hydration.** A template instance claims the server's nodes with one
+  `CLAIM_TPL` command and fills its slots as a clone does.
 
 See [Virtual DOM](../concepts/vdom.md#compiled-templates) for the
 details.

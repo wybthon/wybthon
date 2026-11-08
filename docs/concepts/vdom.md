@@ -215,7 +215,7 @@ props never change costs about what its markup costs.
 They return region nodes that the reconciler mounts directly, with no
 component context, props object, or wrapper memo:
 
-- **`Show` and `Switch`** are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes, between two comment markers.
+- **`Show` and `Switch`** are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes. In a template slot or a hole, where nearly every `Show` sits, the region ends at the slot's placeholder and creates no DOM nodes of its own; elsewhere it sits between two comment markers.
 - **`For` and `Repeat`** are list regions. Each row is its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly. A row's index is a plain integer until something reads `index()` in a tracking scope, which is when the signal behind it is created.
 
 Matching a keyed list against its mounted rows skips the common prefix
@@ -309,7 +309,7 @@ reactive bindings, refs) are found through the template's slot plan.
 
 Lists benefit most:
 
-- Clearing a `For` list emits one `DISPOSE_RANGE`, plus the disposal of each row's owner. When the list is all its parent holds (but for its markers and placeholder), the kernel empties the parent in one native call.
+- Clearing a `For` list emits one `DISPOSE_RANGE`, plus the disposal of each row's owner. When the list is all its parent holds (but for its slot's placeholder), the kernel empties the parent in one native call.
 - When a keyed list reuses no rows (every row replaced), the new rows mount as one splice and the old ones go in one `DISPOSE_RANGE`, instead of reconciling a thousand unrelated pairs.
 
 ## Event delegation
