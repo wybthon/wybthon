@@ -2855,6 +2855,8 @@
       
         
       
+        
+      
     
     
     
@@ -3150,6 +3152,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3771,7 +3801,7 @@ bootstrap runs.</p>
 </span></code></pre></div>
 <p>The production bootstrap calls <code>hydrate</code> automatically when the page contains server state. <code>hydrate</code> mounts the tree exactly as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> would, except that each node <em>claims</em> the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.</p>
 <p>Templates need nothing special. A server render and a hydrating client
-expand each template into the same VNodes <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> would build,
+expand each template into the same VNodes <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> would build,
 so the markup and hydration keys match whether a component uses
 templates or <code>h()</code>. Once hydration has committed, browser updates use
 the compiled path. See <a href="../templates/">Templates</a>.</p>

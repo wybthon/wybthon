@@ -3083,6 +3083,8 @@
       
         
       
+        
+      
     
     
     
@@ -3378,6 +3380,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -5537,7 +5567,7 @@ node from another API, and <code>Element(node_id=42)</code> wraps a kernel id
 <p>Refs are assigned during mount, so read them in
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../wybthon/#wybthon.on_settled"><code>on_settled</code></a>, an effect, or an event handler, not
 at the top of the component body. The <code>ref</code> attribute (or the <code>ref</code> prop
-of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a>) also accepts a callback that receives the <code>Element</code>, which
+of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../vnode/#wybthon.vnode.h"><code>h()</code></a>) also accepts a callback that receives the <code>Element</code>, which
 is closer to Solid 2.0's function refs:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">measure</span><span class="p">(</span><span class="n">el</span><span class="p">):</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">offsetWidth</span><span class="p">)</span>

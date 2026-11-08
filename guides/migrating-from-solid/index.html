@@ -2893,6 +2893,8 @@
       
         
       
+        
+      
     
     
     
@@ -3188,6 +3190,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3686,7 +3716,7 @@
 </tr>
 <tr>
 <td><code>createReaction(effect)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_reaction"><code>create_reaction(effect)</code></a> returns <code>track(fn)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.create_reaction"><code>create_reaction(effect)</code></a> returns <code>track(fn)</code></td>
 </tr>
 <tr>
 <td><code>onMount(fn)</code></td>
@@ -3714,7 +3744,7 @@
 </tr>
 <tr>
 <td><code>getObserver()</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_observer&lt;/span&gt;" href="../../api/wybthon/#wybthon.get_observer"><code>get_observer()</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_observer&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.get_observer"><code>get_observer()</code></a></td>
 </tr>
 <tr>
 <td><code>untrack(fn)</code></td>
@@ -3806,7 +3836,7 @@
 </tr>
 <tr>
 <td><code>mapArray(list, fn, { fallback })</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/wybthon/#wybthon.map_array"><code>map_array(list, fn, fallback=...)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.map_array"><code>map_array(list, fn, fallback=...)</code></a></td>
 </tr>
 <tr>
 <td><code>indexArray(list, fn)</code></td>
@@ -3814,7 +3844,7 @@
 </tr>
 <tr>
 <td><code>repeat(count, fn, { from, fallback })</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;repeat&lt;/span&gt;" href="../../api/wybthon/#wybthon.repeat"><code>repeat(count, fn, start=..., fallback=...)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;repeat&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.repeat"><code>repeat(count, fn, start=..., fallback=...)</code></a></td>
 </tr>
 <tr>
 <td><code>&lt;Loading fallback&gt;</code> (was <code>Suspense</code>)</td>
@@ -3910,7 +3940,7 @@
 </tr>
 <tr>
 <td><code>children(() =&gt; props.children)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../../api/wybthon/#wybthon.children"><code>children(lambda: props.children)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>children(lambda: props.children)</code></a></td>
 </tr>
 <tr>
 <td><code>children(...).toArray()</code></td>
@@ -4006,7 +4036,7 @@
 </tr>
 <tr>
 <td><code>h(tag, props, ...children)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a></td>
 </tr>
 <tr>
 <td><code>"use server"</code> (<code>@solidjs/web/server-functions</code>)</td>
@@ -4136,7 +4166,7 @@
 <li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, and context providers work as calls in an interpolation (<code>{Show(ready(), panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready()}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
 <li>Markup the browser's parser would rewrite is an error instead of a silent change: put <code>&lt;tr&gt;</code> in a <code>&lt;tbody&gt;</code>, and don't nest a <code>&lt;div&gt;</code> in a <code>&lt;p&gt;</code>. The compiler reports it as a <code>SyntaxError</code> with the file and line.</li>
 <li>A template that reaches <code>html()</code> without being compiled (a REPL, <code>exec</code>) has already evaluated its dynamic expressions once, so dev mode raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> instead of rendering markup that would never update.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>, for markup built by code. Its props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) or HTML names. SVG works in a template.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>, for markup built by code. Its props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) or HTML names. SVG works in a template.</li>
 </ul>
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
 <p>Solid types props with an interface (<code>props: CardProps</code>); Wybthon declares them on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class with plain annotations, and the component takes one parameter annotated with it. Pyright and mypy check every call against the class with no plugin.</p>
@@ -4261,7 +4291,7 @@
 <p>These are native regions, not wrapper components: <code>Show</code> and <code>Switch</code> are one branch computation each, and when a hole re-renders a tree containing one, the new condition or source is pushed into the mounted region instead of remounting it.</p>
 <h2 id="boundaries">Boundaries<a class="headerlink" href="#boundaries" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_path</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">url</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">failed</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
@@ -4271,7 +4301,7 @@
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">Errored</span><span class="p">(</span>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">Loading</span><span class="p">(</span><span class="n">Dashboard</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)),</span>
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">failed</span><span class="p">,</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">reset_on</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
 </span></code></pre></div>
 <p><code>Loading</code> and <code>Errored</code> match their Solid 2.0 namesakes. The error fallback receives <code>(err, reset)</code>, where <code>err</code> is an accessor for the caught error, as in Solid 2.0; <code>reset_on</code> re-mounts when the given accessor changes. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates multiple boundaries like <code>SuspenseList</code>.</p>

@@ -2905,6 +2905,8 @@
       
         
       
+        
+      
     
     
     
@@ -3200,6 +3202,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3702,7 +3732,7 @@
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="n">fire</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">screen</span><span class="o">.</span><span class="n">get_by_role</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"+"</span><span class="p">))</span>
 </span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="k">assert</span> <span class="n">screen</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="s2">"Clicks: 1"</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>render</code> accepts any node: a component call, an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template, or a tree built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a>. The compiler checks each template's markup when it compiles the module, so a template the browser would rewrite fails the test module with a <code>SyntaxError</code> that names its file and line.</p>
+<p><code>render</code> accepts any node: a component call, an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template, or a tree built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a>. The compiler checks each template's markup when it compiles the module, so a template the browser would rewrite fails the test module with a <code>SyntaxError</code> that names its file and line.</p>
 <p>Use <code>render</code> as a context manager to unmount when the block ends, or call <code>screen.unmount()</code> yourself. <code>screen.html()</code> returns the container's inner HTML without Wybthon's comment markers, and <code>screen.text()</code> returns its text with whitespace collapsed:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">html</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
@@ -3968,12 +3998,19 @@
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../api/router/#wybthon.router.url"><code>url</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_location&lt;/span&gt;" href="../../api/router/#wybthon.router.use_location"><code>use_location()</code></a> read. Flush afterward. Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/router/#wybthon.router.resolve"><code>resolve</code></a> in <code>wybthon.router</code>, or <code>router.match(href)</code> on a router from <code>create_router</code>) is pure and needs no rendering.</li>
+  &lt;/span&gt;" href="../../api/router/#wybthon.router.url"><code>url</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_location&lt;/span&gt;" href="../../api/router/#wybthon.router.use_location"><code>use_location()</code></a> read. Flush afterward. Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;match_route&lt;/span&gt;" href="../../api/router/#wybthon.router.match_route"><code>match_route</code></a>, or <code>router.match(href)</code> on a router from <code>create_router</code>) is pure and needs no rendering.</li>
 <li>To test server functions, wrap the render in <code>connect_server()</code> from <code>wybthon.testing</code>, so each call is encoded and validated as it would be over HTTP; <code>Client(create_app(...))</code> sends whole requests to a <code>wybthon.asgi</code> app. See <a href="../../concepts/full-stack/">Full-stack apps</a>.</li>
 <li>Drive form bindings with <code>fire.input</code>, <code>fire.change</code>, and <code>fire.submit</code> against the rendered controls.</li>
 </ul>
 <h3 id="dev-mode-diagnostics">Dev-mode diagnostics<a class="headerlink" href="#dev-mode-diagnostics" title="Permanent link">&para;</a></h3>
-<p>Dev-mode warnings print to <code>stderr</code>; capture them with pytest's <code>capsys</code>. Warnings are deduplicated per process, so call <code>wybthon._warnings._reset_warning_dedupe()</code> at the start of a test that asserts on one. A write inside a memo raises <code>WriteInScopeError</code> when the memo is read (<code>pytest.raises(WriteInScopeError)</code> around the read); a write inside a single-function effect surfaces through the effect's <code>error=</code> handler on the next flush. Calling a component with an unknown or missing prop raises <code>TypeError</code> at the call.</p>
+<p>Dev-mode warnings are Python warnings of the category <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WybthonWarning&lt;/span&gt;" href="../../api/wybthon/#wybthon.WybthonWarning"><code>WybthonWarning</code></a>: assert on one with <code>pytest.warns(WybthonWarning)</code>, or make them errors with <code>-W error::wybthon.WybthonWarning</code> (or a <code>filterwarnings</code> entry). Each one is issued once per process.</p>
+<p>An error a component, binding, or effect raises that no <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundary handles fails the test: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/testing/#wybthon.testing.render"><code>render</code></a> raises it, as does the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;fire&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../api/testing/#wybthon.testing.fire"><code>fire</code></a> call that caused it or the end of the <code>with</code> block, so a test never passes against a view that broke. Pass <code>render(view, strict=False)</code> for a test about what a view does after such an error. A failed query (<code>get_by_text</code>, <code>get_by_role</code>, ...) prints the rendered markup, and <code>screen.debug()</code> prints it on demand. The pytest plugin unmounts views a test leaves mounted.</p>
+<p>A write inside a memo raises <code>WriteInScopeError</code> when the memo is read (<code>pytest.raises(WriteInScopeError)</code> around the read); a write inside a single-function effect surfaces through the effect's <code>error=</code> handler on the next flush. Calling a component with an unknown or missing prop raises <code>TypeError</code> at the call.</p>
 <h2 id="compiling-templates-in-tests">Compiling templates in tests<a class="headerlink" href="#compiling-templates-in-tests" title="Permanent link">&para;</a></h2>
 <p>Installing Wybthon registers a pytest plugin (through the <code>pytest11</code> entry point) that adds the compiler to pytest's assertion rewriting, so every test module and <code>conftest.py</code> is compiled before it runs. Its cached bytecode gets a tag of its own, so a test module cached without the compiler is never reused. Helper modules that your tests import are compiled by the import hook that <code>import wybthon</code> installs. There's nothing to configure; disable the plugin with <code>-p no:wybthon</code>.</p>
 <p>Two cases need a step of your own:</p>

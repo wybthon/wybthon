@@ -2860,6 +2860,8 @@
       
         
       
+        
+      
     
     
     
@@ -3155,6 +3157,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3664,7 +3694,7 @@
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">__wybthon__</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">__wybthon__</span><span class="o">.</span><span class="n">getter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">)))</span>
 </span></code></pre></div>
 <ul>
-<li>When the callee is a component, it's called with the prepared arguments: each dynamic argument is a getter, exactly what <code>&lt;{Card} title={user().name}&gt;</code> passes. Components are <code>@component</code> functions, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic</code></a> components, contexts, and the built-ins that render markup (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Repeat&lt;/span&gt;" href="../../api/wybthon/#wybthon.Repeat"><code>Repeat</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../../api/wybthon/#wybthon.Switch"><code>Switch</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a>, <code>Link</code>, and the rest). Arguments are prepared recursively, so <code>Errored(Loading(...))</code> builds its inner component the same way, and handler-named keywords (<code>on_close=...</code>) and <code>ref</code> are passed as they are.</li>
+<li>When the callee is a component, it's called with the prepared arguments: each dynamic argument is a getter, exactly what <code>&lt;{Card} title={user().name}&gt;</code> passes. Components are <code>@component</code> functions, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic</code></a> components, contexts, and the built-ins that render markup (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Repeat&lt;/span&gt;" href="../../api/wybthon/#wybthon.Repeat"><code>Repeat</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../../api/wybthon/#wybthon.Switch"><code>Switch</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a>, and the rest). Arguments are prepared recursively, so <code>Errored(Loading(...))</code> builds its inner component the same way, and handler-named keywords (<code>on_close=...</code>) and <code>ref</code> are passed as they are.</li>
 <li>Any other callee (<code>badge</code>, <code>str</code>, <code>Decimal</code>) gets the deferred call: the whole call becomes one reactive hole, which is what Solid does with a function call in JSX.</li>
 </ul>
 <p>A built-in that takes a callback (<code>For</code>'s row function, <code>Show</code>'s children, a <code>keyed</code> function) unwraps a getter it receives once, untracked, so <code>{For(rows(), make_row(kind))}</code> behaves as it reads.</p>
@@ -3700,7 +3730,7 @@
 <p>You don't call the compiler yourself. It runs in each place Python code enters a Wybthon application:</p>
 <ul>
 <li><strong><code>wyb build</code> and <code>wyb dev</code></strong> run every application module through the compiler, which also checks every template, and write the compiled bytecode into the archives when the build's Python version matches the runtime's. The import hook uses that bytecode as is, so such a page never compiles anything.</li>
-<li><strong>The import hook.</strong> <code>import wybthon</code> installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention <code>wybthon</code> and <code>html</code> and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (<code>views.cpython-314.opt-wyb2.pyc</code>), so a plain compile cached earlier is never mistaken for a compiled one. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;install&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.install"><code>wybthon.compiler.install()</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;uninstall&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.uninstall"><code>uninstall()</code></a> add and remove it explicitly.</li>
+<li><strong>The import hook.</strong> <code>import wybthon</code> installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention <code>wybthon</code> and <code>html</code> and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (<code>views.cpython-314.opt-wyb3.pyc</code>), so a plain compile cached earlier is never mistaken for a compiled one. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;install&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.install"><code>wybthon.compiler.install()</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;uninstall&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.uninstall"><code>uninstall()</code></a> add and remove it explicitly.</li>
 <li><strong>The pytest plugin.</strong> Installing Wybthon registers a <code>pytest11</code> plugin that compiles test modules and <code>conftest.py</code> files alongside pytest's assertion rewriting, so templates in tests behave exactly as they do in the application. Disable it with <code>-p no:wybthon</code>.</li>
 <li><strong><code>wyb run script.py</code></strong> runs a script with its own templates compiled and the hook installed, for scripts and quick experiments. Arguments after the script are passed to it.</li>
 <li><strong>Prerendering</strong> imports the application after Wybthon, so the hook compiles it.</li>

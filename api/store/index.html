@@ -2393,6 +2393,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" StoreSetter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.StoreSetter.edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2905,6 +2922,8 @@
       
         
       
+        
+      
     
     
     
@@ -3200,6 +3219,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3551,6 +3598,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label=" StoreSetter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.StoreSetter.edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -4153,6 +4217,27 @@ the dataclass, so a store typed as your class behaves like one.</p>
 
 
 
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;edit&lt;/span&gt; (&lt;code&gt;wybthon.store.StoreSetter.edit&lt;/code&gt;)" href="#wybthon.store.StoreSetter.edit">edit</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Edit the store in a <code>with</code> block: the draft's changes stage together when it ends.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -4167,6 +4252,32 @@ the dataclass, so a store typed as your class behaves like one.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.store.StoreSetter.edit" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">edit</span>
+
+
+<a href="#wybthon.store.StoreSetter.edit" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">edit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="wybthon.store.StoreSetter[T]">T</span></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Edit the store in a <code>with</code> block: the draft's changes stage together when it ends.</p>
+<p>The block is the setter's callback written inline, so it's atomic
+in the same way: an exception discards every change it made.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">set_state</span><span class="o">.</span><span class="n">edit</span><span class="p">()</span> <span class="k">as</span> <span class="n">draft</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">todos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">todos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+</span></code></pre></div>
+
+
+    </div>
+
+</div>
 
 
 

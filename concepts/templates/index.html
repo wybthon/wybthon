@@ -2883,6 +2883,8 @@
       
         
       
+        
+      
     
     
     
@@ -3178,6 +3180,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3671,7 +3701,7 @@
 <tr>
 <td>Event</td>
 <td><code>&lt;button onclick={save}&gt;</code></td>
-<td>A delegated handler. <code>onClick</code> and <code>on:click</code> work too.</td>
+<td>A delegated handler; <code>on:click</code> is a native listener on the element.</td>
 </tr>
 <tr>
 <td>Ref</td>
@@ -3805,16 +3835,17 @@
 </span></code></pre></div>
 <p>Here <code>{summary()}</code> is a hole, and it re-runs when <code>user</code> changes. While the user stays an admin, it returns the same literal again and the mounted <code>&lt;b&gt;</code> is patched in place; when that changes, a template from the other literal replaces it.</p>
 <h2 id="templates-and-h">Templates and <code>h()</code><a class="headerlink" href="#templates-and-h" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>. Use it when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>. Use it when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">html</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vnode</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">heading</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"title"</span><span class="p">},</span> <span class="n">text</span><span class="p">)</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">heading</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"title"</span><span class="p">},</span> <span class="n">text</span><span class="p">)</span>
 </span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;section&gt;</span><span class="si">{</span><span class="n">heading</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">())</span><span class="si">}{</span><span class="n">body</span><span class="si">}</span><span class="s2">&lt;/section&gt;"</span><span class="p">)</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class_"</span><span class="p">:</span> <span class="s2">"page"</span><span class="p">},</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;"</span><span class="p">))</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;section&gt;</span><span class="si">{</span><span class="n">heading</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">())</span><span class="si">}{</span><span class="n">body</span><span class="si">}</span><span class="s2">&lt;/section&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class_"</span><span class="p">:</span> <span class="s2">"page"</span><span class="p">},</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;"</span><span class="p">))</span>
 </span></code></pre></div>
 <p><code>h()</code> props accept Python names (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>, <code>on_click</code>) as well as HTML names. The compiler only rewrites templates, so the arguments of an <code>h()</code> call are evaluated when it runs: pass an accessor or a lambda where a value should stay reactive (<code>h("p", None, count)</code>). A t-string isn't markup outside <code>html()</code>; pass it to <code>html()</code> first.</p>
 <h2 id="server-rendering-hydration-and-svg">Server rendering, hydration, and SVG<a class="headerlink" href="#server-rendering-hydration-and-svg" title="Permanent link">&para;</a></h2>

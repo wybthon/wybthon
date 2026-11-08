@@ -2896,6 +2896,8 @@
       
         
       
+        
+      
     
     
     
@@ -3191,6 +3193,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -4228,7 +4258,7 @@ application archives, so they download in parallel with Pyodide.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a></td>
-<td>CLI entry point (<code>wyb init</code>, <code>wyb dev</code>, <code>wyb build</code>, <code>wyb preview</code>, <code>wyb run</code>).</td>
+<td>CLI entry point (<code>wyb init</code>, <code>wyb dev</code>, <code>wyb build</code>, <code>wyb preview</code>, <code>wyb run</code>, <code>wyb check</code>).</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a></td>
@@ -4245,6 +4275,7 @@ application archives, so they download in parallel with Pyodide.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>wyb<span class="w"> </span>build<span class="w"> </span>--dir<span class="w"> </span>my-app<span class="w"> </span>--base<span class="w"> </span>/app/
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>my-app/dist
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>wyb<span class="w"> </span>run<span class="w"> </span>scripts/seed.py<span class="w"> </span>--verbose
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>wyb<span class="w"> </span>check<span class="w"> </span>app<span class="w"> </span>--checker<span class="w"> </span>pyright
 </span></code></pre></div>
 <table>
 <thead>
@@ -4315,6 +4346,18 @@ application archives, so they download in parallel with Pyodide.</p>
 <td><code>script [args ...]</code></td>
 <td>none</td>
 <td>Run a Python script as <code>__main__</code> with its templates compiled; the arguments after it are passed to the script.</td>
+</tr>
+<tr>
+<td><code>wyb check</code></td>
+<td><code>paths ...</code></td>
+<td><code>.</code></td>
+<td>Files and directories to type-check, including component tag props (see <a href="../../guides/typing/#checking-tag-props-with-wyb-check">Typing</a>).</td>
+</tr>
+<tr>
+<td><code>wyb check</code></td>
+<td><code>--checker</code></td>
+<td><code>mypy</code></td>
+<td><code>mypy</code> or <code>pyright</code>.</td>
 </tr>
 </tbody>
 </table>

@@ -2833,6 +2833,8 @@
       
         
       
+        
+      
     
     
     
@@ -3128,6 +3130,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3537,7 +3567,7 @@ measuring, third-party widgets) or when you receive a node back from a
 <h2 id="refs-holding-onto-an-element">Refs: holding onto an element<a class="headerlink" href="#refs-holding-onto-an-element" title="Permanent link">&para;</a></h2>
 <p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> is a small mutable container that the renderer
 fills with the mounted <code>Element</code>. Pass it as the <code>ref</code> attribute of any
-host element (a <code>ref</code> prop in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a>) and read <code>ref.current</code>
+host element (a <code>ref</code> prop in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a>) and read <code>ref.current</code>
 after mount:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -3677,7 +3707,7 @@ widgets that own their subtree.</p>
 </table>
 <h2 id="styles-classes-and-dataset-through-bindings">Styles, classes, and dataset through bindings<a class="headerlink" href="#styles-classes-and-dataset-through-bindings" title="Permanent link">&para;</a></h2>
 <p>You usually don't need <code>Element</code> for styling. Templates and
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> share one set of prop appliers, so these work the same
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> share one set of prop appliers, so these work the same
 in both:</p>
 <ul>
 <li><code>style</code> takes a dict with camelCase or snake_case keys (<code>background_color</code>, <code>fontSize</code>); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing <code>None</code> clears earlier styles. Values may be accessors, and a raw style string is accepted too.</li>

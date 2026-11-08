@@ -2068,6 +2068,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.vnode.Node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.vnode.VNode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2901,6 +2912,8 @@
       
         
       
+        
+      
     
     
     
@@ -3209,6 +3222,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3477,6 +3518,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.vnode.Node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.vnode.VNode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3670,9 +3722,9 @@
     <div class="doc doc-contents first">
 
         <p>Virtual node data structure and tree-building helpers.</p>
-<p>This module defines <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> and the functions that
-build trees of them: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a>,
-and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../wybthon/#wybthon.hole"><code>hole</code></a>. It has no browser or DOM dependencies, so
+<p>This module defines <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="#wybthon.vnode.VNode"><code>VNode</code></a> and the functions that
+build trees of them: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="#wybthon.vnode.h"><code>h</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="#wybthon.vnode.Fragment"><code>Fragment</code></a>,
+and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="#wybthon.vnode.hole"><code>hole</code></a>. It has no browser or DOM dependencies, so
 VNode trees can be constructed and inspected anywhere CPython runs.</p>
 <p>A <strong>reactive hole</strong> is a <code>_hole</code> VNode wrapping a reactive expression
 (an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../wybthon/#wybthon.Accessor"><code>Accessor</code></a> or a zero-argument function). The
@@ -3685,7 +3737,7 @@ position, and explicitly with <code>hole()</code> when you want a <code>key</cod
 <details class="example" open>
   <summary>Example</summary>
   <p>Building a small subtree without a browser:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">Fragment</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vnode</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">Fragment</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"section"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">},</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>         <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span>
@@ -3786,6 +3838,61 @@ position, and explicitly with <code>hole()</code> when you want a <code>key</cod
 
 
 
+<h3 id="wybthon.vnode.Node" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Node</span>
+
+
+<a href="#wybthon.vnode.Node" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Anything that renders: what <code>html()</code>, <code>h()</code>, and a component call give you.</p>
+<p>Annotate component functions and node-holding variables with <code>Node</code>.
+A component call is typed as its props class (so a type checker checks
+its keywords), and every <code>Props</code> class is a <code>Node</code> to type checkers,
+so <code>-&gt; Node</code>, <code>list[Node]</code>, and <code>children: Node</code> accept it.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="wybthon.vnode.VNode" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">VNode</span>
 
@@ -3795,6 +3902,8 @@ position, and explicitly with <code>hole()</code> when you want a <code>key</cod
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Node&lt;/span&gt; (&lt;code&gt;wybthon.vnode.Node&lt;/code&gt;)" href="#wybthon.vnode.Node">Node</a></code></p>
 
 
 
@@ -4203,7 +4312,7 @@ receive their children verbatim through the <code>children</code> prop.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vnode</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"on_click"</span><span class="p">:</span> <span class="n">handle_click</span><span class="p">},</span> <span class="s2">"Click me"</span><span class="p">)</span>
 </span></code></pre></div>
@@ -4327,7 +4436,7 @@ are returned unchanged.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>vnode</code> defines the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> data structure and the pure
+<p><code>vnode</code> defines the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="#wybthon.vnode.VNode"><code>VNode</code></a> data structure and the pure
 helpers that build trees of them. It has no browser dependency, so
 trees can be constructed and inspected anywhere CPython runs. A
 <strong>reactive hole</strong> is a <code>_hole</code> VNode wrapping an accessor or zero-arg
@@ -4342,19 +4451,19 @@ only that region when its reads change.</p>
 </thead>
 <tbody>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="#wybthon.vnode.VNode"><code>VNode</code></a></td>
 <td>Element, text, component, fragment, hole, template, or region node; <code>tag</code>, <code>props</code>, <code>children</code>, <code>key</code>.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="#wybthon.vnode.h"><code>h</code></a></td>
 <td>Hyperscript constructor: <code>h(tag, props, *children)</code>; components get children as the <code>children</code> prop.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="#wybthon.vnode.Fragment"><code>Fragment</code></a></td>
 <td>Group children with no wrapper element.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../wybthon/#wybthon.hole"><code>hole</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="#wybthon.vnode.hole"><code>hole</code></a></td>
 <td>Explicit reactive hole, optionally with a <code>key</code>.</td>
 </tr>
 </tbody>
@@ -4382,25 +4491,26 @@ visually explicit.</p>
 markup is a template; use <code>h()</code> when code builds the markup: generated
 forms, recursive trees, or a tag computed at run time. Templates and
 <code>h()</code> trees mix freely in either direction.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">hole</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">active</span><span class="p">,</span> <span class="n">set_active</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vnode</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">hole</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">active</span><span class="p">,</span> <span class="n">set_active</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">field</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">kind</span><span class="p">):</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="p">{},</span> <span class="n">label</span><span class="p">,</span> <span class="n">h</span><span class="p">(</span><span class="s2">"input"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">"aria_label"</span><span class="p">:</span> <span class="n">label</span><span class="p">}))</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">field</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">kind</span><span class="p">):</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="p">{},</span> <span class="n">label</span><span class="p">,</span> <span class="n">h</span><span class="p">(</span><span class="s2">"input"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">"aria_label"</span><span class="p">:</span> <span class="n">label</span><span class="p">}))</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="s2">"section"</span><span class="p">,</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="p">{</span><span class="s2">"class_"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"card"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="n">active</span><span class="p">},</span> <span class="s2">"data_testid"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">},</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span>  <span class="c1"># an accessor child is a hole</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">hole</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">())</span><span class="si">}</span><span class="s2"> letters"</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">"count"</span><span class="p">),</span>  <span class="c1"># explicit hole with a key</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">[</span><span class="n">field</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">kind</span><span class="p">)</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"Email"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"Age"</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)]],</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 1"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 2"</span><span class="p">)),</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;A template inside: </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">),</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="s2">"section"</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="p">{</span><span class="s2">"class_"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"card"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="n">active</span><span class="p">},</span> <span class="s2">"data_testid"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">},</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span>  <span class="c1"># an accessor child is a hole</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">hole</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">())</span><span class="si">}</span><span class="s2"> letters"</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">"count"</span><span class="p">),</span>  <span class="c1"># explicit hole with a key</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="p">[</span><span class="n">field</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">kind</span><span class="p">)</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"Email"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"Age"</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)]],</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 1"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 2"</span><span class="p">)),</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;A template inside: </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">),</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">)</span>
 </span></code></pre></div>
 <p><code>h()</code> evaluates its arguments before Wybthon sees them, so the compiler
 can't help here: pass an accessor (<code>name</code>) or a function
@@ -4482,7 +4592,7 @@ getters.</p>
 <ul>
 <li><a href="../../concepts/templates/">Templates</a>: the <code>html</code> template function, the primary way to write markup</li>
 <li><a href="../compiler/">Compiler</a>: how templates get their getters</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_accessor&lt;/span&gt;" href="../wybthon/#wybthon.is_accessor"><code>is_accessor</code></a>: the rule that decides what becomes a hole</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_accessor&lt;/span&gt;" href="../reactivity/#wybthon.reactivity.is_accessor"><code>is_accessor</code></a>: the rule that decides what becomes a hole</li>
 <li><a href="../reconciler/">Reconciler</a>: how VNodes mount and patch</li>
 <li><a href="../events/">Events</a> and <a href="../dom/">DOM</a>: handler props, <code>Element</code>, and <code>Ref</code></li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>

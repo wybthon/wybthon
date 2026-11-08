@@ -2977,6 +2977,8 @@
       
         
       
+        
+      
     
     
     
@@ -3272,6 +3274,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3832,16 +3862,17 @@ engine and <a href="../../rfcs/0003-engine-v3/">RFC 0003</a> for compiled templa
 <h2 id="two-ways-to-write-markup">Two ways to write markup<a class="headerlink" href="#two-ways-to-write-markup" title="Permanent link">&para;</a></h2>
 <p><a href="../templates/">Templates</a> are the primary path:
 <code>html(t"&lt;div class={cls()}&gt;{count()}&lt;/div&gt;")</code> is compiled ahead of time
-and mounts with one clone command. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a>
+and mounts with one clone command. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a>
 is the programmatic path, the counterpart of Solid's <code>h</code>, for markup
 built by code: generated forms, recursive trees, or components that
 compute their tag. The two mix freely, and they share one set of prop
 appliers, so a prop means the same thing in both.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="app"&gt;&lt;h1&gt;Hello&lt;/h1&gt;&lt;p&gt;Welcome&lt;/p&gt;&lt;/div&gt;'</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">built</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"app"</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Welcome"</span><span class="p">))</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">grouped</span> <span class="o">=</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Title"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Body&lt;/p&gt;"</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">html</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vnode</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="app"&gt;&lt;h1&gt;Hello&lt;/h1&gt;&lt;p&gt;Welcome&lt;/p&gt;&lt;/div&gt;'</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">built</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"app"</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Welcome"</span><span class="p">))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">grouped</span> <span class="o">=</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Title"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Body&lt;/p&gt;"</span><span class="p">))</span>
 </span></code></pre></div>
 <p>For <code>h</code>:</p>
 <ul>
@@ -3941,7 +3972,7 @@ it becomes a binding. In a template, the compiler makes every dynamic
 expression a getter, so <code>{count() * 2}</code> and <code>class={status()}</code> are a
 hole and a binding. Each binding updates on its own, so unrelated
 attributes on the same element update independently. Use
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/wybthon/#wybthon.hole"><code>hole</code></a> to create a hole explicitly in an <code>h()</code> tree
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.hole"><code>hole</code></a> to create a hole explicitly in an <code>h()</code> tree
 when you need a <code>key</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>

@@ -2689,6 +2689,8 @@
       
         
       
+        
+      
     
     
     
@@ -2984,6 +2986,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3527,7 +3557,7 @@
 <summary><code>ImportError: cannot import name 'div' from 'wybthon'</code></summary>
 <p><strong>Symptoms:</strong> importing <code>div</code>, <code>p</code>, <code>button</code>, <code>input_</code>, <code>element</code>, or another element helper fails, or <code>import wybthon.elements</code> (or <code>wybthon.svg</code>, or the older <code>from wybthon.html import div</code>) raises <code>ModuleNotFoundError</code>.</p>
 <p><strong>Likely cause:</strong> <a href="../../rfcs/0004-engine-v4/">RFC 0004</a> removed the element helpers. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. <code>wybthon.html</code> is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template function, not a module.</p>
-<p><strong>Fix:</strong> write markup as templates, <code>html(t'&lt;div class="card"&gt;{props.title}&lt;/div&gt;')</code>; <code>&lt;svg&gt;</code> works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a>. See <a href="../../concepts/templates/">Templates</a>.</p>
+<p><strong>Fix:</strong> write markup as templates, <code>html(t'&lt;div class="card"&gt;{props.title}&lt;/div&gt;')</code>; <code>&lt;svg&gt;</code> works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a>. See <a href="../../concepts/templates/">Templates</a>.</p>
 </details>
 <details class="bug">
 <summary>Pyodide fails to load</summary>
@@ -3599,7 +3629,7 @@
 <details class="bug">
 <summary>A template attribute such as <code>class_</code> shows up literally in the DOM</summary>
 <p><strong>Symptoms:</strong> the rendered element has an attribute named <code>class_</code> or <code>html_for</code>, and no class or label association.</p>
-<p><strong>Likely cause:</strong> templates use HTML attribute names. The Python spellings (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>) belong to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h()</code></a> props.</p>
+<p><strong>Likely cause:</strong> templates use HTML attribute names. The Python spellings (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>) belong to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h()</code></a> props.</p>
 <p><strong>Fix:</strong> write <code>class</code>, <code>for</code>, and <code>aria-label</code> in templates. Event attributes accept <code>onclick</code>, <code>onClick</code>, and <code>on:click</code>. A spread (<code>&lt;input {attrs}&gt;</code>) is the exception: its mapping uses <code>h()</code>'s Python names, such as <code>on_input</code> and <code>aria_label</code>.</p>
 </details>
 <details class="bug">

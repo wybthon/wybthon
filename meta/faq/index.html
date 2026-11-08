@@ -2689,6 +2689,8 @@
       
         
       
+        
+      
     
     
     
@@ -2984,6 +2986,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3492,7 +3522,7 @@
 </details>
 <details class="question">
 <summary>What happened to the element helpers (<code>div(...)</code>, <code>p(...)</code>)?</summary>
-<p><a href="../../rfcs/0004-engine-v4/">RFC 0004</a> removed them, along with <code>wybthon.elements</code> and <code>wybthon.svg</code>. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates are the way to write markup (including <code>&lt;svg&gt;</code>), and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, like <code>h</code> in Solid: use it for markup that code builds, such as generated forms, recursive trees, or a computed tag. <code>h()</code> props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) as well as HTML names.</p>
+<p><a href="../../rfcs/0004-engine-v4/">RFC 0004</a> removed them, along with <code>wybthon.elements</code> and <code>wybthon.svg</code>. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates are the way to write markup (including <code>&lt;svg&gt;</code>), and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, like <code>h</code> in Solid: use it for markup that code builds, such as generated forms, recursive trees, or a computed tag. <code>h()</code> props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) as well as HTML names.</p>
 </details>
 <h2 id="pyodide-and-runtime">Pyodide and runtime<a class="headerlink" href="#pyodide-and-runtime" title="Permanent link">&para;</a></h2>
 <details class="question">
@@ -3574,10 +3604,10 @@
 <p>No. <code>Props</code> uses PEP 681 <code>dataclass_transform</code>, so pyright, Pylance, and mypy check component calls out of the box. See the <a href="../../guides/typing/">typing guide</a>.</p>
 </details>
 <details class="question">
-<summary>Where did <code>Router</code>, <code>Link</code>, and <code>form_state</code> go?</summary>
-<p>The core lives in <code>wybthon</code>; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>:</p>
+<summary>Where are the router and forms?</summary>
+<p>The core lives in <code>wybthon</code>; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>. Links are plain <code>&lt;a href&gt;</code> elements, as in Solid Router 2.0:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind_text</span><span class="p">,</span> <span class="n">form_state</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">navigate</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span><span class="p">,</span> <span class="n">navigate</span><span class="p">,</span> <span class="n">use_link_state</span>
 </span></code></pre></div>
 </details>
 <h2 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h2>

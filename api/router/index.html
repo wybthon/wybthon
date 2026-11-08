@@ -2648,6 +2648,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.router.Params" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Params
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.router.PreloadArgs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2697,6 +2708,34 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;match
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.router.SearchParamsView" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SearchParamsView
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" SearchParamsView">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.router.SearchParamsView.get_all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_all
       
     </span>
   </a>
@@ -2797,10 +2836,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.router.resolve" class="md-nav__link">
+  <a href="#wybthon.router.match_route" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;match_route
       
     </span>
   </a>
@@ -3328,6 +3367,8 @@
       
         
       
+        
+      
     
     
     
@@ -3623,6 +3664,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -4204,6 +4273,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.router.Params" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Params
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.router.PreloadArgs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4253,6 +4333,34 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;match
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.router.SearchParamsView" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SearchParamsView
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" SearchParamsView">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.router.SearchParamsView.get_all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_all
       
     </span>
   </a>
@@ -4353,10 +4461,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.router.resolve" class="md-nav__link">
+  <a href="#wybthon.router.match_route" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;match_route
       
     </span>
   </a>
@@ -4579,7 +4687,7 @@
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
 </span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">),</span> <span class="n">Route</span><span class="p">(</span><span class="s2">"/users/:id"</span><span class="p">,</span> <span class="n">Profile</span><span class="p">),</span> <span class="n">Route</span><span class="p">(</span><span class="s2">"*404"</span><span class="p">,</span> <span class="n">NotFound</span><span class="p">)])</span>
 </span></code></pre></div>
-<p>Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="#wybthon.router.resolve"><code>resolve</code></a>) needs no browser, so
+<p>Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;match_route&lt;/span&gt;" href="#wybthon.router.match_route"><code>match_route</code></a>) needs no browser, so
 it also runs in tests, tools, and on the server.</p>
 
 
@@ -4685,6 +4793,14 @@ it also runs in tests, tools, and on the server.</p>
             </td>
           </tr>
           <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Params&lt;/span&gt; (&lt;code&gt;wybthon.router.Params&lt;/code&gt;)" href="#wybthon.router.Params">Params</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>The matched route's path parameters, read with <code>params["id"]</code>; every read is tracked.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;PreloadArgs&lt;/span&gt;
 
 
@@ -4723,6 +4839,14 @@ it also runs in tests, tools, and on the server.</p>
             <td>
               <div class="doc-md-description">
                 <p>A route tree; returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_router&lt;/span&gt;" href="#wybthon.router.create_router"><code>create_router</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParamsView&lt;/span&gt; (&lt;code&gt;wybthon.router.SearchParamsView&lt;/code&gt;)" href="#wybthon.router.SearchParamsView">SearchParamsView</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>The query string's parameters, read with <code>search["page"]</code>; every read is tracked.</p>
               </div>
             </td>
           </tr>
@@ -4806,7 +4930,7 @@ it also runs in tests, tools, and on the server.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt; (&lt;code&gt;wybthon.router.resolve&lt;/code&gt;)" href="#wybthon.router.resolve">resolve</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;match_route&lt;/span&gt; (&lt;code&gt;wybthon.router.match_route&lt;/code&gt;)" href="#wybthon.router.match_route">match_route</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>The best matching route for <code>pathname</code>, with its parameters and its chain of parents.</p>
@@ -4849,7 +4973,7 @@ it also runs in tests, tools, and on the server.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_params&lt;/span&gt; (&lt;code&gt;wybthon.router.use_params&lt;/code&gt;)" href="#wybthon.router.use_params">use_params</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Tracked accessor for the matched route's path parameters (<code>{}</code> outside a router).</p>
+                  <p>The matched route's path parameters: <code>use_params()["id"]</code>, tracked (empty outside a router).</p>
                 </div>
               </td>
             </tr>
@@ -4865,7 +4989,7 @@ it also runs in tests, tools, and on the server.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_search_params&lt;/span&gt; (&lt;code&gt;wybthon.router.use_search_params&lt;/code&gt;)" href="#wybthon.router.use_search_params">use_search_params</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>The parsed query string, and a function that updates it.</p>
+                  <p>The query string's parameters, and a function that updates them.</p>
                 </div>
               </td>
             </tr>
@@ -6211,6 +6335,63 @@ hash and parameter order (what <code>aria-current="page"</code> means).</p>
 
 
 
+<h3 id="wybthon.router.Params" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Params</span>
+
+
+<a href="#wybthon.router.Params" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Params</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._core.Accessor&lt;/code&gt;)" href="../reactivity/#wybthon.reactivity.Accessor">Accessor</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]])</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code></p>
+
+
+
+        <p>The matched route's path parameters, read with <code>params["id"]</code>; every read is tracked.</p>
+<p>What <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_params&lt;/span&gt;" href="#wybthon.router.use_params"><code>use_params</code></a> returns, as Solid's
+<code>useParams()</code> returns a reactive object: a read inside markup, a memo,
+or an effect updates when the URL's parameters change.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="wybthon.router.PreloadArgs" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">PreloadArgs</span>
 
@@ -6715,6 +6896,103 @@ its <code>children</code>.</p>
 
 </div>
 
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon.router.SearchParamsView" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">SearchParamsView</span>
+
+
+<a href="#wybthon.router.SearchParamsView" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SearchParamsView</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._core.Accessor&lt;/code&gt;)" href="../reactivity/#wybthon.reactivity.Accessor">Accessor</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParams&lt;/span&gt; (&lt;code&gt;wybthon.router._location.SearchParams&lt;/code&gt;)" href="#wybthon.router.SearchParams">SearchParams</a></span><span class="p">])</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code></p>
+
+
+
+        <p>The query string's parameters, read with <code>search["page"]</code>; every read is tracked.</p>
+<p>The first half of what <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_search_params&lt;/span&gt;" href="#wybthon.router.use_search_params"><code>use_search_params</code></a>
+returns. <code>get_all(name)</code> reads every value of a repeated parameter.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_all&lt;/span&gt; (&lt;code&gt;wybthon.router.SearchParamsView.get_all&lt;/code&gt;)" href="#wybthon.router.SearchParamsView.get_all">get_all</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Every value of <code>key</code>, in URL order (tracked).</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.router.SearchParamsView.get_all" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_all</span>
+
+
+<a href="#wybthon.router.SearchParamsView.get_all" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_all</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Every value of <code>key</code>, in URL order (tracked).</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -7196,12 +7474,12 @@ no-op while rendering on the server.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.router.resolve" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">resolve</span>
+<h3 id="wybthon.router.match_route" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">match_route</span>
 
 
-<a href="#wybthon.router.resolve" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve</span><span class="p">(</span><span class="n">routes</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">pathname</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span>
+<a href="#wybthon.router.match_route" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">match_route</span><span class="p">(</span><span class="n">routes</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">pathname</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7538,12 +7816,12 @@ focusing it) preloads its route's code and data.</p>
 
 
 <a href="#wybthon.router.use_params" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use_params</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._core.Accessor&lt;/code&gt;)" href="../reactivity/#wybthon.reactivity.Accessor">Accessor</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use_params</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Params&lt;/span&gt; (&lt;code&gt;wybthon.router._router.Params&lt;/code&gt;)" href="#wybthon.router.Params">Params</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Tracked accessor for the matched route's path parameters (<code>{}</code> outside a router).</p>
+        <p>The matched route's path parameters: <code>use_params()["id"]</code>, tracked (empty outside a router).</p>
 
 
     </div>
@@ -7583,16 +7861,17 @@ focusing it) preloads its route's code and data.</p>
 
 
 <a href="#wybthon.router.use_search_params" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use_search_params</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._core.Accessor&lt;/code&gt;)" href="../reactivity/#wybthon.reactivity.Accessor">Accessor</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParams&lt;/span&gt; (&lt;code&gt;wybthon.router._location.SearchParams&lt;/code&gt;)" href="#wybthon.router.SearchParams">SearchParams</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use_search_params</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParamsView&lt;/span&gt; (&lt;code&gt;wybthon.router._router.SearchParamsView&lt;/code&gt;)" href="#wybthon.router.SearchParamsView">SearchParamsView</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>The parsed query string, and a function that updates it.</p>
-<p>The setter merges its changes into the current query (<code>None</code> or <code>""</code>
-removes a key) and navigates without scrolling:</p>
+        <p>The query string's parameters, and a function that updates them.</p>
+<p>Reads of the first half are tracked. The setter merges its changes
+into the current query (<code>None</code> or <code>""</code> removes a key) and navigates
+without scrolling:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">search</span><span class="p">,</span> <span class="n">set_search</span> <span class="o">=</span> <span class="n">use_search_params</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">set_search</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">search</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"page"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">set_search</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"page"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 
 
@@ -7692,7 +7971,7 @@ removes a key) and navigates without scrolling:</p>
 <td>Actions a form posts to, and their settled submissions.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="#wybthon.router.resolve"><code>resolve</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteSpec&lt;/span&gt;
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;match_route&lt;/span&gt;" href="#wybthon.router.match_route"><code>match_route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteSpec&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;

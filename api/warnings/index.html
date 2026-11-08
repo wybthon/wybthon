@@ -2695,6 +2695,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon._warnings.WybthonWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;WybthonWarning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon._warnings.set_dev_mode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2859,6 +2870,8 @@
       
         
           
+        
+      
         
       
         
@@ -3187,6 +3200,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3466,6 +3507,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon._warnings.WybthonWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;WybthonWarning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon._warnings.set_dev_mode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3628,7 +3680,9 @@
         <p>Development-mode warnings and error reporting.</p>
 <p>A process-wide <code>DEV_MODE</code> flag and helpers that surface clear,
 actionable messages during development while keeping production builds
-quiet. All output goes to <code>sys.stderr</code>.</p>
+quiet. Warnings are issued through Python's <code>warnings</code> module as
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WybthonWarning&lt;/span&gt;" href="../wybthon/#wybthon.WybthonWarning"><code>WybthonWarning</code></a>, so <code>pytest.warns</code>, <code>-W error</code>,
+and warning filters work on them. Errors go to <code>sys.stderr</code>.</p>
 <p>Dev-mode diagnostics raised elsewhere in the framework:</p>
 <ul>
 <li><strong>Top-level reactive read</strong>: a signal, memo, or prop was called at the
@@ -3647,6 +3701,27 @@ quiet. All output goes to <code>sys.stderr</code>.</p>
 
 
 
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WybthonWarning&lt;/span&gt; (&lt;code&gt;wybthon._warnings.WybthonWarning&lt;/code&gt;)" href="#wybthon._warnings.WybthonWarning">WybthonWarning</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A development-mode diagnostic: a frozen reactive read, a static list, and the like.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -3680,7 +3755,7 @@ quiet. All output goes to <code>sys.stderr</code>.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;warn&lt;/span&gt; (&lt;code&gt;wybthon._warnings.warn&lt;/code&gt;)" href="#wybthon._warnings.warn">warn</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Print a development-mode warning to <code>stderr</code> (no-op when dev mode is off).</p>
+                  <p>Issue a development-mode <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WybthonWarning&lt;/span&gt;" href="../wybthon/#wybthon.WybthonWarning"><code>WybthonWarning</code></a> (no-op when dev mode is off).</p>
                 </div>
               </td>
             </tr>
@@ -3758,6 +3833,44 @@ quiet. All output goes to <code>sys.stderr</code>.</p>
 </div>
 
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon._warnings.WybthonWarning" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">WybthonWarning</span>
+
+
+<a href="#wybthon._warnings.WybthonWarning" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#UserWarning">UserWarning</a></code></p>
+
+
+
+        <p>A development-mode diagnostic: a frozen reactive read, a static list, and the like.</p>
+<p>Turn them into errors in tests with <code>-W error::wybthon.WybthonWarning</code>,
+or assert on one with <code>pytest.warns(WybthonWarning)</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -3841,12 +3954,14 @@ suppressed in <code>log_error</code>.</p>
 
 
 <a href="#wybthon._warnings.warn" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">warn</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">warn</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">stacklevel</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Print a development-mode warning to <code>stderr</code> (no-op when dev mode is off).</p>
+        <p>Issue a development-mode <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WybthonWarning&lt;/span&gt;" href="../wybthon/#wybthon.WybthonWarning"><code>WybthonWarning</code></a> (no-op when dev mode is off).</p>
+<p><code>stacklevel</code> counts from the caller of <code>warn</code>, as <code>warnings.warn</code>'s
+does from its own caller: 1 attributes the warning to that caller.</p>
 
 
     </div>

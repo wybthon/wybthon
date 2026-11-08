@@ -2783,6 +2783,8 @@
       
         
       
+        
+      
     
     
     
@@ -3078,6 +3080,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3490,7 +3520,7 @@
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../../api/forms/#wybthon.forms.form_state"><code>form_state</code></a> returns a dict of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/forms/#wybthon.forms.Field"><code>Field</code></a> objects. Each field carries <code>value</code>, <code>error</code>, and <code>touched</code> accessors with matching setters, so every piece of form state is a signal.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_text"><code>bind_text</code></a> returns <code>{"value": field.value, "on_input": handler}</code>. The <code>value</code> entry is the accessor itself, so programmatic writes through <code>field.set_value(...)</code> update the input too. Validators run on every <code>input</code> event.</li>
-<li><code>{bind_text(...)}</code> in the <code>&lt;input&gt;</code> tag is a <strong>spread</strong>: the mapping's entries are applied as props. A spread is evaluated once, when the template is created; the accessors inside it (the value, the ARIA state) are what keep the input in sync. A tag can take several spreads alongside ordinary attributes. Spread keys use Python names (<code>on_input</code>, <code>aria_invalid</code>), the same names <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> props take.</li>
+<li><code>{bind_text(...)}</code> in the <code>&lt;input&gt;</code> tag is a <strong>spread</strong>: the mapping's entries are applied as props. A spread is evaluated once, when the template is created; the accessors inside it (the value, the ARIA state) are what keep the input in sync. A tag can take several spreads alongside ordinary attributes. Spread keys use Python names (<code>on_input</code>, <code>aria_invalid</code>), the same names <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> props take.</li>
 <li><code>&lt;span ...&gt;{name.error()}&lt;/span&gt;</code> reads the error in the template, so the message appears and disappears as validation runs.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;a11y_control_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.a11y_control_attrs"><code>a11y_control_attrs</code></a> produces reactive <code>aria-invalid</code> and <code>aria-describedby</code> props; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;error_message_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.error_message_attrs"><code>error_message_attrs</code></a> marks the message container as a polite live region.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit_validated&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit_validated"><code>on_submit_validated</code></a> calls <code>prevent_default()</code>, validates every field in <code>rules</code> (marking them touched), and only invokes <code>save</code> when all pass. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit"><code>on_submit</code></a> when you want to handle validation yourself.</li>

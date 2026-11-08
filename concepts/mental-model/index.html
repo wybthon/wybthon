@@ -2827,6 +2827,8 @@
       
         
       
+        
+      
     
     
     
@@ -3122,6 +3124,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3581,7 +3611,7 @@
 <p>See <a href="../components/">Components</a> for the full prop story.</p>
 <h2 id="why-a-virtual-dom-at-all">Why a virtual DOM at all?<a class="headerlink" href="#why-a-virtual-dom-at-all" title="Permanent link">&para;</a></h2>
 <p>SolidJS compiles JSX ahead of time into a static template plus the expressions that change. Wybthon's compiler does the same with t-strings: each literal becomes a native <code>&lt;template&gt;</code>, a mount function written into the module, and a plan of its slots, and each dynamic expression becomes a getter. Mounting an instance is one clone command, with no VNode tree for its static parts.</p>
-<p>In Pyodide every DOM call crosses the Python-to-JavaScript bridge, which dominates rendering cost. So Wybthon keeps a small VDOM as an implementation detail: holes and bindings emit compact operations into a buffer that the JavaScript kernel applies in one crossing per flush. When a hole re-renders, the reconciler diffs only that hole's subtree, and a template from the same literal is patched slot by slot. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic path for markup built by code; it builds VNodes that mount node by node, in the same batch. The reactive model is Solid's; the VDOM is the batching layer that makes it fast under Pyodide. See <a href="../templates/">Templates</a> and <a href="../vdom/">Virtual DOM</a>.</p>
+<p>In Pyodide every DOM call crosses the Python-to-JavaScript bridge, which dominates rendering cost. So Wybthon keeps a small VDOM as an implementation detail: holes and bindings emit compact operations into a buffer that the JavaScript kernel applies in one crossing per flush. When a hole re-renders, the reconciler diffs only that hole's subtree, and a template from the same literal is patched slot by slot. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a> is the programmatic path for markup built by code; it builds VNodes that mount node by node, in the same batch. The reactive model is Solid's; the VDOM is the batching layer that makes it fast under Pyodide. See <a href="../templates/">Templates</a> and <a href="../vdom/">Virtual DOM</a>.</p>
 <h2 id="where-it-differs-from-react">Where it differs from React<a class="headerlink" href="#where-it-differs-from-react" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No per-component re-render. The tree is built once; updates target individual holes.</li>

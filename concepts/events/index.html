@@ -2838,6 +2838,8 @@
       
         
       
+        
+      
     
     
     
@@ -3133,6 +3135,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3538,16 +3568,18 @@ single Python call per handler that matches.</p>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">clicked</span><span class="si">}</span><span class="s2">&gt;Click&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>In a template, <code>onclick</code>, <code>onClick</code>, and <code>on:click</code> all bind a <code>click</code>
-handler; use whichever reads best to you. The compiler never wraps an
+<p>In a template, an element's handlers use HTML's attribute names:
+<code>onclick</code> binds a delegated <code>click</code> handler, and <code>on:click</code> a native
+listener on the element itself, as in Solid. The compiler never wraps an
 event handler, so <code>onclick={clicked}</code> passes the function itself. When
-markup is built by code with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a>, the same prop takes a
-Python name, <code>on_click</code>:</p>
+markup is built by code with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a>, the same prop takes
+a Python name, <code>on_click</code>, as component props do:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">h</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"on_click"</span><span class="p">:</span> <span class="n">clicked</span><span class="p">},</span> <span class="s2">"Click"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Both go through the same prop applier, so a handler behaves
-identically in either. Non-callable values are ignored, and passing
-<code>None</code> on an update removes the handler.</p>
+identically in either. A handler that isn't callable raises <code>TypeError</code>
+(<code>onclick={set_open(False)}</code> calls the setter instead of passing a
+handler), and passing <code>None</code> on an update removes the handler.</p>
 <p>A handler may take the event or no arguments at all. Wybthon checks the
 handler's signature once, when it's registered, so a zero-argument
 handler costs nothing extra. Prefer one whenever you don't read the
@@ -3643,41 +3675,41 @@ aren't routed to an <a class="autorefs autorefs-internal" title="&lt;code class=
 <li>When the last handler for an event type is removed across the whole app (by unmount, or by diffing a handler to <code>None</code>), the native listener for that type is removed from every root.</li>
 </ul>
 <h2 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h2>
-<p>Every spelling normalizes to a lowercase DOM event name:</p>
+<p>Markup uses HTML's names and Python code uses Python's, one spelling each:</p>
 <table>
 <thead>
 <tr>
 <th>Where</th>
-<th>Spellings</th>
+<th>Spelling</th>
 <th>Event</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Template</td>
-<td><code>onclick</code>, <code>onClick</code>, <code>on:click</code></td>
+<td>An element in a template</td>
+<td><code>onclick</code> (delegated), <code>on:click</code> (native listener)</td>
 <td><code>"click"</code></td>
 </tr>
 <tr>
-<td>Template</td>
-<td><code>ondblclick</code>, <code>onDblClick</code>, <code>on:dblclick</code></td>
+<td>An element in a template</td>
+<td><code>ondblclick</code>, <code>on:dblclick</code></td>
 <td><code>"dblclick"</code></td>
 </tr>
 <tr>
-<td><code>h()</code> props and spreads</td>
-<td><code>on_click</code>, <code>onClick</code></td>
+<td><code>h()</code> props, spreads, and component props</td>
+<td><code>on_click</code></td>
 <td><code>"click"</code></td>
 </tr>
 <tr>
-<td><code>h()</code> props and spreads</td>
-<td><code>on_input</code>, <code>onInput</code></td>
+<td><code>h()</code> props, spreads, and component props</td>
+<td><code>on_input</code></td>
 <td><code>"input"</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>A <code>Capture</code> suffix listens in the capture phase: <code>onClickCapture</code> in a template, <code>on_click_capture</code> in <code>h()</code> props.</li>
-<li>Any attribute or prop starting with <code>on</code> (<code>on_</code> or <code>on:</code> included) is treated as an event handler.</li>
+<li><code>onClick</code> and <code>on_click</code> on an element in a template are compile errors that name the spelling to use.</li>
+<li>To listen in the capture phase, pass <code>event(handler, capture=True)</code>, or use <code>on_click_capture</code> in <code>h()</code> props.</li>
 </ul>
 <h2 id="event-types-that-work-best-with-delegation">Event types that work best with delegation<a class="headerlink" href="#event-types-that-work-best-with-delegation" title="Permanent link">&para;</a></h2>
 <p>Prefer events that bubble:</p>

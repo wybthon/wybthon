@@ -2816,6 +2816,8 @@
       
         
       
+        
+      
     
     
     
@@ -3111,6 +3113,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3498,6 +3528,7 @@
 <li><strong>Templates are compiled ahead of time.</strong> Wybthon's <a href="../../concepts/compiler/">compiler</a> parses and validates each <code>html(t"...")</code> literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. It also replaces the call, so an instance is the literal's entry given a tuple of values: no t-string is built and nothing is parsed per instance. <code>wyb build</code> turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. The kernel registers only the nodes Python can address (the root, slot nodes, and handler nodes). No VNode tree is built for static parts. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
 <li><strong>Bindings that read nothing cost nothing.</strong> The compiler's rule is syntactic, so <code>{item["label"]}</code> or <code>{props.title}</code> becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.</li>
 <li><strong>Bindings are made in one step.</strong> A hole, a text slot, or an attribute binding is a small computation whose apply stage is a module function and whose data is its node id. It's built, run, and applied by one straight-line routine; the general scheduler takes over only while a transition, an action, a server render, or an unpublished preparation is involved. Fields only effects and async work use live in a separate record, and a computation that reads one source (or a source with one reader) links to it directly instead of through a dictionary. A node with one delegated handler stores it directly in the handler table.</li>
+<li><strong>SVG and MathML clone too.</strong> A template containing <code>&lt;svg&gt;</code> or <code>&lt;math&gt;</code>, or mounted under an SVG parent (a component that returns a <code>&lt;circle&gt;</code>), clones like any other: the kernel parses it inside a wrapper of that namespace. Only an SVG name whose capitals the HTML parser wouldn't restore (outside the specification's list, such as a custom <code>dataPoint</code> attribute) makes a template mount node by node.</li>
 <li><strong>Text slots stay text.</strong> A child slot whose expression returns text writes it into the slot's placeholder, filling the clone command on the first run. It becomes a hole region, able to hold nodes, only if the expression ever returns something other than text.</li>
 <li><strong>Disposal frees memory at once.</strong> Unmounting breaks every reference cycle the engine creates (a row and its node, a hole and its binding, a region and its node), so a removed subtree is freed by reference counting immediately instead of waiting for Python's cycle collector. Fewer live objects, and no cyclic garbage, mean less work for the collector, which matters most in Pyodide.</li>
 <li><strong>The collector runs when the page is idle.</strong> A flush or mount pauses Python's cyclic garbage collector, as allocating thousands of long-lived nodes would otherwise trigger collections in the middle of the work. In the browser, the collection that the paused work owes runs from <code>requestIdleCallback</code>, after the committed DOM has painted, and large disposals are freed there too, instead of inside the event handler that caused them.</li>
@@ -3512,7 +3543,7 @@
 <li><strong>Stores wrap lazily.</strong> Creating a store takes constant time, whatever its size: a nested dict, list, or dataclass gets its reactive bookkeeping the first time something reads it, and a field gets a subscription only when it's read in a tracking scope. A setter copies each container it edits once and publishes the changed fields with that container's commit. Natively, a store field write costs about 2.8 times a signal write; most of that is the draft views and the copy of the edited container. In the browser benchmark, store mode creates, updates, and appends rows 17% to 32% faster than Engine v6 did (see <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v7.md"><code>engine-v7.md</code></a>).</li>
 </ul>
 <h2 id="templates-and-h">Templates and <code>h()</code><a class="headerlink" href="#templates-and-h" title="Permanent link">&para;</a></h2>
-<p>Templates and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> share one set of prop appliers, so they behave the same; they differ in what happens before mounting.</p>
+<p>Templates and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> share one set of prop appliers, so they behave the same; they differ in what happens before mounting.</p>
 <ul>
 <li>A <strong>template</strong> is prepared by the compiler. Each call costs a cached lookup and one clone, and its structure is fixed by the literal.</li>
 <li>An <strong><code>h()</code> tree</strong> is built as VNodes on every call and mounts on the generic path, with no template to clone.</li>

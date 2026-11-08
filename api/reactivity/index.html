@@ -2428,17 +2428,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.reactivity.children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;children
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_deferred" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2663,6 +2652,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.resolve_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve_children
       
     </span>
   </a>
@@ -3526,6 +3526,8 @@
       
         
       
+        
+      
     
     
     
@@ -3821,6 +3823,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -4518,17 +4548,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.reactivity.children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;children
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_deferred" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4753,6 +4772,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.resolve_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve_children
       
     </span>
   </a>
@@ -5019,7 +5049,7 @@ submodules are implementation detail.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.ChildrenAccessor&lt;/code&gt;)" href="#wybthon.reactivity.ChildrenAccessor">ChildrenAccessor</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>The resolved children returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../wybthon/#wybthon.children"><code>children</code></a>.</p>
+                <p>The resolved children returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../wybthon/#wybthon.resolve_children"><code>resolve_children</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -5146,7 +5176,7 @@ submodules are implementation detail.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.untrack&lt;/code&gt;)" href="#wybthon.reactivity.untrack">untrack</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Run <code>fn</code> without tracking any reactive reads.</p>
+                  <p>Read reactive values without tracking them, in <code>fn</code> or in a <code>with</code> block.</p>
                 </div>
               </td>
             </tr>
@@ -5163,14 +5193,6 @@ submodules are implementation detail.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Map an integer range to rows, each with its own owner scope.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.children&lt;/code&gt;)" href="#wybthon.reactivity.children">children</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Resolve a component's children once, so it can inspect or reuse them.</p>
                 </div>
               </td>
             </tr>
@@ -5339,6 +5361,14 @@ submodules are implementation detail.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Return an awaitable for the next settled value of <code>fn()</code>.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.resolve_children&lt;/code&gt;)" href="#wybthon.reactivity.resolve_children">resolve_children</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Resolve a component's children once, so it can inspect or reuse them.</p>
                 </div>
               </td>
             </tr>
@@ -6353,7 +6383,7 @@ into the untracked <code>apply</code> stage of a split
 
 
 
-        <p>The resolved children returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../wybthon/#wybthon.children"><code>children</code></a>.</p>
+        <p>The resolved children returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../wybthon/#wybthon.resolve_children"><code>resolve_children</code></a>.</p>
 <p>Calling it returns the single resolved child, or a list when there
 are several (or none); <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;to_array&lt;/span&gt;" href="../wybthon/#wybthon.ChildrenAccessor.to_array"><code>to_array</code></a>
 always returns a list.</p>
@@ -7200,17 +7230,26 @@ arguments do not.</p>
 
 
 <a href="#wybthon.reactivity.untrack" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">untrack</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="wybthon.reactivity._core.untrack[T]">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.reactivity._core.untrack[T]">T</span></span>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">untrack</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="T">T</span></span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">untrack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.reactivity._core._Untracked">_Untracked</span></span>
+</span></code></pre></div>          </div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">untrack</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Run <code>fn</code> without tracking any reactive reads.</p>
+        <p>Read reactive values without tracking them, in <code>fn</code> or in a <code>with</code> block.</p>
 <p>Use it to read a signal inside an effect without depending on it,
 or to seed local state from a prop during component setup without
 subscribing (the dev-mode top-level-read warning is silenced inside
 <code>untrack</code>; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;peek&lt;/span&gt;" href="../wybthon/#wybthon.Accessor.peek"><code>Accessor.peek</code></a> is the shorter
 form for a single read).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">untrack</span><span class="p">():</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">start</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">step</span>
+</span></code></pre></div>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7229,15 +7268,16 @@ form for a single read).</p>
                 <code>fn</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a>[[], <span title="wybthon.reactivity._core.untrack[T]">T</span>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>] | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Zero-arg callable to invoke with tracking suppressed.</p>
+                <p>Zero-arg callable to invoke with tracking suppressed. Without
+it, <code>untrack()</code> returns a context manager.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -7255,7 +7295,7 @@ form for a single read).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="wybthon.reactivity._core.untrack[T]">T</span></code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7532,39 +7572,6 @@ row when the count is zero.</p>
           </tr>
       </tbody>
     </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.reactivity.children" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">children</span>
-
-
-<a href="#wybthon.reactivity.children" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">children</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._primitives.ChildrenAccessor&lt;/code&gt;)" href="#wybthon.reactivity.ChildrenAccessor">ChildrenAccessor</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Resolve a component's children once, so it can inspect or reuse them.</p>
-<p>Wraps a getter that returns children (typically <code>props.children</code>)
-and returns a memoized accessor. Nested lists are flattened,
-reactive children (accessors and zero-argument functions) are called
-and their results resolved, and <code>None</code> and booleans are dropped.
-This matches Solid 2.0's <code>children</code> helper.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">children</span> <span class="k">as</span> <span class="n">resolve_children</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Tabs</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">tabs</span> <span class="o">=</span> <span class="n">resolve_children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;nav&gt;</span><span class="si">{</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;li&gt;</span><span class="si">{</span><span class="n">tab</span><span class="si">}</span><span class="s1">&lt;/li&gt;'</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">tab</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">tabs</span><span class="o">.</span><span class="n">to_array</span><span class="p">()]</span><span class="si">}</span><span class="s2">&lt;/nav&gt;"</span><span class="p">)</span>
-</span></code></pre></div>
 
 
     </div>
@@ -8388,7 +8395,7 @@ short hash), so the server and the hydrating browser agree on them.</p>
         <p>Resolve a children value to the list it renders.</p>
 <p>Nested lists are flattened, accessors and zero-argument functions are
 called (tracked) and their results resolved, and <code>None</code> and booleans
-are dropped. The unmemoized form of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../wybthon/#wybthon.children"><code>children</code></a>;
+are dropped. The unmemoized form of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../wybthon/#wybthon.resolve_children"><code>resolve_children</code></a>;
 matches Solid 2.0's <code>flatten</code>.</p>
 
 
@@ -8554,9 +8561,12 @@ is waiting on a transition:</p>
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../wybthon/#wybthon.refresh"><code>refresh</code></a> is silent);</li>
 <li>a value an in-flight action declared with
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;affects&lt;/span&gt;" href="../wybthon/#wybthon.affects"><code>affects</code></a>;</li>
-<li>an optimistic value with an active override;</li>
-<li>a read that raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>.</li>
+<li>an optimistic value with an active override.</li>
 </ul>
+<p>A first load isn't a change in flight: while an async value has never
+resolved, reading it raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>
+and the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a> boundary shows its
+fallback, and <code>is_pending</code> is <code>False</code>, as in Solid 2.0.</p>
 <p>The reads are tracked like any other, so a hole using <code>is_pending</code>
 updates as the state changes, but they don't make the hole wait for
 the transition: an indicator has to show <em>during</em> the hold.</p>
@@ -8958,6 +8968,39 @@ removes the temporary subscriptions.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.reactivity.resolve_children" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">resolve_children</span>
+
+
+<a href="#wybthon.reactivity.resolve_children" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_children</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._primitives.ChildrenAccessor&lt;/code&gt;)" href="#wybthon.reactivity.ChildrenAccessor">ChildrenAccessor</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Resolve a component's children once, so it can inspect or reuse them.</p>
+<p>Wraps a getter that returns children (typically <code>props.children</code>)
+and returns a memoized accessor. Nested lists are flattened,
+reactive children (accessors and zero-argument functions) are called
+and their results resolved, and <code>None</code> and booleans are dropped.
+This matches Solid 2.0's <code>children</code> helper.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_children</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Tabs</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ParentProps</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">tabs</span> <span class="o">=</span> <span class="n">resolve_children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;nav&gt;</span><span class="si">{</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;li&gt;</span><span class="si">{</span><span class="n">tab</span><span class="si">}</span><span class="s1">&lt;/li&gt;'</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">tab</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">tabs</span><span class="o">.</span><span class="n">to_array</span><span class="p">()]</span><span class="si">}</span><span class="s2">&lt;/nav&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.reactivity.is_static" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">is_static</span>
 
@@ -9139,7 +9182,7 @@ holds on the old state until the new value lands, and an
 <td>What <code>children()</code> returns: call it for one child or a list, or <code>.to_array()</code> for a list.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../wybthon/#wybthon.Owner"><code>Owner</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="#wybthon.reactivity.Owner"><code>Owner</code></a></td>
 <td>Ownership scope; disposing it disposes children and runs cleanups.</td>
 </tr>
 <tr>
@@ -9202,7 +9245,7 @@ holds on the old state until the new value lands, and an
 <td><code>create_render_effect(compute, apply)</code>: effect in the render phase, before the DOM commit; first run is immediate. <code>apply</code> is required.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt;" href="../wybthon/#wybthon.create_reaction"><code>create_reaction</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt;" href="#wybthon.reactivity.create_reaction"><code>create_reaction</code></a></td>
 <td><code>create_reaction(effect, *, error=None)</code> returns <code>track(fn)</code>: the first change to what <code>fn</code> read runs <code>effect</code> once.</td>
 </tr>
 <tr>
@@ -9238,7 +9281,7 @@ holds on the old state until the new value lands, and an
 <td>Capture the owner before an <code>await</code> and restore it after.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_observer&lt;/span&gt;" href="../wybthon/#wybthon.get_observer"><code>get_observer</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_observer&lt;/span&gt;" href="#wybthon.reactivity.get_observer"><code>get_observer</code></a></td>
 <td>The computation currently tracking reads, or <code>None</code>.</td>
 </tr>
 <tr>
@@ -9290,7 +9333,7 @@ holds on the old state until the new value lands, and an
 <td><code>is_static(props, key)</code>: whether the parent passed a plain value rather than an expression, so a component can take a cheaper path. Reads nothing.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../wybthon/#wybthon.children"><code>children</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../wybthon/#wybthon.resolve_children"><code>resolve_children</code></a></td>
 <td><code>children(lambda: props.children)</code>: a memoized <code>ChildrenAccessor</code> that resolves nested accessors, flattens lists, and drops <code>None</code> and booleans.</td>
 </tr>
 <tr>
@@ -9298,11 +9341,11 @@ holds on the old state until the new value lands, and an
 <td>The unmemoized form of <code>children</code>: resolve a children value to the list it renders.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../wybthon/#wybthon.map_array"><code>map_array</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="#wybthon.reactivity.map_array"><code>map_array</code></a></td>
 <td>Reactive value mapping with per-row scopes and an optional <code>fallback</code>; DOM lists use <code>For</code>'s native regions.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;repeat&lt;/span&gt;" href="../wybthon/#wybthon.repeat"><code>repeat</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;repeat&lt;/span&gt;" href="#wybthon.reactivity.repeat"><code>repeat</code></a></td>
 <td><code>repeat(count, fn, *, start=0, fallback=None)</code>: reactive mapping over a range of indices.</td>
 </tr>
 <tr>
@@ -9310,7 +9353,7 @@ holds on the old state until the new value lands, and an
 <td>Process-unique id string for <code>id</code>/<code>for</code> pairs.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_accessor&lt;/span&gt;" href="../wybthon/#wybthon.is_accessor"><code>is_accessor</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_accessor&lt;/span&gt;" href="#wybthon.reactivity.is_accessor"><code>is_accessor</code></a></td>
 <td><code>True</code> for an <code>Accessor</code> or a zero-arg function.</td>
 </tr>
 <tr>

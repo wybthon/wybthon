@@ -2885,6 +2885,8 @@
       
         
       
+        
+      
     
     
     
@@ -3180,6 +3182,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3661,7 +3691,7 @@ phase of every flush).</p>
 <li><strong>Reactive holes</strong> are <code>_hole</code> VNodes whose expression runs inside a
   render effect; when its dependencies change, only that region is
   patched. Holes are created for every reactive expression in a child
-  position and explicitly with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../wybthon/#wybthon.hole"><code>hole</code></a>.</li>
+  position and explicitly with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../vnode/#wybthon.vnode.hole"><code>hole</code></a>.</li>
 <li>
 <p><strong>Namespaces are inferred.</strong> An <code>svg</code> or <code>math</code> element switches its
   subtree to the SVG or MathML namespace (<code>foreignObject</code> switches back
@@ -4326,7 +4356,7 @@ region.</p>
   node: one fused <code>CLONE</code> command copies the template's native
   <code>&lt;template&gt;</code>, and the mount function the <a href="../compiler/">compiler</a>
   emitted fills its slots. No VNodes exist for the static parts.</li>
-<li><strong><code>h()</code> trees.</strong> Element VNodes built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a> mount
+<li><strong><code>h()</code> trees.</strong> Element VNodes built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../vnode/#wybthon.vnode.h"><code>h</code></a> mount
   node by node, with one command per node.</li>
 <li><strong>Regions.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions
   with no component wrapped around them.</li>
@@ -4389,7 +4419,7 @@ and <code>unmount</code> are for control-flow primitives and tests.</p>
 <ol>
 <li>The container is resolved to a kernel node id and registered as an
    event-delegation root (<code>ROOT</code> op).</li>
-<li>The tree mounts under a fresh <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../wybthon/#wybthon.Owner"><code>Owner</code></a>; component
+<li>The tree mounts under a fresh <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../reactivity/#wybthon.reactivity.Owner"><code>Owner</code></a>; component
    bodies run once, and holes and reactive props create render effects (a binding that
    reads nothing reactive is applied once and creates none).</li>
 <li><code>flush()</code> commits staged writes, runs effects, and sends the op

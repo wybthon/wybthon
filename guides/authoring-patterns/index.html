@@ -2893,6 +2893,8 @@
       
         
       
+        
+      
     
     
     
@@ -3188,6 +3190,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3640,7 +3670,7 @@
 <p class="admonition-title">Mental model in one line</p>
 <p>Components run <strong>once</strong>. Inputs are declared on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class with plain annotations, and reading <code>props.title</code> returns the value, tracked. Anything that should update over time is an expression in the markup, a memo, or an effect: the <a href="../../concepts/compiler/">compiler</a> turns each dynamic expression in a template (<code>{count() * 2}</code>, <code>{props.title}</code>) into a getter, so only the text node or attribute that reads it updates.</p>
 </div>
-<p>The examples write markup with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates; see <a href="../../concepts/templates/">Templates</a> for the syntax. Where markup is built by code, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>.</p>
+<p>The examples write markup with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates; see <a href="../../concepts/templates/">Templates</a> for the syntax. Where markup is built by code, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>.</p>
 <h2 id="run-once-bodies">Run-once bodies<a class="headerlink" href="#run-once-bodies" title="Permanent link">&para;</a></h2>
 <p>The body of a <code>@component</code> function executes exactly once per mount. Its return value is mounted, and from then on updates flow through the reactive graph, never by calling the body again.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
@@ -3739,7 +3769,7 @@
 </span></code></pre></div>
 <p><code>{name()}</code> and <code>{letters()}</code> each update one text node; the text around them is static markup. The conditional mounts or removes a subtree. Names, constants, and lambdas aren't wrapped: an accessor placed directly (<code>{name}</code>) still binds reactively, and anything else that isn't callable is applied once. Conversions and format specs fold into the getter (<code>{price():.2f}</code>).</p>
 <p>A function call in a child position is dispatched when the template is created: a component or built-in (<code>{Card(title=user().name)}</code>, <code>{Show(...)}</code>, <code>{For(...)}</code>) is built with a getter for each dynamic argument, and any other call (<code>{badge(user())}</code>, <code>{str(n())}</code>) becomes one reactive hole. See <a href="../../concepts/compiler/">The compiler</a> for the full rule.</p>
-<p>Keep holes small. A hole that produces a subtree runs again on every change: if it returns a template from the same literal, Wybthon patches the mounted instance slot by slot, but anything else is rebuilt. A hole around a single text node patches one node. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/wybthon/#wybthon.hole"><code>hole</code></a> when you need an explicit <code>key</code> for a hole inside a fragment.</p>
+<p>Keep holes small. A hole that produces a subtree runs again on every change: if it returns a template from the same literal, Wybthon patches the mounted instance slot by slot, but anything else is rebuilt. A hole around a single text node patches one node. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.hole"><code>hole</code></a> when you need an explicit <code>key</code> for a hole inside a fragment.</p>
 <p>Attributes work the same way. A dynamic expression as an attribute value creates a per-attribute binding, and an attribute that mixes text with interpolations becomes one binding:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
@@ -3844,9 +3874,9 @@
 </span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Composition"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Body text&lt;/p&gt;"</span><span class="p">))</span>  <span class="c1"># keyword</span>
 </span></code></pre></div>
 <p>The tag form reads like the rest of the markup, but type checkers can't see its props; dev mode checks them at run time. The call forms are fully type-checked, and the keyword form works inside a template too: <code>{Card(title=user().name, children=html(t"&lt;p&gt;Body&lt;/p&gt;"))}</code>. Positional children (<code>Card(html(t"&lt;p&gt;Body&lt;/p&gt;"), title="Composition")</code>) still work at run time, but type checkers don't validate them, so prefer the keyword or item syntax.</p>
-<p>When a component needs to inspect or reorder its children, resolve them with the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../../api/wybthon/#wybthon.children"><code>children</code></a> helper. It takes a getter, flattens nested lists, calls nested accessors, and drops <code>None</code> and booleans. Calling the result returns the single child or a list; <code>.to_array()</code> always returns a list:</p>
+<p>When a component needs to inspect or reorder its children, resolve them with the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>resolve_children</code></a> helper. It takes a getter, flattens nested lists, calls nested accessors, and drops <code>None</code> and booleans. Calling the result returns the single child or a list; <code>.to_array()</code> always returns a list:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">children</span> <span class="k">as</span> <span class="n">resolve_children</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_children</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nd">@component</span>

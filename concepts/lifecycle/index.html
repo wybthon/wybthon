@@ -2849,6 +2849,8 @@
       
         
       
+        
+      
     
     
     
@@ -3144,6 +3146,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3554,7 +3584,7 @@ attach to that owner. Disposing the owner cleans them all up.</p>
 and settled callbacks run, and the order in which things are torn down.</p>
 <h2 id="the-ownership-tree">The ownership tree<a class="headerlink" href="#the-ownership-tree" title="Permanent link">&para;</a></h2>
 <p>When a component mounts, the reconciler creates a fresh
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.Owner"><code>Owner</code></a> for it and runs the body under that owner.
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.Owner"><code>Owner</code></a> for it and runs the body under that owner.
 Anything created during the body (effects, memos, child components,
 holes and bindings in the returned template) attaches to it. When the component unmounts, the owner is
 disposed and the whole subtree goes with it.</p>

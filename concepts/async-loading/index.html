@@ -2967,6 +2967,8 @@
       
         
       
+        
+      
     
     
     
@@ -3262,6 +3264,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3944,7 +3974,7 @@ one is open joins it.</p>
 <p>Three helpers work with in-flight state without making you catch
 <code>NotReadyError</code>:</p>
 <ul>
-<li><strong><code>is_pending(fn)</code></strong> is a tracked probe. It's <code>True</code> while any value <code>fn</code> reads is held by a transition, while an async recompute of something it reads is in flight, while an in-flight action declared it with <code>affects</code>, while an optimistic override is active on it, or when it raises <code>NotReadyError</code>. The probe's reads don't wait for the transition: an indicator has to show <em>during</em> the hold.</li>
+<li><strong><code>is_pending(fn)</code></strong> is a tracked probe. It's <code>True</code> while any value <code>fn</code> reads is held by a transition, while an async recompute of something it reads is in flight, while an in-flight action declared it with <code>affects</code>, or while an optimistic override is active on it. A first load isn't a change in flight: while a value has never resolved, <code>is_pending</code> is <code>False</code> and the nearest <code>Loading</code> boundary shows its fallback, as in Solid 2.0. The probe's reads don't wait for the transition: an indicator has to show <em>during</em> the hold.</li>
 <li><strong><code>latest(fn)</code></strong> evaluates <code>fn</code> against the newest state: held values return the value being computed, and not-ready async reads return their most recent value (or <code>None</code>). Use it for the one piece of UI that should move ahead of the rest.</li>
 <li><strong><code>await resolve(fn)</code></strong> returns the next settled value of <code>fn()</code> (or raises the exception it raised). It's for imperative code.</li>
 </ul>

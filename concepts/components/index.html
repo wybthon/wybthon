@@ -2966,6 +2966,8 @@
       
         
       
+        
+      
     
     
     
@@ -3261,6 +3263,34 @@
     
   
     0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0009-engine-v8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Engine v8
   
 
     
@@ -3915,7 +3945,7 @@ doesn't warn:</p>
 <h2 id="using-a-component">Using a component<a class="headerlink" href="#using-a-component" title="Permanent link">&para;</a></h2>
 <p>There are two ways to use a component in a template.</p>
 <p><strong>The call form.</strong> Calling a <code>Component</code> returns a
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/wybthon/#wybthon.VNode"><code>VNode</code></a>. Keyword arguments become props, and every
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.VNode"><code>VNode</code></a>. Keyword arguments become props, and every
 component also accepts <code>key=</code>. Call it inside an interpolation and the
 type checker sees every prop, while the compiler still passes each
 dynamic argument as a getter:</p>
@@ -3951,7 +3981,7 @@ or without a required one raises <code>TypeError</code> at the call:
 <code>Counter(bogus=1)</code> fails immediately instead of silently rendering.
 Statically, a type checker sees the call as constructing the props
 class, so the same mistakes show up in your editor.</p>
-<p>The low-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> form still works (<code>h(Counter, {"initial": 5})</code>).</p>
+<p>The low-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> form still works (<code>h(Counter, {"initial": 5})</code>).</p>
 <h3 id="plain-functions-as-tags">Plain functions as tags<a class="headerlink" href="#plain-functions-as-tags" title="Permanent link">&para;</a></h3>
 <p>A function without <code>@component</code> whose only parameter is the props can be
 used as a tag too, with the tag form or <code>h(fn, props)</code>. It receives the
@@ -3993,11 +4023,14 @@ never calls it:</p>
 </span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
 </span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">Picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="nb">print</span><span class="p">,</span> <span class="n">on_close</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"closed"</span><span class="p">))</span>
 </span></code></pre></div>
-<p>The declared type, not the callback's argument count, decides what's
-unwrapped, so a zero-argument callback such as <code>on_close</code> is passed
-through untouched. Every other field unwraps an accessor or getter on
-read. Annotate a field as <code>Accessor[T]</code> when the child wants the
-accessor itself rather than its value.</p>
+<p>Reading a prop never calls a function the parent passed: a callback
+such as <code>on_close</code> comes back exactly as it was passed, whatever its
+field is annotated. What a read does unwrap is an expression: a getter
+the compiler made from markup (<code>title={user().name}</code>), or an accessor
+the parent passed (a signal or memo). A field annotated as callable, or
+as <code>Accessor[T]</code>, gets the accessor itself rather than its value.</p>
+<p>Outside markup, pass an accessor to make a prop reactive:
+<code>Card(title=create_memo(lambda: user().name))</code>. A lambda is a value.</p>
 <h2 id="what-props-cost">What props cost<a class="headerlink" href="#what-props-cost" title="Permanent link">&para;</a></h2>
 <p>A component costs about what its markup costs. Whether a prop read
 allocates anything depends on whether the component can ever receive
@@ -4070,13 +4103,13 @@ declares <code>children: Any = None</code>. Most layouts interpolate
 </span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">)])</span>  <span class="c1"># children as a keyword</span>
 </span></code></pre></div>
 <p>When you need to inspect or iterate children, resolve them with
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../../api/wybthon/#wybthon.children"><code>children</code></a>. It takes a getter for the children and
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>resolve_children</code></a>. It takes a getter for the children and
 returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.ChildrenAccessor"><code>ChildrenAccessor</code></a> that resolves
 nested accessors, flattens lists, and drops <code>None</code> and booleans.
 Calling it returns the single child or a list; <code>to_array()</code> always
 returns a list. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flatten&lt;/span&gt;" href="../../api/wybthon/#wybthon.flatten"><code>flatten</code></a> is the unmemoized form,
 for a one-off resolution:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">children</span> <span class="k">as</span> <span class="n">resolve_children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">resolve_children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nd">@component</span>
@@ -4161,7 +4194,7 @@ fragments never disturb CSS selectors or layout.</p>
 </span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;&lt;p&gt;Body text here.&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When you build the children in code, group them with
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../../api/wybthon/#wybthon.Fragment"><code>Fragment</code></a>: <code>Fragment(*sections)</code>.</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.Fragment"><code>Fragment</code></a>: <code>Fragment(*sections)</code>.</p>
 <h2 id="portal">Portal<a class="headerlink" href="#portal" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a> mounts children into another DOM container
 (an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a>, a CSS selector, or a kernel node id;
