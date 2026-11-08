@@ -459,7 +459,8 @@
     if (op.length > 5 + t.texts.length) claimWrites(op[5 + t.texts.length]);
   }
   // The attribute and style values a claimed instance computed (its SET_ATTR
-  // and SET_STYLE commands), written where they differ from the server's.
+  // and SET_STYLE commands), written where they differ from the server's. A
+  // SET_STYLE with a fourth field set replaces the server's whole style.
   function claimWrites(writes) {
     for (let i = 0; i < writes.length; i++) {
       const w = writes[i];
@@ -472,6 +473,13 @@
       } else {
         const style = n.style;
         const decls = w[2];
+        if (w[3]) {
+          // A whole style: the server's other declarations go.
+          for (let j = style.length - 1; j >= 0; j--) {
+            const k = style.item(j);
+            if (!Object.prototype.hasOwnProperty.call(decls, k)) style.removeProperty(k);
+          }
+        }
         for (const k in decls) {
           const v = decls[k];
           if (v === null) style.removeProperty(k);

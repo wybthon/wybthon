@@ -95,7 +95,8 @@ OP_INTERCEPT = 29  # [op, event_type, on]  (dispatch the type even without handl
 # them as a clone would, and note where each slot's server content starts.
 # `hints` hold each text slot's text, or 0 when the slot holds nodes.
 # `writes`, when present, are the instance's SET_ATTR and SET_STYLE commands,
-# applied after the walk where they differ from the server's values.
+# applied after the walk where they differ from the server's values; a
+# SET_STYLE with a fourth field set replaces the server's whole style.
 OP_CLAIM_TPL = 30  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *hints, writes?]
 OP_CLAIM_SLOT = 31  # [op, parent_id, slot_id]  (point the parent's cursor at the slot's server content)
 
@@ -1069,7 +1070,14 @@ class PythonBackend:
                     node.setAttribute(w[2], w[3])
             else:
                 style = node.style
-                for key, value in w[2].items():
+                decls = w[2]
+                if len(w) > 3 and w[3]:
+                    # A whole style: the server's other declarations go.
+                    for i in range(style.length - 1, -1, -1):
+                        key = style.item(i)
+                        if key not in decls:
+                            style.removeProperty(key)
+                for key, value in decls.items():
                     if value is None:
                         style.removeProperty(key)
                     elif style.getPropertyValue(key) != value:

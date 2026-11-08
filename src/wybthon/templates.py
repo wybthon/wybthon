@@ -70,6 +70,7 @@ from ._dom_props import (
     apply_props,
     attach_ref,
     binding_value,
+    claimed_attribute,
     detach_ref,
     remove_bindings_for,
 )
@@ -1473,7 +1474,9 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
     Attribute and style values the first render computed ride in the claim
     command after its hints, and the kernel writes those that differ from
     the server's: a value only the browser can compute (stored state, the
-    user's language) is still corrected, without a command of its own.
+    user's language) is still corrected, without a command of its own. A
+    style replaces the server's declarations, and an attribute the first
+    render leaves out is removed.
     """
     compiled: _Compiled = vnode.props  # type: ignore[assignment]
     values: tuple[Any, ...] = vnode.children  # type: ignore[assignment]
@@ -1508,19 +1511,34 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
                     d = _prop_fn(nid, slot[3], values[index], index in probes)
                 else:
                     d = _prop_slot(nid, slot[3], values[index], index in probes)
+            # Attribute and style values ride in the claim command, which
+            # writes only those that differ from what the server wrote;
+            # property writes go as they are. The first value decides the
+            # attribute whole, as the server's did: a style replaces the
+            # server's declarations, and a value that leaves the attribute
+            # out (`None`, `False`) removes the server's.
+            style: dict[str, Any] | None = None
+            written = False
             if len(ops) > mark:
-                # Attribute and style values ride in the claim command, which
-                # writes only those that differ from what the server wrote;
-                # property writes go as they are.
                 for o in ops[mark:]:
-                    if o[0] == _OP_SET_ATTR or o[0] == _OP_SET_STYLE:
+                    if o[0] == _OP_SET_STYLE:
+                        style = {**style, **o[2]} if style is not None else dict(o[2])
+                    elif o[0] == _OP_SET_ATTR:
                         writes.append(o)
+                        written = True
                     else:
                         kept.append(o)
                 del ops[mark:]
                 if kept:
                     ops.extend(kept)
                     kept = []
+            if style is not None:
+                writes.append((_OP_SET_STYLE, nid, style, True))
+            elif not written and (d is None or d._applied_value is not _FRESH):
+                # Applied (not waiting on an async value), and nothing written.
+                attr = claimed_attribute(slot[3])
+                if attr is not None:
+                    writes.append((_OP_SET_ATTR, nid, attr, None))
         elif kind == _S_EVENT:
             v = values[slot[2]]
             if slot[5] and type(v) is not _events.EventHandler and callable(v):
@@ -1678,8 +1696,8 @@ def _child_slot(
         # placeholder. A list mounts as an anchored fragment, so it costs no
         # markers, and a later list of another length reconciles against
         # it. In an instance that's never patched (a component's output, a
-        # list row), a list of one node mounts as that node: no later list
-        # will be compared with it.
+        # list row; see `reconciler._patchable`), a list of one node mounts
+        # as that node: no later list will be compared with it.
         if t is VNode:
             node = value
         elif len(value) == 1 and type(value[0]) is VNode and not _reconciler._patchable:

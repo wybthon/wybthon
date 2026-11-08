@@ -226,20 +226,45 @@ def test_hydration_corrects_attribute_values_only_the_browser_computes(wyb):
 
     def view() -> Any:
         # The server renders first; the browser computes other values (a
-        # stored theme, say).
+        # stored theme, say), leaving out what the server wrote.
         renders.append(1)
         browser = len(renders) > 1
         theme = "dark" if browser else "light"
-        color = "white" if browser else "black"
-        return html(t"<main class={theme} style={ {'color': color} }>x</main>")
+        style = {"color": "white"} if browser else {"color": "black", "display": "none"}
+        title = None if browser else "server"
+        return html(t"<main class={theme} style={style} title={title} hidden={not browser}>x</main>")
 
     hydration = CountingHydration(wyb, view)
     result = hydration.result
+    assert result.mismatches == 0
     assert hydration.counts.get(OP_CLAIM_TPL) == 1
     assert OP_SET_ATTR not in hydration.counts
     main = next(n for n in nodes(result.container) if getattr(n, "tag", None) == "main")
     assert main.getAttribute("class") == "dark"
-    assert main.style.getPropertyValue("color") == "white"
+    assert main.getAttribute("style") == "color: white"
+    assert main.getAttribute("title") is None
+    assert main.getAttribute("hidden") is None
+
+
+def test_hydration_keeps_an_attribute_whose_value_is_still_loading(wyb):
+    import asyncio
+
+    renders: list[int] = []
+
+    async def load() -> str:
+        await asyncio.sleep(0)
+        return "loaded"
+
+    def view() -> Any:
+        renders.append(1)
+        if len(renders) == 1:
+            return html(t'<main title="server">x</main>')
+        # The browser's value is still on its way: the server's stays.
+        return html(t"<main title={load()}>x</main>")
+
+    hydration = CountingHydration(wyb, view)
+    main = next(n for n in nodes(hydration.result.container) if getattr(n, "tag", None) == "main")
+    assert main.getAttribute("title") == "server"
 
 
 def test_a_show_over_children_reopens(wyb, root_element):
@@ -277,6 +302,34 @@ def test_a_keyed_list_keeps_its_items_through_one_item(wyb, root_element):
         assert visible(root_element.element) == expected
     # Item 1 is set up once and kept; Item 2 is set up each time it comes back.
     assert setups == [1, 2, 2]
+
+
+def test_a_re_rendered_template_keeps_its_slot_list_through_one_item(wyb, root_element):
+    # A hole re-renders the same template, so its slot's list is patched:
+    # a list of one stays a fragment there (see `reconciler._patchable`).
+    ids, set_ids = create_signal([1])
+    setups: list[int] = []
+
+    class ItemProps(Props):
+        n: int
+
+    @component
+    def Item(props: ItemProps):
+        setups.append(props.n)
+        return html(t"<i>{props.n}</i>")
+
+    def view() -> Any:
+        # A plain list in the slot (not an expression the compiler wraps).
+        items = [Item(n=i, key=i) for i in ids()]
+        return html(t"<div>{items}</div>")
+
+    wyb["reconciler"].render(html(t"<p>{view()}</p>"), root_element)
+    flush()
+    for value, expected in (([1, 2], "12"), ([1], "1")):
+        set_ids(value)
+        flush()
+        assert visible(root_element.element) == expected
+    assert setups == [1, 2]
 
 
 def test_text_next_to_static_text_adopts_the_server_text(wyb):

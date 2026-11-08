@@ -2,7 +2,7 @@
 
 This evaluation compares [RFC 0010](../../docs/rfcs/0010-engine-v9.md) with v0.44.0 (`1fffede`). What changed in the engine:
 
-- a component tag mounts the template its body returns straight into its slot, and in a component's output a `children` list of one mounts as that child;
+- a component tag mounts the template its body returns straight into its slot, and in a template that's never patched a child slot holding a list of one node mounts that node without a fragment;
 - a `Show`, `For`, `Repeat`, `Switch`, or unkeyed fragment that fills a slot or a hole ends at its anchor and has no markers;
 - a server-rendered template instance hydrates with one `CLAIM_TPL` command, which carries its attribute values, plus one `CLAIM_SLOT` per slot holding nodes;
 - plain signal writes, template binding applies, `_read`, and static probes take shorter paths, and a template expression found reactive once isn't probed again.
@@ -100,7 +100,7 @@ Store rows mount 14% faster: a field binding's probe ran once per row, read the 
 
 ## Validation
 
-- **Unit tests:** 3,239 pass on Python 3.14 (one pyright test skips without pyright), with 82% branch coverage, including `tests/test_engine_v9.py` and a zero-mismatch hydration check over `tests/test_ssr_output.py`'s views.
+- **Unit tests:** 3,241 pass on Python 3.14 (one pyright test skips without pyright), with 82% branch coverage, including `tests/test_engine_v9.py` and a zero-mismatch hydration check over `tests/test_ssr_output.py`'s views.
 - **Typing and lint:** mypy, ruff, and the formatter pass.
 - **Browser tests:** 95 pass in Chromium on Pyodide 314.0.6, including the hydration and full-stack suites, which run the JavaScript kernel's `CLAIM_TPL` walk and correct an attribute value only the browser computes.
 

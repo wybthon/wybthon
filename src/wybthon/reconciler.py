@@ -118,11 +118,14 @@ def _bind_regions() -> None:
 # in place (see `wybthon._hmr`); `None` otherwise, so mounting pays nothing.
 _hot_track: Any = None
 
-# Whether a component mounted right now can later receive new props. Only
-# a tree returned by a reactive hole (or passed to `render`) is ever
-# patched; a component's own output, list rows, and branch content are
-# not. A component that can't be patched reads constant props without
-# subscribing to anything (see `Props`).
+# Whether what's mounting right now can later be patched. Only a tree
+# returned by a reactive hole (or passed to `render`) is ever patched; a
+# component's own output, list rows, and branch content are not. A
+# component that can't be patched reads constant props without subscribing
+# to anything (see `Props`), and a template instance that can't be patched
+# mounts a child slot's list of one node as that node (see
+# `templates._child_slot`), since no later list is compared with it. Any
+# path that patches a tree must have mounted it with this set.
 _patchable = True
 
 

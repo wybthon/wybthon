@@ -95,19 +95,48 @@ class _ClassList:
 
 
 class _Style:
-    __slots__ = ("_props",)
+    """An element's inline style, kept in step with its `style` attribute, as a browser keeps them."""
 
-    def __init__(self) -> None:
+    __slots__ = ("_props", "_owner")
+
+    def __init__(self, owner: TestNode | None = None) -> None:
         self._props: dict[str, str] = {}
+        self._owner = owner
 
     def setProperty(self, name: str, value: Any) -> None:
         self._props[name] = str(value)
+        self._sync()
 
     def removeProperty(self, name: str) -> None:
         self._props.pop(name, None)
+        self._sync()
 
     def getPropertyValue(self, name: str) -> str:
         return self._props.get(name, "")
+
+    @property
+    def length(self) -> int:
+        return len(self._props)
+
+    def item(self, index: int) -> str:
+        return list(self._props)[index]
+
+    def _parse(self, text: str) -> None:
+        """Replace the declarations with those of a `style` attribute (its owner already holds the text)."""
+        self._props = {}
+        for decl in text.split(";"):
+            if ":" in decl:
+                key, val = decl.split(":", 1)
+                self._props[key.strip()] = val.strip()
+
+    def _sync(self) -> None:
+        owner = self._owner
+        if owner is None:
+            return
+        if self._props:
+            owner.attributes["style"] = "; ".join(f"{k}: {v}" for k, v in self._props.items())
+        else:
+            owner.attributes.pop("style", None)
 
 
 class TestNode:
@@ -133,7 +162,7 @@ class TestNode:
         self.childNodes: list[TestNode] = []
         self.attributes: dict[str, str] = {}
         self.classList = _ClassList()
-        self.style = _Style()
+        self.style = _Style(self)
         self.value: Any = ""
         self.checked = False
         self.scrollTop = 0
@@ -188,12 +217,19 @@ class TestNode:
 
     def setAttribute(self, name: str, value: Any) -> None:  # noqa: D102 - DOM API
         self.attributes[name] = str(value)
+        if name == "style":
+            self.style._parse(str(value))
 
     def getAttribute(self, name: str) -> str | None:  # noqa: D102 - DOM API
         return self.attributes.get(name)
 
+    def hasAttribute(self, name: str) -> bool:  # noqa: D102 - DOM API
+        return name in self.attributes
+
     def removeAttribute(self, name: str) -> None:  # noqa: D102 - DOM API
         self.attributes.pop(name, None)
+        if name == "style":
+            self.style._props = {}
 
     def addEventListener(self, event_type: str, listener: Any, *_args: Any) -> None:  # noqa: D102 - DOM API
         self._listeners.setdefault(event_type, set()).add(listener)
@@ -265,11 +301,6 @@ class _Parser(HTMLParser):
             if name == "class":
                 for cls in value.split():
                     node.classList.add(cls)
-            elif name == "style":
-                for decl in value.split(";"):
-                    if ":" in decl:
-                        key, val = decl.split(":", 1)
-                        node.style.setProperty(key.strip(), val.strip())
         self._stack[-1].appendChild(node)
         return node
 

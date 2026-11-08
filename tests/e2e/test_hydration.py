@@ -39,6 +39,7 @@ def Home():
 
     # A value only the browser computes: hydration corrects the server's.
     side = "server" if is_server() else "browser"
+    style = {"color": "red", "outline": "1px solid"} if side == "server" else {"color": "blue"}
 
     # Kept as the server rendered it: never mounted, so it never updates.
     footer = html(t"""
@@ -50,7 +51,7 @@ def Home():
 
     return html(t"""
       <div>
-        <h1 id="title" data-side={side} style={ {"color": "red" if side == "server" else "blue"} }>Prerendered</h1>
+        <h1 id="title" data-side={side} title={"server" if side == "server" else None} style={style}>Prerendered</h1>
         <button id="count" onclick={increment}>Count: {count()}</button>
         <input id="name" value={text()} oninput={(lambda e: set_text(e.target.value))}>
         <p id="typed">Typed: {text()}</p>
@@ -102,6 +103,7 @@ def test_prerendered_page_hydrates_and_replays_early_input(browser, tmp_path):
         # The server's HTML is on screen before Python has started.
         assert page.locator("#title").inner_text() == "Prerendered"
         assert page.locator("#title").get_attribute("data-side") == "server"
+        assert page.locator("#title").get_attribute("title") == "server"
         assert page.locator("#static-count").inner_text() == "Static count: 0"
         page.locator("#static").evaluate("node => { node.__serverNode = true; }")
         assert page.locator("#greeting").inner_text() == "Hello, server"
@@ -121,6 +123,9 @@ def test_prerendered_page_hydrates_and_replays_early_input(browser, tmp_path):
         assert mismatches == 0
         assert page.locator("#title").get_attribute("data-side") == "browser"
         assert page.locator("#title").evaluate("node => node.style.color") == "blue"
+        # What only the server wrote is removed.
+        assert page.locator("#title").evaluate("node => node.style.outline") == ""
+        assert page.locator("#title").get_attribute("title") is None
         page.click("#count")
         assert page.locator("#count").inner_text() == "Count: 2"
         # The NoHydration region keeps the server's nodes and wires nothing.

@@ -331,6 +331,21 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
     write(node_id, old_val, new_val)
 
 
+def claimed_attribute(name: str) -> str | None:
+    """The one attribute prop `name`'s value decides whole, or None (hydration internal).
+
+    A claimed template instance removes this attribute when its first value
+    leaves it out, since the server may have written it. Event props,
+    `dataset` (one attribute per key), DOM properties, and skipped props
+    decide no single attribute.
+    """
+    if name in _SKIP or name in _DOM_PROPS or name == "dataset" or is_event_prop(name):
+        return None
+    if name == "class_":
+        return "class"
+    return attr_name(name)
+
+
 def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
     """Emit ops removing one prop from a DOM node."""
     if name in _SKIP:
