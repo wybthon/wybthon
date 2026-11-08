@@ -1657,23 +1657,16 @@ class Signal[T](Accessor[T]):
             and _in_action is None
             and not _held
             and not _optimistic_depth
-            and self._equals is _DEFAULT_EQUALS
             and (_current_observer is None or not _flushing)
         ):
             # A plain write (an event handler, a test, an effect's apply
             # stage outside any transition): `_set` with the origin it
-            # would compute (normal) and default equality, inlined.
+            # would compute (normal), inlined.
             if self._staged:
                 self._pending = value
                 return value
-            old = self._value
-            if value is old:
+            if not _changed(self._equals, self._value, value):
                 return value
-            try:
-                if value == old:
-                    return value
-            except Exception:
-                pass
             self._pending = value
             self._write_tx = None
             self._staged = True
@@ -1732,15 +1725,7 @@ class Signal[T](Accessor[T]):
         tx, self._write_tx = self._write_tx, None
         self._origin = _O_NORMAL
         old = self._value
-        if self._equals is _DEFAULT_EQUALS:
-            if new is old:
-                return
-            try:
-                if new == old:
-                    return
-            except Exception:
-                pass
-        elif not _changed(self._equals, old, new):
+        if not _changed(self._equals, old, new):
             return
         self._value = new
         if _track:
@@ -3560,7 +3545,8 @@ _probed_value: Any = None
 # `{row["label"]}` over a store is probed once, not once per row: the probe
 # reads the field, escapes with an exception, and the binding reads it again.
 # Skipping the probe only gives a binding a computation it might not have
-# needed. Bounded, since code objects can come and go (`exec`).
+# needed. A hot update clears it (see `wybthon._hmr`), so replaced code isn't
+# kept alive; the bound covers code made at run time (`exec`).
 _escaped_code: set[Any] = set()
 _ESCAPED_CODE_MAX: Final = 4096
 

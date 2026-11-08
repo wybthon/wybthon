@@ -60,7 +60,7 @@ hot path; `None` anchors mean "append".
 | `CLAIM_TEXT` | `id, parent_id, text` | Adopt the next text node, splitting text the HTML parser merged; empty text is created |
 | `CLAIM_COMMENT` | `id, parent_id, data` | Adopt the next comment; a keyed end marker (`/...`) resynchronizes by searching forward |
 | `CLAIM_STATIC` | `parent_id, end_marker` | Keep the server nodes before the marker as static DOM (a [`NoHydration`][wybthon.NoHydration] region) |
-| `CLAIM_TPL` | `first_id, tpl_id, parent_id, anchor_id, *hints` | Claim a server-rendered template instance: walk the template's skeleton against the server's nodes, register them under the ids a `CLONE` would give them, and note where each slot's content starts. A hint is a text slot's text, or `0` when the slot holds nodes |
+| `CLAIM_TPL` | `first_id, tpl_id, parent_id, anchor_id, *hints, writes?` | Claim a server-rendered template instance: walk the template's skeleton against the server's nodes, register them under the ids a `CLONE` would give them, and note where each slot's content starts. A hint is a text slot's text, or `0` when the slot holds nodes. `writes`, when present, are the instance's `SET_ATTR` and `SET_STYLE` commands, applied where they differ from the server's values |
 | `CLAIM_SLOT` | `parent_id, slot_id` | Point the parent's claim cursor at the server content of a claimed template's slot, before that content's own claims |
 | `HYDRATE_END` | none | Remove server nodes nobody claimed and stop claiming |
 

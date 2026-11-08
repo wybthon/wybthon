@@ -1414,6 +1414,8 @@ def expand(vnode: VNode) -> VNode:
 # so functions bound here keep working.
 _region_set: Any = None
 _region_commit: Any = None
+_coerce_result: Any = None
+_reconciler: Any = None
 _dispose_tree: Any = None
 _replace_hole_getter: Any = None
 _hole_updater: Any = None
@@ -1421,11 +1423,14 @@ _apply_hole: Any = None
 
 
 def _bind_reconciler() -> None:
-    global _region_set, _region_commit, _dispose_tree, _replace_hole_getter, _hole_updater, _apply_hole
+    global _region_set, _region_commit, _coerce_result, _reconciler, _dispose_tree
+    global _replace_hole_getter, _hole_updater, _apply_hole
     from . import reconciler
 
+    _reconciler = reconciler
     _region_set = reconciler._region_set
     _region_commit = reconciler._region_commit
+    _coerce_result = reconciler._coerce_result
     _dispose_tree = reconciler._dispose_tree
     _replace_hole_getter = reconciler._replace_hole_getter
     _hole_updater = reconciler._hole_updater
@@ -1449,20 +1454,6 @@ def _text_hole(nid: int, text: str, ns: str | None = None) -> VNode:
     return hole
 
 
-def mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
-    """Mount a template instance with one clone command, then fill its slots.
-
-    Each compiled template has a generated mount function (see
-    `_generate`): straight-line code with its offsets and names as
-    constants. A child slot whose value is text keeps it in its
-    placeholder and records the string; any other child slot records the
-    hole region it mounted.
-    """
-    if diagnostics._active is not None:
-        diagnostics._active.counts["template_clones"] += 1
-    vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
-
-
 _OP_SET_ATTR = kernel.OP_SET_ATTR
 _OP_SET_STYLE = kernel.OP_SET_STYLE
 
@@ -1479,9 +1470,10 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
     `OP_CLAIM_SLOT` (see `reconciler._region_commit`) points the parent's
     cursor at them; one that holds text adopts the server's. Each slot's
     content is positioned at `<instance>.<slot>`, as the server positions it.
-    Attribute bindings attach without resending the attribute and style
-    values the server wrote, as hydration assumes the first render matches
-    the server's.
+    Attribute and style values the first render computed ride in the claim
+    command after its hints, and the kernel writes those that differ from
+    the server's: a value only the browser can compute (stored state, the
+    user's language) is still corrected, without a command of its own.
     """
     compiled: _Compiled = vnode.props  # type: ignore[assignment]
     values: tuple[Any, ...] = vnode.children  # type: ignore[assignment]
@@ -1499,6 +1491,8 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
     deferred = compiled.deferred
     ops = kernel._ops
     dyn: list[Any] = []
+    writes: list[Any] = []
+    kept: list[Any] = []
     for k, slot in enumerate(compiled.plan):
         kind = slot[0]
         nid = first + slot[1]
@@ -1515,11 +1509,18 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
                 else:
                     d = _prop_slot(nid, slot[3], values[index], index in probes)
             if len(ops) > mark:
-                # The server wrote the attribute and style values the first
-                # apply computed: send only property writes.
-                kept = [o for o in ops[mark:] if o[0] != _OP_SET_ATTR and o[0] != _OP_SET_STYLE]
+                # Attribute and style values ride in the claim command, which
+                # writes only those that differ from what the server wrote;
+                # property writes go as they are.
+                for o in ops[mark:]:
+                    if o[0] == _OP_SET_ATTR or o[0] == _OP_SET_STYLE:
+                        writes.append(o)
+                    else:
+                        kept.append(o)
                 del ops[mark:]
-                ops.extend(kept)
+                if kept:
+                    ops.extend(kept)
+                    kept = []
         elif kind == _S_EVENT:
             v = values[slot[2]]
             if slot[5] and type(v) is not _events.EventHandler and callable(v):
@@ -1555,6 +1556,8 @@ def claim(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
             finally:
                 _core._restore_position(previous)
         dyn.append(d)
+    if writes:
+        op.append(writes)
     vnode.dyn = tuple(dyn)
 
 
@@ -1670,18 +1673,25 @@ def _child_slot(
     if _region_set is None:
         _bind_reconciler()
     t = type(value)
-    if t is list and len(value) == 1:
-        # `children` is a list, most often of one node.
-        value = value[0]
-        t = type(value)
-    if t is VNode and _core._session is None:
-        # A node: mount it in front of the placeholder.
+    if (t is VNode or t is list) and _core._session is None:
+        # A node, or a list (`children`): mount it in front of the
+        # placeholder. A list mounts as an anchored fragment, so it costs no
+        # markers, and a later list of another length reconciles against
+        # it. In an instance that's never patched (a component's output, a
+        # list row), a list of one node mounts as that node: no later list
+        # will be compared with it.
+        if t is VNode:
+            node = value
+        elif len(value) == 1 and type(value[0]) is VNode and not _reconciler._patchable:
+            node = value[0]
+        else:
+            node = _coerce_result(value)
         hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
         hole.ns = ns
         hole.el = nid
         hole._frag_end = nid
-        hole.subtree = value
-        _region_commit(None, value, parent_id, nid, ns)
+        hole.subtree = node
+        _region_commit(None, node, parent_id, nid, ns)
         return hole
     if is_accessor(value):
         fn = value

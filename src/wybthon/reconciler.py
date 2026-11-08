@@ -89,6 +89,8 @@ from .reactivity._core import (
     Owner,
     _bind,
     _ComponentContext,
+    _enter_component_setup,
+    _exit_component_setup,
     _Getter,
     _probe_target,
     flush,
@@ -524,8 +526,13 @@ def _mount_owned(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | 
     _core._current_observer = None
     try:
         if (
-            vnode.tag == "_tpl" and not kernel.claiming and kernel.html_templates and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
+            vnode.tag == "_tpl"
+            and not kernel.claiming
+            and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
+            and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
         ):
+            # `_clone`, inlined with its exact condition: this runs once per
+            # list row, the hottest mount there is.
             if diagnostics._active is not None:
                 diagnostics._active.counts["template_clones"] += 1
             vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
@@ -536,6 +543,29 @@ def _mount_owned(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | 
         _patchable = previous
         _core._current_owner = prev_owner
         _core._current_observer = prev_obs
+
+
+def _clone(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None, final: bool = True) -> bool:
+    """Mount a template instance with its compiled clone, if it can be; True when it was.
+
+    Hydration claims instead, and a backend without native templates, or
+    SVG and MathML names the HTML parser would change, mount the tree the
+    template stands for. A `final` instance (a list row, a branch, a
+    component's output) is never patched, so it releases its values: they
+    were only kept to diff against a re-rendered instance.
+    """
+    if (
+        kernel.claiming
+        or not (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
+        or not vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
+    ):
+        return False
+    if diagnostics._active is not None:
+        diagnostics._active.counts["template_clones"] += 1
+    vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
+    if final:
+        vnode.children = ()  # type: ignore[assignment]
+    return True
 
 
 def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None, final: bool = False) -> None:
@@ -558,18 +588,7 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
         return
 
     if tag == "_tpl":
-        if (
-            not kernel.claiming
-            and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
-            and vnode.props.clones[ns is not None]  # type: ignore[attr-defined]
-        ):
-            if diagnostics._active is not None:
-                diagnostics._active.counts["template_clones"] += 1
-            vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
-            if final:
-                # Never patched (a row, a component's output): the values
-                # were only kept to diff against a re-rendered instance.
-                vnode.children = ()  # type: ignore[assignment]
+        if _clone(vnode, parent_id, anchor_id, ns, final):
             return
         if kernel.claiming and ns is None and vnode.props.claimable:  # type: ignore[attr-defined]
             # Hydration: claim the server's instance with one command.
@@ -605,10 +624,6 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
 
     if tag == "_static":
         _mount_static(vnode, parent_id, anchor_id)
-        return
-
-    if callable(tag):
-        _mount_component(vnode, parent_id, anchor_id, ns)
         return
 
     _mount_element(vnode, parent_id, anchor_id, ns)
@@ -726,10 +741,11 @@ def _coerce_result(value: Any) -> VNode:
     if isinstance(value, VNode):
         return value
     if isinstance(value, (list, tuple)):
-        if len(value) == 1:
-            # One node needs no fragment and no markers around it: most
-            # `children` are a list of one.
-            return _coerce_result(value[0])
+        # Even a list of one stays a fragment: the same list can grow later
+        # (a keyed fragment reconciles its items), and its items may be
+        # shared (`props.children` mounted again by a reopened `Show`). A
+        # fragment that's a hole's whole content is anchored, so it costs
+        # no markers there.
         return Fragment(*value)
     if value is None or value is True or value is False:
         return to_text_vnode("")
@@ -1058,28 +1074,16 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     if keyed:
         position = f"{getattr(vnode, 'pk', None) or _core._position}:{component_name(comp)}"
         previous_position = _core._enter_position(position)
-    # `_enter_component_setup`, inlined.
-    saved_owner = _core._current_owner
-    saved_obs = _core._current_observer
-    saved_component = _core._setup_component
-    _core._current_owner = ctx
-    _core._current_observer = None
-    _core._setup_depth += 1
-    _core._setup_component = comp
+    saved = _enter_component_setup(ctx)
     try:
         try:
             if type(comp) is Component:
-                # `Component._render`, inlined: this runs once per instance.
+                # `Component._render` without its tuple: this runs once per instance.
                 cls = comp._props_class if comp._resolved else comp._resolve()
                 if cls is None:
                     result = comp.fn()
                 else:
-                    props = cls.__new__(cls)
-                    props._raw = vnode.props
-                    props._sig = None
-                    props._patchable = _patchable
-                    props._defaults = None
-                    ctx._props = props
+                    props = ctx._props = cls._wyb_bind(vnode.props, _patchable)
                     result = comp.fn(props)
             elif isinstance(comp, Component):
                 result, ctx._props = comp._render(vnode.props, _patchable)
@@ -1093,10 +1097,7 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
                 log_error(f"Render failed in component {component_name(comp)}", exc)
                 raise
     finally:
-        _core._current_owner = saved_owner
-        _core._current_observer = saved_obs
-        _core._setup_component = saved_component
-        _core._setup_depth -= 1
+        _exit_component_setup(saved)
         if keyed:
             _core._restore_position(previous_position)
 
@@ -1116,18 +1117,9 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     try:
         try:
             # A component's output is never patched: only its props update.
-            if (
-                sub_tree.tag == "_tpl"
-                and sub_tree.owner_scope is None
-                and not kernel.claiming
-                and kernel.html_templates
-                and sub_tree.props.clones[ns is not None]  # type: ignore[attr-defined]
-            ):
-                # The common case: the body returned one template instance.
-                if diagnostics._active is not None:
-                    diagnostics._active.counts["template_clones"] += 1
-                sub_tree.props.mount(sub_tree, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
-                sub_tree.children = ()  # type: ignore[assignment]
+            # The common case, the body returning one template instance,
+            # clones it without the general mount dispatch.
+            if sub_tree.tag == "_tpl" and sub_tree.owner_scope is None and _clone(sub_tree, parent_id, anchor_id, ns):
                 vnode.el = sub_tree.el
             else:
                 mount(sub_tree, parent_id, anchor_id, ns, True)

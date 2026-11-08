@@ -196,7 +196,7 @@ def test_components_and_show_hydrate_by_claim_and_stay_interactive(wyb):
     assert visible(result.container) == "One1childtopen"
 
 
-def test_hydration_attaches_attribute_bindings_without_resending_them(wyb):
+def test_hydration_sends_attribute_values_in_the_claim(wyb):
     selected, set_selected = create_signal(1)
     rows = [{"id": i, "label": f"row {i}"} for i in range(3)]
 
@@ -219,6 +219,64 @@ def test_hydration_attaches_attribute_bindings_without_resending_them(wyb):
     set_selected(2)
     flush()
     assert [tr.attributes.get("class") for tr in trs] == [None, None, "danger"]
+
+
+def test_hydration_corrects_attribute_values_only_the_browser_computes(wyb):
+    renders: list[int] = []
+
+    def view() -> Any:
+        # The server renders first; the browser computes other values (a
+        # stored theme, say).
+        renders.append(1)
+        browser = len(renders) > 1
+        theme = "dark" if browser else "light"
+        color = "white" if browser else "black"
+        return html(t"<main class={theme} style={ {'color': color} }>x</main>")
+
+    hydration = CountingHydration(wyb, view)
+    result = hydration.result
+    assert hydration.counts.get(OP_CLAIM_TPL) == 1
+    assert OP_SET_ATTR not in hydration.counts
+    main = next(n for n in nodes(result.container) if getattr(n, "tag", None) == "main")
+    assert main.getAttribute("class") == "dark"
+    assert main.style.getPropertyValue("color") == "white"
+
+
+def test_a_show_over_children_reopens(wyb, root_element):
+    open_, set_open = create_signal(True)
+
+    @component
+    def Collapsible(props: ParentProps):
+        return html(t"<div>{Show(open_, lambda: props.children)}</div>")
+
+    wyb["reconciler"].render(html(t"<main><{Collapsible}><b>hi {1}</b></{Collapsible}></main>"), root_element)
+    flush()
+    for value, expected in ((False, ""), (True, "hi 1"), (False, ""), (True, "hi 1")):
+        set_open(value)
+        flush()
+        assert visible(root_element.element) == expected
+
+
+def test_a_keyed_list_keeps_its_items_through_one_item(wyb, root_element):
+    ids, set_ids = create_signal([1])
+    setups: list[int] = []
+
+    class ItemProps(Props):
+        n: int
+
+    @component
+    def Item(props: ItemProps):
+        setups.append(props.n)
+        return html(t"<i>{props.n}</i>")
+
+    wyb["reconciler"].render(html(t"<p>{[Item(n=i, key=i) for i in ids()]}</p>"), root_element)
+    flush()
+    for value, expected in (([1, 2], "12"), ([1], "1"), ([2, 1], "21")):
+        set_ids(value)
+        flush()
+        assert visible(root_element.element) == expected
+    # Item 1 is set up once and kept; Item 2 is set up each time it comes back.
+    assert setups == [1, 2, 2]
 
 
 def test_text_next_to_static_text_adopts_the_server_text(wyb):

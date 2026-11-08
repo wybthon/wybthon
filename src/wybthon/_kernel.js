@@ -420,8 +420,6 @@
     hydrating.cursors.set(parent, c || null);
     reg(id, node);
   }
-  // Keep a server region the client won't hydrate (`NoHydration`) as static
-  // DOM: advance the parent's cursor to its end marker, which is claimed next.
   // Claim a server-rendered template instance (CLAIM_TPL): walk the
   // template's skeleton against the server's nodes, register them with the
   // pre-order ids a clone would get, and note where each slot's content
@@ -457,6 +455,29 @@
     for (let i = 0; i < t.listens.length; i++) {
       const entry = t.listens[i];
       addType(nodes.get(first + entry[0]), entry[1]);
+    }
+    if (op.length > 5 + t.texts.length) claimWrites(op[5 + t.texts.length]);
+  }
+  // The attribute and style values a claimed instance computed (its SET_ATTR
+  // and SET_STYLE commands), written where they differ from the server's.
+  function claimWrites(writes) {
+    for (let i = 0; i < writes.length; i++) {
+      const w = writes[i];
+      const n = nodes.get(w[1]);
+      if (n === undefined) continue;
+      if (w[0] === 8) {
+        if (w[3] === null) {
+          if (n.hasAttribute(w[2])) n.removeAttribute(w[2]);
+        } else if (n.getAttribute(w[2]) !== w[3]) n.setAttribute(w[2], w[3]);
+      } else {
+        const style = n.style;
+        const decls = w[2];
+        for (const k in decls) {
+          const v = decls[k];
+          if (v === null) style.removeProperty(k);
+          else if (style.getPropertyValue(k) !== v) style.setProperty(k, v);
+        }
+      }
     }
   }
   function take(w, n) {
@@ -583,6 +604,8 @@
     reg(id, prev);
     return true;
   }
+  // Keep a server region the client won't hydrate (`NoHydration`) as static
+  // DOM: advance the parent's cursor to its end marker, which is claimed next.
   function claimStatic(parentId, endData) {
     const parent = nodes.get(parentId);
     let c = cursorOf(parent);

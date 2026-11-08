@@ -569,8 +569,6 @@ class _Renderer:
 
     def claimed_slot(self, value: Any, text_slot: bool, out: list[Any], position: str) -> None:
         """A child slot's content and placeholder, as `wybthon.templates._child_slot` mounts it."""
-        if type(value) is list and len(value) == 1:
-            value = value[0]
         vt = type(value)
         if vt is str or vt is int or vt is float:
             out.append(_escape_text(value if vt is str else str(value)))

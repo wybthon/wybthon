@@ -94,7 +94,9 @@ OP_INTERCEPT = 29  # [op, event_type, on]  (dispatch the type even without handl
 # for the template's skeleton (its root from the parent's cursor), register
 # them as a clone would, and note where each slot's server content starts.
 # `hints` hold each text slot's text, or 0 when the slot holds nodes.
-OP_CLAIM_TPL = 30  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *hints]
+# `writes`, when present, are the instance's SET_ATTR and SET_STYLE commands,
+# applied after the walk where they differ from the server's values.
+OP_CLAIM_TPL = 30  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *hints, writes?]
 OP_CLAIM_SLOT = 31  # [op, parent_id, slot_id]  (point the parent's cursor at the slot's server content)
 
 # The comment a server render writes after a template slot's content, where
@@ -1049,6 +1051,29 @@ class PythonBackend:
             )
         for offset, event_type in listens:
             self._listen_op(first + offset, event_type)
+        if len(op) > 5 + len(texts):
+            self._claim_writes(op[5 + len(texts)])
+
+    def _claim_writes(self, writes: Any) -> None:
+        """Write the attribute and style values a claimed instance computed where they differ from the server's."""
+        nodes = self._nodes
+        for w in writes:
+            node = nodes.get(w[1])
+            if node is None:
+                continue
+            if w[0] == OP_SET_ATTR:
+                if w[3] is None:
+                    if node.getAttribute(w[2]) is not None:
+                        node.removeAttribute(w[2])
+                elif node.getAttribute(w[2]) != w[3]:
+                    node.setAttribute(w[2], w[3])
+            else:
+                style = node.style
+                for key, value in w[2].items():
+                    if value is None:
+                        style.removeProperty(key)
+                    elif style.getPropertyValue(key) != value:
+                        style.setProperty(key, value)
 
     def _claim_static(self, parent_id: int, end_marker: str) -> None:
         state = self._hydrating
