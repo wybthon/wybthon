@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from collections.abc import Callable
 from functools import lru_cache
 from types import CodeType
 from typing import Any
@@ -457,9 +458,9 @@ class _PropsRewriter(ast.NodeTransformer):
     own shadows the parameter inside it.
     """
 
-    def __init__(self, hidden: str, params: frozenset[str], static_names: set[str], fail: Any) -> None:
+    def __init__(self, hidden: str, params: frozenset[str], is_static: Callable[[ast.expr], bool], fail: Any) -> None:
         self.hidden = hidden
-        self.static_names = static_names
+        self.is_static = is_static
         self.fail = fail
         self.stack: list[tuple[str, frozenset[str]]] = [("function", params)]
 
@@ -505,10 +506,9 @@ class _PropsRewriter(ast.NodeTransformer):
         raise self.fail(node, f"{node.id!r} is a component parameter, which is a read-only prop; assign to a new name")
 
     def visit_Call(self, node: ast.Call) -> ast.AST:
-        # `is_static(title)` asks about the parameter, not its value.
+        # `is_static(title)` (or `wybthon.is_static(title)`) asks about the parameter, not its value.
         if (
-            isinstance(node.func, ast.Name)
-            and node.func.id in self.static_names
+            self.is_static(node.func)
             and len(node.args) == 1
             and not node.keywords
             and isinstance(node.args[0], ast.Name)
@@ -588,7 +588,9 @@ class _PropsRewriter(ast.NodeTransformer):
             else:
                 node.elt = self.visit(node.elt)
 
-        self._scoped("comprehension", self.active - targets, inner)
+        # A comprehension's body is a function scope: it doesn't see the names
+        # of a class body it's written in, only the enclosing functions'.
+        self._scoped("comprehension", self._function_active() - targets, inner)
         return node
 
     visit_ListComp = _comprehension
@@ -605,13 +607,15 @@ class _Components(ast.NodeTransformer):
         self.lines = lines
         self.names = names
         self.packages = packages
-        self.static_names = {local for local, name in names.items() if name == "is_static"}
         self.count = 0
 
     def fail(self, node: ast.AST, message: str) -> SyntaxError:
         line = getattr(node, "lineno", 1)
         text = self.lines[line - 1] if 0 < line <= len(self.lines) else ""
         return SyntaxError(message, (self.filename, line, getattr(node, "col_offset", 0) + 1, text))
+
+    def _is_static(self, func: ast.expr) -> bool:
+        return _recognized(func, self.names, self.packages) == "is_static"
 
     def _is_component(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
         return any(_recognized(d, self.names, self.packages) == "component" for d in node.decorator_list)
@@ -625,7 +629,13 @@ class _Components(ast.NodeTransformer):
                 args.vararg,
                 f"Component {node.name} can't take *{args.vararg.arg}; declare a `children` parameter for its content",
             )
-        params = [arg.arg for arg in (*args.posonlyargs, *args.args, *args.kwonlyargs)]
+        if args.posonlyargs:
+            raise self.fail(
+                args.posonlyargs[0],
+                f"Component {node.name} can't take positional-only parameters; props are passed by name, "
+                "as a tag's attributes are, so remove the `/`",
+            )
+        params = [arg.arg for arg in (*args.args, *args.kwonlyargs)]
         if not params and args.kwarg is None:
             return self.generic_visit(node)
         names = frozenset(params)
@@ -639,16 +649,16 @@ class _Components(ast.NodeTransformer):
                 )
         hidden = f"__wybthon_props{self.count}__"
         self.count += 1
-        body = copy.deepcopy(node.body)
-        rewriter = _PropsRewriter(hidden, names, self.static_names, self.fail)
-        body = rewriter._visit_list(body)
-        prologue: list[ast.stmt] = []
+        first = node.body[0]
         docstring = (
-            body
-            and isinstance(body[0], ast.Expr)
-            and isinstance(body[0].value, ast.Constant)
-            and isinstance(body[0].value.value, str)
+            isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str)
         )
+        # The body moves to the implementation (rewritten in place); the
+        # signature keeps only a copy of the docstring.
+        signature_body: list[ast.stmt] = [copy.deepcopy(first)] if docstring else []
+        rewriter = _PropsRewriter(hidden, names, self._is_static, self.fail)
+        body = rewriter._visit_list(node.body)
+        prologue: list[ast.stmt] = []
         if docstring:
             prologue.append(body.pop(0))
         if args.kwarg is not None:
@@ -680,7 +690,6 @@ class _Components(ast.NodeTransformer):
         if isinstance(node, ast.AsyncFunctionDef):
             implementation = ast.AsyncFunctionDef(**{f: getattr(implementation, f) for f in implementation._fields})  # type: ignore[assignment]
         ast.copy_location(implementation, node)
-        signature_body: list[ast.stmt] = [node.body[0]] if docstring else []
         signature_body.append(ast.copy_location(ast.Expr(value=ast.Constant(value=...)), node))
         node.body = signature_body
         marker = ast.Call(func=_runtime("props"), args=[ast.Name(id=node.name, ctx=ast.Load())], keywords=[])
@@ -892,8 +901,12 @@ class _Compiler(ast.NodeTransformer):
 
         The arguments have been compiled already. In a template, a
         component call in content is prepared as one in a child position
-        is, so it still receives getters for its dynamic props.
+        is, so it still receives getters for its dynamic props. In a class
+        body content stays eager: a function there can't see the class's
+        names.
         """
+        if self.scopes and self.scopes[-1].kind == "class":
+            return
         for index in positions:
             if index < len(call.args) and self._content(call.args[index]):
                 call.args[index] = self._thunk(call.args[index])

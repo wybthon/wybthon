@@ -142,7 +142,7 @@ html(t"""
 """)
 ```
 
-Attributes become keyword props (a hyphen becomes an underscore, `class` and `for` become `class_` and `html_for`, and a handler such as `onclick` becomes `on_click`, the spelling of a callback parameter and of a spread), and the content becomes the `children` prop, which the component receives through its `children` parameter, one child per top-level node. A dynamic attribute value, such as `title={project().name}`, is passed as a getter, the way Solid passes JSX props. Close the tag with `</{Card}>`, or self-close it with `<{Card} />`. The built-ins work the same way, called the way their signatures take children:
+Attributes become keyword props (a hyphen becomes an underscore, `class` and `for` become `class_` and `html_for`, and a handler such as `onclick`, `onClick`, or `on:confirm` becomes `on_click` or `on_confirm`, the spelling of a callback parameter and of a spread; other names starting with "on", such as `online`, are ordinary props), and the content becomes the `children` prop, which the component receives through its `children` parameter, one child per top-level node. A dynamic attribute value, such as `title={project().name}`, is passed as a getter, the way Solid passes JSX props. Close the tag with `</{Card}>`, or self-close it with `<{Card} />`. The built-ins work the same way, called the way their signatures take children:
 
 ```python
 html(t"""

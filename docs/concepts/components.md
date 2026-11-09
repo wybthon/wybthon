@@ -76,7 +76,8 @@ as Python's scoping rules say, so `[title for title in titles]` is
 fine.
 
 A component can't take `*args`; declare a `children` parameter for its
-content. A `**rest` parameter collects the props the component doesn't
+content. It can't take positional-only parameters (`/`) either, since a
+tag passes every prop by name. A `**rest` parameter collects the props the component doesn't
 declare (see [Forwarding with `**rest`](#forwarding-with-rest-merge-and-omit)).
 
 ### Components must be compiled
@@ -215,7 +216,11 @@ html(t"""
 
 Attributes become keyword props, and a hyphen becomes an underscore
 (`user-id` is `user_id`). A handler attribute takes the Python spelling
-of a callback parameter: `onclick={save}` is `on_click`. A quoted value is a string; pass anything
+of a callback parameter: `onclick={save}` and `onClick={save}` are
+`on_click`, `onValueChange` is `on_value_change`, and `on:confirm` is
+`on_confirm`. Lowercase `on` names count as handlers only for standard
+DOM events, so `online` and `once` stay props of those names; write a
+custom callback as `on:confirm` or `on_confirm`. A quoted value is a string; pass anything
 else, including numbers, expressions, and callbacks, with `{...}`. A
 dynamic value (`title={project().name}`) is passed as a getter. Type
 checkers can't see inside the template string, so on their own they

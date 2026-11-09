@@ -630,6 +630,11 @@ def test_the_pytest_plugin_compiles_test_modules():
     assert getattr(rewrite.rewrite_asserts, "_wybthon", False)
     assert wybthon_pytest.COMPILER_TAG == _hook.COMPILER_TAG
     assert _hook.COMPILER_TAG in rewrite.PYC_TAIL
+    # The plugin keeps its own copy of the hook's candidate rule (so loading
+    # it doesn't import Wybthon); the two must pick the same modules.
+    assert wybthon_pytest._NAMES == _hook._NAMES
+    for source in (b"import wybthon\nx = 1", b"from wybthon import html\nhtml(t'<p/>')", b"from wybthon import Show"):
+        assert wybthon_pytest._is_candidate(source) == _hook.is_candidate(source)
     # This very module's templates were compiled by it.
     found = [value for name, value in globals().items() if name.startswith("__wybthon_t")]
     assert not found  # this module has no html() calls of its own

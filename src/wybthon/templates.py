@@ -485,7 +485,7 @@ def _check_event_name(name: str, parser: _Parser) -> None:
 
 
 def _component_prop(name: str, parser: _Parser) -> str:
-    prop = name.replace("-", "_")
+    prop = _prop_name(name)
     if not prop.isidentifier():
         raise parser.error(f"{name!r} isn't a valid component prop name")
     return prop
@@ -1263,19 +1263,49 @@ def _call_style(comp: Any) -> tuple[int, tuple[str, ...]]:
     return style
 
 
+# The standard DOM events, for telling a handler attribute on a component tag
+# (`onclick`) from a prop whose name starts with "on" (`online`, `once`).
+_DOM_EVENTS = frozenset(
+    """
+    abort animationcancel animationend animationiteration animationstart auxclick beforeinput
+    beforetoggle blur cancel canplay canplaythrough change click close contextmenu copy cuechange
+    cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied
+    ended error focus focusin focusout formdata gotpointercapture input invalid keydown keypress
+    keyup load loadeddata loadedmetadata loadstart lostpointercapture mousedown mouseenter
+    mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel
+    pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress
+    ratechange reset resize scroll scrollend securitypolicyviolation seeked seeking select
+    selectionchange selectstart slotchange stalled submit suspend timeupdate toggle touchcancel
+    touchend touchmove touchstart transitioncancel transitionend transitionrun transitionstart
+    volumechange waiting wheel
+    """.split()
+)
+
+
 def _prop_name(name: str) -> str:
     """A component tag attribute's prop name: `class` is `class_`, and a handler (`onclick`) is `on_click`.
 
     Handlers take the Python spelling a callback parameter and a spread
     use, so `<{Button} onclick={save}>` reaches `on_click: Callable[...]`
-    and, through `**rest`, binds on the element the rest spreads onto.
+    and, through `**rest`, binds on the element the rest spreads onto. A
+    handler is `on:` followed by any name (`on:confirm` is `on_confirm`),
+    a camelCase name (`onValueChange` is `on_value_change`), or `on`
+    followed by a standard DOM event (`onclick`). Other names starting
+    with "on" (`online`, `once`) are props like any other.
     """
     keyword = _KEYWORD_PROPS.get(name)
     if keyword is not None:
         return keyword
     name = name.replace("-", "_")
-    if len(name) > 2 and name[:2] == "on" and name[2] != "_":
-        return "on_" + (name[3:] if name[2] == ":" else name[2:]).lower()
+    if len(name) <= 2 or name[:2] != "on":
+        return name
+    rest = name[2:]
+    if rest[0] == ":":
+        return "on_" + rest[1:]
+    if rest[0].isupper():
+        return "on_" + re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", rest).lower()
+    if rest in _DOM_EVENTS:
+        return "on_" + rest
     return name
 
 

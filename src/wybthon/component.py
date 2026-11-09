@@ -161,19 +161,21 @@ class Component[**P]:
 
 
 def declared_props(comp: Any) -> frozenset[str] | None:
-    """The props a component declares, or `None` when it accepts any (internal).
+    """The props a component declares by name, or `None` when it can't say (internal).
 
-    A component with a `**rest` parameter, a lazy component, and a plain
-    function used as a tag accept any props. The router passes a route's
-    component only the route props (`params`, `search`, `data`,
-    `children`) it declares.
+    A component with a `**rest` parameter also accepts props it doesn't
+    declare, but its declared names are still returned: the router passes
+    a route's component only the route props (`params`, `search`, `data`,
+    `children`) it declares, so they never land in its `**rest` spread.
+    A lazy component, a built-in, and a plain function used as a tag
+    return `None`.
     """
     if type(comp) is not Component:
         return None
     cls = comp._resolve()
     if cls is None:
         return frozenset()
-    if cls._wyb_open or cls._wyb_internal:
+    if cls._wyb_internal:
         return None
     return cls._wyb_names
 

@@ -51,7 +51,7 @@ Creating 1,000 rows makes 61,094 Python calls on both, and a row keeps 2,464 byt
 
 ## Validation
 
-- **Unit tests:** 3,240 pass on Python 3.14, with 82% branch coverage, including `tests/test_engine_v10.py`.
+- **Unit tests:** 3,261 pass on Python 3.14, with 82% branch coverage, including `tests/test_engine_v10.py`.
 - **Browser tests:** 95 pass in Chromium on Pyodide, including the hydration, full-stack, and production-build suites.
 - **Typing and lint:** mypy, ruff, and the formatter pass; the typing fixtures pass under mypy and pyright.
 

@@ -186,7 +186,12 @@ class Props:
                 raise TypeError(
                     f"Component {name} can't take *{param.name}; declare a `children` parameter for its content"
                 )
-            if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
+            if param.kind is param.POSITIONAL_ONLY:
+                raise TypeError(
+                    f"Component {name} can't take positional-only parameters; props are passed by name, "
+                    "as a tag's attributes are, so remove the `/`"
+                )
+            if param.kind is param.POSITIONAL_OR_KEYWORD:
                 positional.append(param.name)
             default: Any = param.default
             factory: Callable[[], Any] | None = None

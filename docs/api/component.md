@@ -40,7 +40,8 @@ a component returns a `VNode`, so trees compose like any other node.
   with item syntax (`Card(title="Hi")[...]`).
 - **`**rest`** (any name, such as `**attrs: Any`) collects the props
   the component doesn't declare, as a reactive, read-only view that
-  spreads onto an element (`<div {attrs}>`). `*args` isn't allowed.
+  spreads onto an element (`<div {attrs}>`). `*args` and positional-only
+  parameters (`/`) aren't allowed.
 - **Arguments bind as in a Python call**: `Greeting("Ada")` is
   `Greeting(name="Ada")`. Positional arguments are never children.
 - **Parameters are read-only**: assigning to one, `del`, rebinding it

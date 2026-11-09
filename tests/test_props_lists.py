@@ -4,6 +4,8 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
+import pytest
+
 from wybthon.reactivity import (
     create_effect,
     create_memo,
@@ -121,13 +123,20 @@ def test_is_static_reports_whether_the_parent_passed_a_plain_value(wyb):
 
 
 def test_signature_props_know_their_positional_names_and_rest(wyb):
-    def _card(title: str, /, body: str = "", *, tone: str = "plain", **rest: Any) -> None: ...
+    def _card(title: str, body: str = "", *, tone: str = "plain", **rest: Any) -> None: ...
 
     cls = props_class("Card", _card)
     assert cls._wyb_positional == ("title", "body")
     assert cls._wyb_open
     props = cls(title="t", id="x")
     assert sorted(props._wyb_rest()) == ["id"]
+
+
+def test_signature_props_reject_positional_only_parameters(wyb):
+    def _badge(text: str, /) -> None: ...
+
+    with pytest.raises(TypeError, match="positional-only"):
+        props_class("Badge", _badge)
 
 
 # ---------------------------------------------------------------------------

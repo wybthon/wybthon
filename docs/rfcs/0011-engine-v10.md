@@ -59,7 +59,7 @@ npm's `next` is still `solid-js@2.0.0-rc.21` and `latest` is `1.9.18`; no stable
 
 `@component` keeps its runtime type, [`Component`][wybthon.Component]. Its function's parameters declare the props:
 
-- Positional-or-keyword, positional-only, and keyword-only parameters are props, with ordinary defaults. `prop(default_factory=list)` gives a parameter a default created once per instance; `prop(default=...)` is removed.
+- Positional-or-keyword and keyword-only parameters are props, with ordinary defaults. Positional-only parameters are rejected, because a tag passes every prop by name. `prop(default_factory=list)` gives a parameter a default created once per instance; `prop(default=...)` is removed.
 - A `**rest` parameter collects the props the component doesn't declare, as a reactive read-only view (the view `omit` returns), which spreads onto an element. It makes the component accept any props.
 - `*args` is rejected (by the compiler, and at run time for an uncompiled function).
 - A parameter annotated as callable (`Callable[...]`, `Accessor[T]`, alone or in a union with `None`) returns exactly what the parent passed; any other parameter unwraps a getter or accessor the parent passed, as fields did.
@@ -112,11 +112,13 @@ An uncompiled component with parameters (a module imported before `wybthon`, `ex
 
 For a call of `Show`, `Match`, `Switch`, `Loading`, `Errored`, or `client_only` imported from Wybthon, the arguments that hold content (`Show`'s `children` and `fallback`, `Match`'s `children`, `Switch`'s `fallback`, and the `children` and `fallback` of the others, by position or keyword) become zero-argument functions when they're markup (`html(t"...")`) or a call whose callee's name is capitalized (a component). The flow controls already accepted zero-argument functions, which their regions call when a branch mounts, inside the branch's scope. Inside a template, a component call in content is first prepared as one in a child position is (`wybthon._compiled.call`), so it still receives getters for its dynamic props. Names, lambdas, and lowercase calls, which may produce callbacks (`Show(user, greeting)`), are passed as written, and captured names follow the getters' rule (captured by value when their binding can change, as in a loop).
 
-The tag form (`<{Show} when={...}>content</{Show}>`) still builds its content when the tag is created.
+The tag form (`<{Show} when={...}>content</{Show}>`) still builds its content when the tag is created, and so does a call written directly in a class body, since a function there can't see the class's names.
 
 ### Handlers on component tags
 
 A component tag's attribute that names a handler (`onclick`, `onClick`, `on:click`), which the compiler already passed as is rather than as a getter, now becomes the prop `on_click`: the spelling of a callback parameter (`on_click: Callable[[], None]`), and the spelling a spread binds as a delegated handler, so `<{Button} onclick={save}>` reaches a `**rest` spread on the button. Before, it arrived as `onclick` and a spread wrote it as a string attribute.
+
+A handler is `on:` followed by any name (`on:confirm` is `on_confirm`), a camelCase name (`onValueChange` is `on_value_change`), or `on` followed by a standard DOM event (`onclick`). Any other name starting with "on" (`online`, `once`) is an ordinary prop, so the rule depends only on the spelling, and `wyb check` applies it the same way.
 
 ### Typing
 
@@ -124,7 +126,7 @@ To a type checker, `component` returns the decorated function's own type with a 
 
 ### The router
 
-`RouteProps` is removed. A route's component declares the route props it uses as parameters, `params: dict[str, str]`, `search: SearchParams`, `data: Any`, and `children: Children`, and the router passes only those (`wybthon.component.declared_props`). A component with `**rest`, or a plain function, receives all four; a lazy component's are filtered once it loads. Extra parameters with defaults replace subclassing `RouteProps`.
+`RouteProps` is removed. A route's component declares the route props it uses as parameters, `params: dict[str, str]`, `search: SearchParams`, `data: Any`, and `children: Children`, and the router passes only those (`wybthon.component.declared_props`). A component with `**rest` also receives only the ones it declares, so route props never land in its spread; a plain function receives all four; and a lazy component's are filtered once it loads. Extra parameters with defaults replace subclassing `RouteProps`.
 
 ### The import hook
 
@@ -173,7 +175,7 @@ A candidate module mentions `wybthon` and either contains a t-string with `html`
 
 ## Testing
 
-- The unit suite (3,240 tests, 82% branch coverage), including `tests/test_engine_v10.py` (the compiled form, aliases, nested components, handlers reading current props, pass-through, `is_static(param)`, `**rest` updates and `key`, every lazy flow control, content components receiving getters, loop captures, laziness outside templates, lazy route components) and a rewritten `tests/test_component.py` (positional binding, signatures, read-only parameters, shadowing, uncompiled modules, `prop()`).
+- The unit suite (3,261 tests, 82% branch coverage), including `tests/test_engine_v10.py` (the compiled form, aliases, nested components, handlers reading current props, pass-through, `is_static(param)`, `**rest` updates and `key`, every lazy flow control, content components receiving getters, loop captures, laziness outside templates, lazy route components) and a rewritten `tests/test_component.py` (positional binding, signatures, read-only parameters, shadowing, uncompiled modules, `prop()`).
 - The typing fixtures under mypy and pyright, with the new `no-key` case and messages that name the component.
 - `wyb check` against parameter components.
 - The browser suite (95 tests in Chromium on Pyodide), including the full-stack, hydration, and production-build suites, whose apps now declare parameters.

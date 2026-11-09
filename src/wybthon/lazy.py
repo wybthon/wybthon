@@ -186,6 +186,8 @@ class LazyComponent(Component[...]):
                 if declared is not None:
                     forwarded = {k: v for k, v in forwarded.items() if k not in optional or k in declared}
             if isinstance(comp, Component):
+                # `h(lazy_comp, {"key": ...})` keys this node; the loaded component takes no key.
+                forwarded.pop("key", None)
                 return comp(*args, **forwarded)
             children = forwarded.pop("children", None)
             if args:

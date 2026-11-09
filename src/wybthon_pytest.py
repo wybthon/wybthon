@@ -31,7 +31,8 @@ def _is_wybthon_module(module_path: Any) -> bool:
     return module_path is not None and Path(str(module_path)).resolve().is_relative_to(_PACKAGE)
 
 
-# Matches `wybthon._hook.is_candidate`.
+# Matches `wybthon._hook.is_candidate` (a test checks they agree); copied so
+# loading the plugin doesn't import Wybthon.
 _NAMES = (b"component", b"Show", b"Match", b"Switch", b"Loading", b"Errored", b"client_only")
 
 

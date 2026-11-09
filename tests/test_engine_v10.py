@@ -217,12 +217,44 @@ def test_handlers_on_a_component_tag_reach_callbacks_and_rest_spreads():
     def confirm() -> None:
         clicks.append("confirm")
 
-    view = html(t"<div><{Button} label='Save' onclick={save} /><{Confirm} onconfirm={confirm} /></div>")
+    view = html(t"<div><{Button} label='Save' onclick={save} /><{Confirm} on:confirm={confirm} /></div>")
     with render(view) as screen:
         fire.click(screen.get_by_text("Save"))
         fire.click(screen.get_by_text("ok"))
         assert "onclick" not in screen.html()
     assert clicks == ["save", "confirm"]
+
+
+@pytest.mark.parametrize(
+    ("attribute", "prop"),
+    [
+        ("onclick", "on_click"),
+        ("onClick", "on_click"),
+        ("on:click", "on_click"),
+        ("on_click", "on_click"),
+        ("on:confirm", "on_confirm"),
+        ("onValueChange", "on_value_change"),
+        ("onHTMLLoad", "on_html_load"),
+        ("online", "online"),
+        ("once", "once"),
+        ("only", "only"),
+        ("onboarding-step", "onboarding_step"),
+        ("onconfirm", "onconfirm"),
+    ],
+)
+def test_component_tag_handler_names_and_props_starting_with_on(attribute: str, prop: str):
+    from wybthon.templates import _prop_name
+
+    assert _prop_name(attribute) == prop
+
+
+def test_a_prop_starting_with_on_reaches_its_parameter():
+    @component
+    def Status(online: bool, once: bool = False):
+        return html(t"<p>{'up' if online else 'down'}, {'once' if once else 'always'}</p>")
+
+    with render(html(t"<{Status} online={True} once={True} />")) as screen:
+        assert screen.get_by_text("up, once", exact=False)
 
 
 def test_an_async_component_body_is_rejected_at_its_first_render_like_any_other():
@@ -433,3 +465,121 @@ def test_for_rows_are_unaffected():
         set_items(["a", "b"])
         flush()
         assert screen.text() == "ab"
+
+
+# ---------------------------------------------------------------------------
+# Review fixes
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def dev_mode():
+    from wybthon import _warnings
+
+    previous = _warnings.is_dev_mode()
+    _warnings.set_dev_mode(True)
+    try:
+        yield
+    finally:
+        _warnings.set_dev_mode(previous)
+
+
+def test_a_keyed_lazy_component_loads_in_dev_mode(dev_mode):
+    # `h(comp, {"key": ...})` keys the lazy node; the loaded component takes no key.
+    from wybthon.vnode import h
+
+    @component
+    def Page(title: str):
+        return html(t"<p>{title}</p>")
+
+    page = lazy(lambda: Page)
+    with render(h(page, {"key": 1, "title": "Hi"})) as screen:
+        flush()
+        assert screen.text() == "Hi"
+
+
+def test_is_static_is_recognized_through_the_package():
+    out = compiled(
+        """
+        import wybthon as w
+
+        @w.component
+        def Icon(name: str):
+            return w.is_static(name)
+        """
+    )
+    assert "w.is_static(__wybthon_props0__, 'name')" in out
+
+
+def test_a_route_component_with_rest_gets_only_the_route_props_it_declares():
+    from wybthon.router import Route, create_router, navigate
+
+    @component
+    def Home():
+        return html(t"<p>home</p>")
+
+    @component
+    def Page(params: dict[str, str], **attrs: Any):
+        return html(t"<main {attrs}>page {params['id']}</main>")
+
+    router = create_router([Route("/", Home), Route("/p/:id", Page)])
+    with render(router()) as screen:
+        navigate("/p/5")
+        flush()
+        assert "page 5" in screen.text()
+        for name in ("params", "search", "data", "children"):
+            assert name not in screen.html()
+
+
+def test_content_in_a_class_body_stays_eager():
+    # A function in a class body can't see the class's names, so content there isn't deferred.
+    out = compiled(
+        """
+        from wybthon import Show, html
+
+        class Views:
+            banner = html(t"<b>Hi</b>")
+            page = Show(True, Card(title=banner))
+        """
+    )
+    assert "Show(True, Card(title=banner))" in out
+
+
+def test_a_comprehension_in_a_class_body_reads_the_parameter():
+    # The comprehension's body skips the class scope, so the class's `title` doesn't shadow the parameter.
+    out = compiled(
+        """
+        from wybthon import component
+
+        @component
+        def Card(title: str):
+            class M:
+                title = 'x'
+                names = [title for _ in range(2)]
+            return M.names
+        """
+    )
+    assert "names = [__wybthon_props0__.title for _ in range(2)]" in out
+    assert "title = 'x'" in out
+
+
+def test_positional_only_parameters_are_rejected():
+    with pytest.raises(SyntaxError, match="positional-only"):
+        compiled(
+            """
+            from wybthon import component
+
+            @component
+            def Badge(text: str, /):
+                return text
+            """
+        )
+
+
+def test_an_uncompiled_component_with_positional_only_parameters_is_rejected():
+    from wybthon.component import Component
+
+    namespace: dict[str, Any] = {}
+    exec("def Badge(text, /):\n    return text\n", namespace)
+    with pytest.raises(TypeError, match="positional-only"):
+        Component(namespace["Badge"])._resolve()

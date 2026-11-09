@@ -173,6 +173,14 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** declare `children: Children = None` (from `wybthon`) and place `{children}` in the markup. Callers pass children as nested markup in the tag form, with the `children=` keyword, or with item syntax: `Card(title="Hi")[html(t"<p>a</p>"), html(t"<p>b</p>")]`. To accept arbitrary keyword props, use `**rest` instead.
 
+??? bug "`SyntaxError: Component Badge can't take positional-only parameters`"
+
+    **Symptoms:** importing a module fails with a `SyntaxError` that ends ``so remove the `/` ``.
+
+    **Likely cause:** the component's signature has a `/`. A component tag passes every prop by name (`<{Badge} text="New" />`), so a prop can't be positional-only.
+
+    **Fix:** remove the `/`. Callers can still pass the parameter positionally (`Badge("New")`).
+
 ??? bug "`TypeError: Component X takes props as parameters, which only Wybthon's compiler makes reactive, and its module wasn't compiled`"
 
     **Symptoms:** in dev mode, calling a component that has parameters raises this `TypeError`.
