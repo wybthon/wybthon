@@ -10,7 +10,7 @@ pages linked in the left column carry the details.
 | Area | Names |
 | --- | --- |
 | [Templates](templates.md) | `html`, `TemplateError`, `Node` |
-| [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `prop`, `merge`, `omit`, `is_static`, `resolve_children`, `flatten`, `ChildrenAccessor` |
+| [Components](component.md) | `component`, `Component`, `Children`, `prop`, `merge`, `omit`, `is_static`, `resolve_children`, `flatten`, `ChildrenAccessor` |
 | [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_root`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_flush`, `on_cleanup`, `untrack`, `get_owner`, `run_with_owner`, `WriteInScopeError` |
 | [Async](reactivity.md) | `NotReadyError`, `ServerError`, `is_pending`, `latest`, `refresh`, `resolve`, `from_source`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Stores](store.md) | `Store`, `StoreList`, `StoreObject`, `StoreSetter`, `DraftExpiredError`, `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
@@ -27,7 +27,7 @@ Other modules are imported by name and aren't re-exported:
 
 | Module | Contents |
 | --- | --- |
-| [`wybthon.router`](router.md) | `create_router`, `Router`, `Route`, `RouteProps`, `PreloadArgs`, `Outlet`, `navigate`, `url`, `use_location`, `Location`, `use_params`, `Params`, `use_search_params`, `SearchParamsView`, `SearchParams`, `use_route_matches`, `use_link_state`, `LinkState`, `preload_route`, `file_routes`, `match_route`, `RouteSpec`; the data layer: `query`, `revalidate`, `form_action`, `use_submissions` |
+| [`wybthon.router`](router.md) | `create_router`, `Router`, `Route`, `PreloadArgs`, `Outlet`, `navigate`, `url`, `use_location`, `Location`, `use_params`, `Params`, `use_search_params`, `SearchParamsView`, `SearchParams`, `use_route_matches`, `use_link_state`, `LinkState`, `preload_route`, `file_routes`, `match_route`, `RouteSpec`; the data layer: `query`, `revalidate`, `form_action`, `use_submissions` |
 | [`wybthon.asgi`](../concepts/full-stack.md) | `create_app`, which serves pages, server functions, and form actions per request |
 | [`wybthon.forms`](forms.md) | `form_state`, `FormState`, `Field`, the `bind_*` helpers, validators, and ARIA helpers |
 | [`wybthon.server`](server.md) | `render_to_string`, `render_to_stream`, `RenderStream` |
@@ -38,16 +38,12 @@ Other modules are imported by name and aren't re-exported:
 | [`wybthon.reactivity`](reactivity.md) | The reactive core, async, and props names above, plus `Owner`, `get_observer`, `create_reaction`, `map_array`, `repeat`, `is_accessor`, `Computation`, and `Transition` |
 
 ```python
-from wybthon import Props, component, create_signal, html, render, untrack
-
-
-class CounterProps(Props):
-    initial: int = 0
+from wybthon import component, create_signal, html, render, untrack
 
 
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.initial))
+def Counter(initial: int = 0):
+    count, set_count = create_signal(untrack(lambda: initial))
 
     def increment():
         set_count(lambda n: n + 1)

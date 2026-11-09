@@ -19,7 +19,7 @@ TODOS = '''"""Todos with a flash message for JavaScript-free posts."""
 from dataclasses import dataclass
 
 from wybthon import FormData, For, Loading, component, create_memo, html, redirect, server_function
-from wybthon.router import RouteProps, form_action, query, use_submissions
+from wybthon.router import form_action, query, use_submissions
 
 
 @dataclass

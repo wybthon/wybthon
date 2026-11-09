@@ -3,18 +3,14 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
-from wybthon import Accessor, For, Props, Show, action, component, create_signal, create_store, html
+from wybthon import Accessor, For, Show, action, component, create_signal, create_store, html
 from wybthon.vnode import VNode
 
 
-class StrictProps(Props):
-    name: str
-
-
 @component
-def Greeting(props: StrictProps) -> VNode:
-    props.name = "x"  # error: assign-prop
-    return html(t"<p>{props.name}</p>")
+def Greeting(name: str) -> VNode:
+    wrong: Accessor[str] = name  # error: value-is-not-accessor
+    return html(t"<p>{wrong}</p>")
 
 
 @component
@@ -29,7 +25,7 @@ Greeting(name="Ada", typo=True)  # error: unknown-prop
 Bare(title="x")  # error: no-props
 Greeting(name=name)  # error: accessor-is-not-value
 html(t"<div>{Greeting(name=len(name()))}</div>")  # error: template-call
-wrong: Accessor[str] = Greeting(name="Ada").name  # error: value-is-not-accessor
+Greeting(name="Ada", key="k")  # error: no-key
 
 
 class Person(TypedDict):

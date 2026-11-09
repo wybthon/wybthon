@@ -22,7 +22,6 @@ from js import window
 from wybthon import (
     Accessor,
     For,
-    Props,
     Setter,
     component,
     create_projection,
@@ -247,20 +246,15 @@ def _row(row, _index):
     )
 
 
-class BenchRowProps(Props):
-    row_id: int
-    label: str
-
-
 @component
-def BenchRow(props: BenchRowProps):
-    row_id = untrack(lambda: props.row_id)
+def BenchRow(row_id: int, label: str):
+    key = untrack(lambda: row_id)
     return html(
-        t"""<tr class={"danger" if is_selected.get(props.row_id) else ""}>
-              <td class="col-md-1">{props.row_id}</td>
-              <td class="col-md-4"><a onclick={(lambda: select(row_id))}>{props.label}</a></td>
+        t"""<tr class={"danger" if is_selected.get(row_id) else ""}>
+              <td class="col-md-1">{row_id}</td>
+              <td class="col-md-4"><a onclick={(lambda: select(key))}>{label}</a></td>
               <td class="col-md-1">
-                <a onclick={(lambda: delete(row_id))}>
+                <a onclick={(lambda: delete(key))}>
                   <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
                 </a>
               </td>

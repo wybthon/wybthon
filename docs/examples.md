@@ -4,11 +4,11 @@ Walk through focused examples of the framework's core features. Every example wr
 
 | Example | What it shows |
 | --- | --- |
-| [Counter](examples/counter.md) | Signals, memos, [`html`][wybthon.html] templates whose dynamic expressions become reactive holes, and typed `Props` with defaults. |
+| [Counter](examples/counter.md) | Signals, memos, [`html`][wybthon.html] templates whose dynamic expressions become reactive holes, and typed props with defaults, declared as parameters. |
 | [Async fetch](examples/fetch.md) | Async [`create_memo`][wybthon.create_memo] with a [`Loading`][wybthon.Loading] boundary, refetching, and [`is_pending`][wybthon.is_pending]. |
 | [Forms](examples/forms.md) | [`form_state`][wybthon.forms.form_state], bindings, validation, and accessibility helpers from `wybthon.forms`. |
 | [Error handling](examples/errors.md) | Recovering from render and async errors with [`Errored`][wybthon.Errored] and its `err` accessor. |
-| [Router](examples/router.md) | [`create_router`][wybthon.router.create_router], [`Route`][wybthon.router.Route], layouts, [`use_link_state`][wybthon.router.use_link_state], [`RouteProps`][wybthon.router.RouteProps], and lazy routes. |
+| [Router](examples/router.md) | [`create_router`][wybthon.router.create_router], [`Route`][wybthon.router.Route], layouts, [`use_link_state`][wybthon.router.use_link_state], route props declared as parameters, and lazy routes. |
 | [Authoring patterns](examples/authoring-patterns.md) | Component tags and composition with `children`, lists with `For`, stores, actions, and cleanup. |
 
 !!! tip "Complete apps"

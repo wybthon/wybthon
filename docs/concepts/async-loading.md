@@ -200,17 +200,13 @@ any registered computation has no value yet it shows `fallback`; once
 everything has a first value it reveals the content.
 
 ```python
-from wybthon import Loading, Props, component, create_memo, html
-
-
-class ProfileProps(Props):
-    user_id: int
+from wybthon import Loading, component, create_memo, html
 
 
 @component
-def Profile(props: ProfileProps):
+def Profile(user_id: int):
     async def load_user():
-        return await fetch_json(f"/api/users/{props.user_id}")  # tracked: refetches on change
+        return await fetch_json(f"/api/users/{user_id}")  # tracked: refetches on change
 
     user = create_memo(load_user)
 
@@ -225,8 +221,8 @@ def Profile(props: ProfileProps):
     )
 ```
 
-- `children` may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass nodes directly: the compiler turns `{user()["name"]}` into a getter, so the read doesn't run until the boundary mounts it. `fallback` may be a node, a string, or a callable.
-- Reading `props.user_id` inside the memo tracks it like any signal, so the parent passing a new id (`<{Profile} user_id={selected()} />`) refetches without remounting `Profile`.
+- `children` may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass markup directly: the compiler makes content written as `html(t"...")` or a component call into a zero-argument function, so it's built when the boundary builds it, and it turns `{user()["name"]}` into a getter, so the read doesn't run until the content mounts. `fallback` may be a node, a string, or a callable; written as markup or a component call, it's lazy too, so it costs nothing unless it shows.
+- Reading the `user_id` parameter inside the memo tracks it like any signal, so the parent passing a new id (`<{Profile} user_id={selected()} />`) refetches without remounting `Profile`.
 - Any read that raises `NotReadyError` under the boundary registers its computation automatically; there's no manual wiring.
 - **Content stays mounted.** The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.
 - **Refreshes don't re-trigger the boundary.** Once the content has shown, a recompute is a transition (the old content stays put), not a return to the fallback.

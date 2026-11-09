@@ -39,7 +39,7 @@ js = ModuleType("js")
 js.document = None
 sys.modules["js"] = js
 
-import wybthon  # noqa: E402,F401
+import wybthon  # noqa: E402
 from wybthon import kernel  # noqa: E402
 
 try:
@@ -74,7 +74,24 @@ from wybthon.reactivity import create_signal, flush  # noqa: E402
 from wybthon.reconciler import render  # noqa: E402
 from wybthon.vnode import h  # noqa: E402
 
-ROWS = '''
+# The components in each checkout's idiom: parameters are props from Engine
+# v10 (RFC 0011); a `ParentProps` class before it.
+CARDS = '''
+from wybthon import Children, Show, component, create_signal, html
+
+
+@component
+def Card(title: str, count: int = 0, children: Children = None):
+    return html(t"""<div class="card"><h3>{title}</h3><span>{count}</span><button onclick={(lambda: None)}>t</button>{children}</div>""")
+
+
+@component
+def ShowCard(title: str, count: int = 0, children: Children = None):
+    open_, _ = create_signal(False)
+    return html(t"""<div class="card"><h3>{title}</h3><span>{count}</span><button onclick={(lambda: None)}>t</button>{Show(open_(), html(t"<p>open</p>"))}{children}</div>""")
+'''
+
+CARDS_V9 = '''
 from wybthon import ParentProps, Show, component, create_signal, html
 
 
@@ -92,6 +109,12 @@ def Card(props: CardProps):
 def ShowCard(props: CardProps):
     open_, _ = create_signal(False)
     return html(t"""<div class="card"><h3>{props.title}</h3><span>{props.count}</span><button onclick={(lambda: None)}>t</button>{Show(open_(), html(t"<p>open</p>"))}{props.children}</div>""")
+'''
+
+ROWS = (
+    (CARDS_V9 if hasattr(wybthon, "ParentProps") else CARDS)
+    + '''
+from wybthon import Show, create_signal, html
 
 
 def plain(item, index):
@@ -114,6 +137,7 @@ def component_show(item, index):
 def table(items, row):
     return html(t"<section>{For(items, row)}</section>")
 '''
+)
 
 rows_module = ModuleType("component_bench_rows")
 sys.modules["component_bench_rows"] = rows_module

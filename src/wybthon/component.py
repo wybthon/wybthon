@@ -1,67 +1,64 @@
 """The `@component` decorator and the `Component` type it produces.
 
 Wybthon components **run once**: the body executes a single time when
-the component mounts and returns a tree. Inputs are declared on a
-[`Props`][wybthon.Props] class and arrive as one typed parameter, the
-counterpart of Solid's `props` object:
+the component mounts and returns its markup. A component declares its
+inputs as ordinary parameters, which are its props:
 
 ```python
-class CounterProps(Props):
-    label: str = "Count"
-    initial: int = 0
-
-
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.initial))
+def Counter(label: str = "Count", initial: int = 0):
+    count, set_count = create_signal(untrack(lambda: initial))
 
     def increment():
         set_count(lambda n: n + 1)
 
-    return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
+    return html(t"<div><p>{label}: {count()}</p><button onclick={increment}>+</button></div>")
 
 
 render(Counter(initial=10), "#app")
 ```
 
-Reading `props.label` returns the parent's value, tracked; in markup the
-compiler turns `{props.label}` into a getter, so it updates when the
-parent passes an expression that changes.
+Wybthon's compiler turns every read of a parameter in the body into a
+tracked read of the parent's current value, as reading a property of
+Solid's props object is. So `{label}` in the markup updates when the
+parent passes an expression that changes, and a handler that reads a
+parameter reads its latest value. Reading one at the top level of the
+body reads it once, as destructuring Solid's props does; dev mode warns
+when the value was reactive.
 
-Calling a component with keyword props returns a node, and so does a
-component tag in a template (`<{Counter} initial={5} />`). Type checkers
-see the call as constructing the props class, so missing, mistyped, and
-unknown props are errors without a plugin. A component with no inputs
-takes no parameters.
-
-Children are the `children` prop. Pass them as a tag's content, as a
-keyword, or with item syntax on the call:
-`Card(title="Hi")[html(t"<p>Body</p>")]`. Declare them with
-[`ParentProps`][wybthon.ParentProps].
+Calling a component returns a node, and so does a component tag in a
+template (`<{Counter} initial={5} />`). Type checkers see the call as a
+call of the function, so missing, mistyped, and unknown props are errors
+without a plugin. Content arrives as the `children` parameter: a tag's
+markup, the `children` keyword, or item syntax on the call,
+`Card(title="Hi")[html(t"<p>Body</p>")]`. A `**rest` parameter collects
+the props the component doesn't declare, as a reactive view that
+spreads onto an element.
 """
 
 from __future__ import annotations
 
+import annotationlib
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any, Protocol, overload
+from typing import TYPE_CHECKING, Any
 
 from . import _warnings
 from .reactivity._props import Props
 from .vnode import Node, VNode, flatten_children
 
-__all__ = ["component", "Component", "builtin"]
+__all__ = ["component", "Component", "builtin", "declared_props"]
 
 
-class Component:
+class Component[**P]:
     """A run-once component produced by [`component`][wybthon.component].
 
-    Calling it returns a [`VNode`][wybthon.vnode.VNode]; the reconciler runs the
-    wrapped function once per mount.
+    Calling it returns a [`VNode`][wybthon.vnode.VNode]; the reconciler runs
+    the component's body once per mount.
     """
 
-    __slots__ = ("fn", "_props_class", "_resolved", "__dict__")
+    __slots__ = ("fn", "signature", "_props_class", "_resolved", "_compiled", "__dict__")
 
     # A component call in a compiled template receives getters for its
     # dynamic props (see `wybthon._compiled.call`).
@@ -71,49 +68,80 @@ class Component:
     __qualname__: str
 
     def __init__(self, fn: Callable[..., Any]) -> None:
-        self.fn = fn
+        body = getattr(fn, "__wybthon_body__", None)
+        # The function whose signature declares the props.
+        self.signature = fn
+        # What runs at mount: the compiled body, which takes the props object.
+        self.fn: Callable[..., Any] = body if body is not None else fn
+        self._compiled = body is not None
         self._props_class: type[Props] | None = None
         self._resolved = False
         functools.update_wrapper(self, fn, updated=())
 
     def _resolve(self) -> type[Props] | None:
-        """Find the props class from the function's single parameter annotation (lazily)."""
+        """Build the props class from the function's signature (on first use)."""
         if self._resolved:
             return self._props_class
+        fn = self.signature
         try:
-            params = list(inspect.signature(self.fn, eval_str=True).parameters.values())
-        except NameError as exc:
-            raise TypeError(f"Component {self.fn.__qualname__}: can't resolve its props annotation ({exc})") from exc
+            params = list(inspect.signature(fn, annotation_format=annotationlib.Format.FORWARDREF).parameters.values())
+        except (TypeError, ValueError) as exc:  # pragma: no cover - every function has a signature
+            raise TypeError(f"Component {fn.__qualname__}: can't read its signature ({exc})") from exc
+        cls: type[Props] | None
         if not params:
             cls = None
-        elif len(params) == 1 and params[0].kind in (params[0].POSITIONAL_ONLY, params[0].POSITIONAL_OR_KEYWORD):
-            cls = params[0].annotation
-            if not (isinstance(cls, type) and issubclass(cls, Props)):
-                raise TypeError(
-                    f"Component {self.fn.__qualname__} must take no parameters or one parameter annotated with a "
-                    "Props subclass (class CardProps(Props): ...; def Card(props: CardProps))."
-                )
+        elif not self._compiled and (internal := _internal_props(fn, params)) is not None:
+            cls = internal
         else:
-            raise TypeError(
-                f"Component {self.fn.__qualname__} must take no parameters or one parameter annotated with a "
-                "Props subclass."
-            )
+            cls = Props._wyb_from_signature(fn.__qualname__, params)
+            if not self._compiled:
+                if _warnings.DEV_MODE:
+                    raise TypeError(
+                        f"Component {fn.__qualname__} takes props as parameters, which only Wybthon's compiler "
+                        "makes reactive, and its module wasn't compiled. Modules imported after wybthon, wyb build, "
+                        "wyb dev, wyb run, and pytest compile components; see the compiler documentation."
+                    )
+                self.fn = _uncompiled(fn, cls)
         self._props_class = cls
         self._resolved = True
         return cls
 
-    def __call__(self, *children: Any, **props: Any) -> VNode:
-        """Return a node for this component; positional arguments become `children`."""
-        if children:
-            props["children"] = flatten_children(children)
+    def _hot_replace(self, other: Component[Any]) -> None:
+        """Take on another component's code, keeping this object's identity (hot module replacement)."""
+        self.signature = other.signature
+        self.fn = other.fn
+        self._compiled = other._compiled
+        self._props_class = None
+        self._resolved = False
+        for attribute in ("__doc__", "__wrapped__", "__annotations__"):
+            if hasattr(other, attribute):
+                setattr(self, attribute, getattr(other, attribute))
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Node:
+        """Return a node for this component; arguments bind to its parameters as in a call."""
+        props: dict[str, Any] = kwargs
+        if args:
+            cls = self._resolve()
+            if cls is not None and cls._wyb_internal:
+                props["children"] = flatten_children(args)
+            else:
+                names = cls._wyb_positional if cls is not None else ()
+                if len(args) > len(names):
+                    raise TypeError(
+                        f"{self.__qualname__}() takes {len(names)} positional argument(s) but {len(args)} were given"
+                    )
+                for name, value in zip(names, args, strict=False):
+                    if name in props:
+                        raise TypeError(f"{self.__qualname__}() got multiple values for argument {name!r}")
+                    props[name] = value
         if _warnings.DEV_MODE:
             cls = self._resolve()
             if cls is None:
-                if props.keys() - {"key"}:
+                if props:
                     raise TypeError(f"{self.__qualname__}() takes no props")
             else:
                 cls._wyb_check(props, self.__qualname__)
-        return VNode(self, props, [], props.get("key"))
+        return VNode(self, props, [])
 
     def _render(self, props: dict[str, Any], patchable: bool) -> tuple[Any, Props | None]:
         """Run the body once; returns its result and the live props instance.
@@ -132,6 +160,51 @@ class Component:
         return f"<component {self.__qualname__}>"
 
 
+def declared_props(comp: Any) -> frozenset[str] | None:
+    """The props a component declares, or `None` when it accepts any (internal).
+
+    A component with a `**rest` parameter, a lazy component, and a plain
+    function used as a tag accept any props. The router passes a route's
+    component only the route props (`params`, `search`, `data`,
+    `children`) it declares.
+    """
+    if type(comp) is not Component:
+        return None
+    cls = comp._resolve()
+    if cls is None:
+        return frozenset()
+    if cls._wyb_open or cls._wyb_internal:
+        return None
+    return cls._wyb_names
+
+
+def _internal_props(fn: Callable[..., Any], params: list[inspect.Parameter]) -> type[Props] | None:
+    """The props class of one of Wybthon's built-ins, which take their props object as their one parameter."""
+    if len(params) != 1 or params[0].kind not in (params[0].POSITIONAL_ONLY, params[0].POSITIONAL_OR_KEYWORD):
+        return None
+    annotation = params[0].annotation
+    if isinstance(annotation, str):
+        # A module with `from __future__ import annotations`, as Wybthon's own are.
+        try:
+            annotation = inspect.signature(fn, eval_str=True).parameters[params[0].name].annotation
+        except Exception:
+            return None
+    return annotation if isinstance(annotation, type) and issubclass(annotation, Props) else None
+
+
+def _uncompiled(fn: Callable[..., Any], cls: type[Props]) -> Callable[[Props], Any]:
+    """Run a component whose module wasn't compiled with its props' current values (outside dev mode)."""
+    names = tuple(cls._wyb_fields)
+
+    def body(props: Props) -> Any:
+        values = {name: getattr(props, name) for name in names}
+        if cls._wyb_open:
+            values.update({key: value for key, value in props._raw.items() if key not in values})
+        return fn(**values)
+
+    return body
+
+
 def builtin[F](fn: F) -> F:
     """Mark a built-in that renders markup, so compiled templates pass it getters (internal).
 
@@ -143,45 +216,33 @@ def builtin[F](fn: F) -> F:
     return fn
 
 
-class PlainComponent(Protocol):
-    """The static type of a component without props: called with nothing but an optional `key`."""
+if TYPE_CHECKING:
+    # To a type checker a component is its own function returning a node, so
+    # a call is checked against the function's signature and errors name it.
+    def component[**P](fn: Callable[P, object]) -> Callable[P, Node]:
+        """Declare a function as a run-once Wybthon component."""
+        ...
 
-    def __call__(self, *, key: str | int | None = None) -> Node: ...
+else:
 
+    def component(fn: Callable[..., object]) -> Component[...]:
+        """Declare a function as a run-once Wybthon component.
 
-@overload
-def component[P: Props](fn: Callable[[P], Any]) -> type[P]: ...
-@overload
-def component(fn: Callable[[], Any]) -> PlainComponent: ...
-def component(fn: Callable[..., Any]) -> Any:
-    """Declare a function as a run-once Wybthon component.
+        The function's parameters are its props. Calling the result returns
+        a node for the tree; type checkers check the call against the
+        function's own signature.
 
-    The function takes no parameters, or one parameter annotated with a
-    [`Props`][wybthon.Props] subclass. Calling the result returns a node
-    for the tree.
-
-    Static typing: the decorated object is typed as the props class (or
-    as a callable taking only `key`), so a type checker validates each
-    call's keywords against the declared fields, and every props class is
-    a [`Node`][wybthon.Node], so the call can be returned from a function
-    annotated `-> Node`. At run time it's a
-    [`Component`][wybthon.Component] that returns a node.
-
-    Example:
-        ```python
-        class GreetingProps(Props):
-            name: str = "world"
+        Example:
+            ```python
+            @component
+            def Greeting(name: str = "world"):
+                return html(t"<p>Hello, {name}!</p>")
 
 
-        @component
-        def Greeting(props: GreetingProps):
-            return html(t"<p>Hello, {props.name}!</p>")
-
-
-        Greeting(name="Ada")                       # a node
-        html(t"<{Greeting} name={user().name} />")  # updates when user() changes
-        ```
-    """
-    if isinstance(fn, Component):
-        return fn
-    return Component(fn)
+            Greeting(name="Ada")                       # a node
+            html(t"<{Greeting} name={user().name} />")  # updates when user() changes
+            ```
+        """
+        if isinstance(fn, Component):
+            return fn
+        return Component(fn)

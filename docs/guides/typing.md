@@ -4,28 +4,23 @@ Wybthon requires Python 3.14. Its accessors, components, actions, and stores car
 
 ## Component props
 
-Components declare their inputs on a [`Props`][wybthon.Props] subclass with plain annotations. `Props` is a [PEP 681](https://peps.python.org/pep-0681/) `dataclass_transform` base, so a type checker treats each props class as a keyword-only constructor and checks every component call against it:
+A component declares its inputs as ordinary, annotated parameters. To a type checker, an `@component` is the function itself, returning a [`Node`][wybthon.Node], so pyright, Pylance, and mypy check every call against the function's own signature, with no plugin:
 
 ```python
 from collections.abc import Callable
 
-from wybthon import Node, Props, component, create_signal, html, prop
-
-
-class GreetingProps(Props):
-    name: str
-    copies: int = 1
-    tags: list[str] = prop(default_factory=list)
-    on_wave: Callable[[], None] | None = None
+from wybthon import Node, component, create_signal, html, prop
 
 
 @component
-def Greeting(props: GreetingProps) -> Node:
+def Greeting(
+    name: str, copies: int = 1, tags: list[str] = prop(default_factory=list), on_wave: Callable[[], None] | None = None
+) -> Node:
     def wave() -> None:
-        if props.on_wave is not None:
-            props.on_wave()
+        if on_wave is not None:
+            on_wave()
 
-    return html(t"<p onclick={wave}>{props.name * props.copies}</p>")
+    return html(t"<p onclick={wave}>{name * copies}</p>")
 
 
 name, set_name = create_signal("Ada")
@@ -34,9 +29,9 @@ Greeting(name="Ada", copies=2, on_wave=lambda: print("hi"))
 html(t"<div>{Greeting(name=name(), copies=2)}</div>")
 ```
 
-- Inside the component, a field reads as its annotation: `props.name` is a `str`, and `props.copies` is an `int`. The read is tracked, so `{props.name * props.copies}` updates when either changes.
+- Inside the component, a parameter has its annotated type: `name` is a `str`, and `copies` is an `int`. The compiler makes each read a tracked read of the parent's current value, so `{name * copies}` updates when either changes.
 - A caller passes values of the declared types. In a template, `{Greeting(name=name())}` type-checks as `name: str`, and the compiler still passes a getter, so the prop stays reactive. In Python code outside a template, `Greeting(name=name)` passes the accessor itself, which works at run time (the read unwraps it) but is a type error, because an `Accessor[str]` isn't a `str`.
-- A missing required prop, a value of the wrong type, and an unknown keyword are all type errors:
+- A missing required prop, a value of the wrong type, and an unknown keyword are all type errors, and the messages name the component:
 
 ```python
 Greeting(name=42)  # incompatible type
@@ -44,20 +39,18 @@ Greeting()  # missing "name"
 Greeting(name="Ada", typo=1)  # unexpected keyword "typo"
 ```
 
+mypy reports the last two as `Missing positional argument "name" in call to "Greeting"` and `Unexpected keyword argument "typo" for "Greeting"`. Positional arguments bind to parameters as in any call, so `Greeting("Ada")` is checked as `Greeting(name="Ada")`.
+
 At run time, dev mode raises `TypeError` for the same unknown and missing props, so code that isn't type checked still fails loudly.
 
-### Callable fields
+### Callable parameters
 
-A field annotated as callable, with `Callable[...]` or [`Accessor[T]`][wybthon.Accessor], alone or in a union with `None`, is returned exactly as the parent passed it. That's how callbacks work: reading `props.on_wave` never calls it, so `props.on_wave()` calls the parent's function. Every other field unwraps an accessor the parent passes, so a field that should hold a function must be annotated as one.
+A parameter annotated as callable, with `Callable[...]` or [`Accessor[T]`][wybthon.Accessor], alone or in a union with `None`, reads as exactly what the parent passed. That's how callbacks work: reading `on_wave` never calls it, so `on_wave()` calls the parent's function. Every other parameter unwraps an accessor the parent passes, so a parameter that should hold a function must be annotated as one.
 
-Annotate a field `Accessor[T]` when the component needs the accessor itself, for example to hand it to `For`:
+Annotate a parameter `Accessor[T]` when the component needs the accessor itself, for example to hand it to `For`:
 
 ```python
-from wybthon import Accessor, For, Node, Props, component, html
-
-
-class TagListProps(Props):
-    items: Accessor[list[str]]
+from wybthon import Accessor, For, Node, component, html
 
 
 def tag(item: str, index: Accessor[int]) -> Node:
@@ -65,43 +58,42 @@ def tag(item: str, index: Accessor[int]) -> Node:
 
 
 @component
-def TagList(props: TagListProps) -> Node:
-    items = props.items  # the accessor itself
-    return html(t"<ul>{For(items, tag)}</ul>")
+def TagList(items: Accessor[list[str]]) -> Node:
+    return html(t"<ul>{For(items, tag)}</ul>")  # items is the accessor itself
 ```
 
-Reading a callable field returns what the parent passed without calling it, so reading it once at the top of the body freezes nothing. The parent passes the accessor by name, `{TagList(items=tags)}`; an expression such as `tags()` would hand the component a getter, which every read unwraps, even for a callable field.
+Reading a callable parameter returns what the parent passed without calling it, so reading it once at the top of the body freezes nothing. The parent passes the accessor by name, `{TagList(items=tags)}`; an expression such as `tags()` would hand the component a getter, which every read unwraps, even for a callable parameter.
 
 ### Defaults
 
-Defaults work as in a dataclass (`copies: int = 1`, `on_wave: ... = None`). Use [`prop(default_factory=list)`][wybthon.prop] for a mutable value; the factory runs once per component instance. `prop(default=value)` also works, but type checkers only recognize a field specifier's default when it's passed by keyword, so a positional `prop(0)` isn't accepted.
+Defaults are ordinary parameter defaults (`copies: int = 1`, `on_wave: ... = None`). Use [`prop(default_factory=list)`][wybthon.prop] for a mutable value; the factory runs once per component instance. `prop()` is typed to return the factory's result, so `tags: list[str] = prop(default_factory=list)` checks.
 
 ### Children
 
-[`ParentProps`][wybthon.ParentProps] declares `children: Any`. Both the `children` keyword and item syntax are checked:
+Declare a `children` parameter, annotated with [`Children`][wybthon.Children], to accept content. `Children` is an alias of `Any`, for documentation. Both the `children` keyword and item syntax are checked:
 
 ```python
-from wybthon import Node, ParentProps, component, html
-
-
-class CardProps(ParentProps):
-    title: str
+from wybthon import Children, Node, component, html
 
 
 @component
-def Card(props: CardProps) -> Node:
-    return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
+def Card(title: str, children: Children = None) -> Node:
+    return html(t"<div><h2>{title}</h2>{children}</div>")
 
 
 Card(title="Hi")[html(t"<p>a</p>"), html(t"<p>b</p>")]
 Card(title="Hi", children=html(t"<p>a</p><p>b</p>"))
 ```
 
-Positional children (`Card(html(t"<p>a</p>"), title="Hi")`) work at run time, but checkers reject them because the props constructor is keyword-only.
+Positional arguments aren't children: they bind to parameters in order, so `Card(html(t"<p>a</p>"))` passes the markup as `title` and is reported as an incompatible type. Item syntax on a call type-checks through `Node.__getitem__`.
+
+### Forwarded props
+
+A `**rest` parameter collects the props a component doesn't declare. Annotate it `**attrs: Any`: a checker then accepts any extra keyword, as the component does at run time, while the declared parameters stay checked.
 
 ### What a component call returns
 
-`@component` is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. To a type checker every props class is a [`Node`][wybthon.Node], the type of anything that renders, so a component call can be returned from a function annotated `-> Node`, kept in a `list[Node]`, or passed as children. At run time the call returns a [`VNode`][wybthon.vnode.VNode], which is a `Node` too. A component with no parameters is typed as a callable that takes only `key` and returns a `Node`.
+`@component` is typed to return the function it decorates with its return type replaced by [`Node`][wybthon.Node], the type of anything that renders. That's how the checker validates the arguments, and it's why a component call can be returned from a function annotated `-> Node`, kept in a `list[Node]`, or passed as children. At run time the call returns a [`VNode`][wybthon.vnode.VNode], which is a `Node` too. A component with no parameters takes no arguments.
 
 Under `mypy --strict`, annotate component functions with `-> Node`; [`html`][wybthon.html] returns a `Node` as well.
 
@@ -113,10 +105,10 @@ A template's interpolations are ordinary Python expressions, so the checker sees
 | --- | --- |
 | `{expression}` in any position | Statically, as ordinary code: an undefined name, a wrong attribute, or a bad call is reported. |
 | `{Card(title=user().name)}` | Statically, with full prop checking, like any component call. The checker sees `user().name` as a `str`; the compiler passes a getter. |
-| `<{Card} title={user().name}>...</{Card}>` | The expression `user().name` is checked as code. A plain checker run doesn't check it against `Card`'s props, but [`wyb check`](#checking-tag-props-with-wyb-check) does. Without it, an unknown or missing prop raises `TypeError` at run time, in dev mode, when the template renders. |
+| `<{Card} title={user().name}>...</{Card}>` | The expression `user().name` is checked as code. A plain checker run doesn't check it against `Card`'s signature, but [`wyb check`](#checking-tag-props-with-wyb-check) does. Without it, an unknown or missing prop raises `TypeError` at run time, in dev mode, when the template renders. |
 | The HTML markup itself | When the module is compiled: markup the parser would rewrite is a `SyntaxError` with the file and line (or a [`TemplateError`][wybthon.TemplateError] for a template compiled at run time). |
 
-Type checkers can't see inside the template's static text, so on their own they don't check a component tag's attributes against its props class. Run them through `wyb check` (below) to check tags too, or use the call form inside an interpolation; use the tag form when passing nested markup as children reads better.
+Type checkers can't see inside the template's static text, so on their own they don't check a component tag's attributes against its parameters. Run them through `wyb check` (below) to check tags too, or use the call form inside an interpolation; use the tag form when passing nested markup as children reads better.
 
 `html()` is annotated to take a `string.templatelib.Template`, so passing a plain string is a type error, and it raises `TypeError` at run time:
 
@@ -135,11 +127,11 @@ wyb check                      # mypy on the current directory
 wyb check app tests --checker pyright
 ```
 
-For each `html(t"...")` call, it checks a call such as `Card(title=user().name, children=...)` per component tag, with each attribute as a keyword: a static value as its string, a bare attribute as `True`, an `{expression}` as itself, an attribute that mixes text and interpolations as a `str`, and a spread as `**expression`. Content between the tags is passed as `children`, so a component whose props have no `children` field is reported. Each error in a tag is reported at the tag's line, among the checker's other errors:
+For each `html(t"...")` call, it checks a call such as `Card(title=user().name, children=...)` per component tag, with each attribute as a keyword: a static value as its string, a bare attribute as `True`, an `{expression}` as itself, an attribute that mixes text and interpolations as a `str`, and a spread as `**expression`. Content between the tags is passed as `children`, so a component with no `children` parameter (and no `**rest` parameter) is reported. Each error in a tag is reported at the tag's line, among the checker's other errors:
 
 ```text
-app/pages.py:12: error: in <{Card}>: Unexpected keyword argument "bogus" for "CardProps"  [call-arg]
-app/pages.py:14: error: in <{Card}>: Missing named argument "title" for "CardProps"  [call-arg]
+app/pages.py:12: error: in <{Card}>: Unexpected keyword argument "bogus" for "Card"  [call-arg]
+app/pages.py:14: error: in <{Card}>: Missing positional argument "title" in call to "Card"  [call-arg]
 ```
 
 The command exits with status 1 when there are errors and 2 when the checker isn't installed. It reads your project's checker configuration (`mypy.ini`, `setup.cfg`, `pyproject.toml`, or `pyrightconfig.json` in the current directory), and it skips `.venv`, `dist`, `build`, and hidden directories. Under mypy's defaults, the body of an unannotated function isn't checked, so neither are the tags in it.
@@ -328,4 +320,4 @@ The repository's `tests/typing` fixtures check valid calls and expected errors (
 
 - Read [Components](../concepts/components.md) for the full props model, and [Templates](../concepts/templates.md) for template syntax.
 - See [Authoring patterns](authoring-patterns.md) for callbacks, children, and forwarding attributes.
-- Browse the [`reactivity`][wybthon.reactivity] API for `Props`, `ParentProps`, and `prop`, and [The compiler](../concepts/compiler.md) for what happens to template expressions.
+- Browse the [`component`][wybthon.component] API for `Children` and `prop`, and [The compiler](../concepts/compiler.md) for what happens to parameters and template expressions.

@@ -4,49 +4,51 @@ Wybthon uses function components exclusively, following the SolidJS model.
 
 !!! tip "Mental model"
     A component body **runs once** when it mounts and returns its
-    markup, usually a [template](templates.md). Inputs are declared on
-    a typed [`Props`][wybthon.Props] class, and reading `props.title`
-    returns the parent's value, tracked, as reading a property of
-    Solid's props object does. In the returned template, `{props.title}`
-    is a dynamic expression, so the [compiler](compiler.md) makes it a
-    binding and only that node updates when the value changes. See
-    [Primitives](primitives.md#reactive-holes) for the full story.
+    markup, usually a [template](templates.md). Its inputs are ordinary
+    function parameters, and the [compiler](compiler.md) turns every
+    read of a parameter into a tracked read of the parent's current
+    value, as reading a property of Solid's props object is. In the
+    returned template, `{title}` is a dynamic expression, so the
+    compiler makes it a binding and only that node updates when the
+    value changes. See [Primitives](primitives.md#reactive-holes) for
+    the full story.
 
 ## Declaring a component with `@component`
 
 The [`component`][wybthon.component] decorator turns a function into a
-[`Component`][wybthon.Component]. Declare inputs on a subclass of
-[`Props`][wybthon.Props] as plain annotations, give defaults the way a
-dataclass does, and take one parameter annotated with that class:
+[`Component`][wybthon.Component]. The function's parameters are its
+props: declare each input as a parameter with an annotation and, when
+it's optional, a default:
 
 ```python
-from wybthon import Props, component, html, prop
-
-
-class HelloProps(Props):
-    name: str = "world"
-    tags: list[str] = prop(default_factory=list)
+from wybthon import component, html, prop
 
 
 @component
-def Hello(props: HelloProps):
-    return html(t"<p>Hello, {props.name}!</p>")
+def Hello(name: str = "world", tags: list[str] = prop(default_factory=list)):
+    return html(t"<p>Hello, {name}!</p>")
 ```
 
-Reading a field returns its value, tracked:
+The compiler rewrites every read of a parameter inside an `@component`
+body, so a parameter always reads as the parent's current value,
+tracked:
 
-- In the template, `{props.name}` is dynamic, so the compiler turns it into a getter: a binding that updates when the parent's value changes.
-- In a memo or effect, `props.name` subscribes to the parent's value like any other tracked read.
-- [`untrack(lambda: props.name)`][wybthon.untrack] reads it once without subscribing, for example to seed local state.
+- In the template, `{name}` is dynamic. Other bare names are applied once, but a parameter is a read of a prop, so the compiler turns it into a getter: a binding that updates when the parent's value changes.
+- In a memo or effect, `name` subscribes to the parent's value like any other tracked read.
+- In an event handler, `name` reads the latest value when the handler runs.
+- [`untrack(lambda: name)`][wybthon.untrack] reads it once without subscribing, for example to seed local state.
 
 An ordinary default (`name: str = "world"`) needs nothing more. Use
 [`prop(default_factory=...)`][wybthon.prop] for a mutable default; the
-factory runs once per component instance. Type checkers only recognize
-a field specifier's default when it's passed by keyword. `Props` is a
-[PEP 681](https://peps.python.org/pep-0681/) `dataclass_transform`
-base, so pyright and mypy check every call site with no plugin: a
-missing required prop, a wrong type, or an unknown name is a type
-error.
+factory runs once per component instance, so instances never share a
+list.
+
+A type checker sees an `@component` as the function itself, returning
+a [`Node`][wybthon.Node], so pyright, Pylance, and mypy check every call
+against the function's own signature with no plugin: a missing
+required prop, a wrong type, or an unknown name is a type error that
+names the component. Inside the body, a parameter has its annotated
+type. See the [Typing guide](../guides/typing.md).
 
 A component with no inputs takes no parameters:
 
@@ -56,6 +58,37 @@ def App():
     return html(t"<main>{Hello(name='Wybthon')}</main>")
 ```
 
+### Parameters are read-only
+
+A parameter is the parent's prop, so the body can't rebind it.
+Assigning to a parameter, augmented assignment (`count += 1`), `del`,
+rebinding it with `for`, `import`, or `except ... as`, and declaring it
+`nonlocal` in a nested function are all compile-time errors:
+
+```text
+SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name
+```
+
+Give the value a new name instead (`label = title.upper()` reads it
+once, as any top-level read does). A nested function, lambda,
+comprehension, or class that binds the same name shadows the parameter,
+as Python's scoping rules say, so `[title for title in titles]` is
+fine.
+
+A component can't take `*args`; declare a `children` parameter for its
+content. A `**rest` parameter collects the props the component doesn't
+declare (see [Forwarding with `**rest`](#forwarding-with-rest-merge-and-omit)).
+
+### Components must be compiled
+
+The compiler gives parameters their meaning, so a component's module
+must be compiled, as a module with templates must be. The import hook
+that `import wybthon` installs compiles every module imported after it,
+and `wyb build`, `wyb dev`, `wyb run`, and Wybthon's pytest plugin
+compile the modules they load. In dev mode, calling an uncompiled
+component that has parameters raises `TypeError` with a message saying
+the component wasn't compiled. See [Where it runs](compiler.md#where-it-runs).
+
 ## Bodies run once
 
 There's no re-render. The only things that update later are the
@@ -63,16 +96,12 @@ bindings and holes in the returned markup and the effects created in
 the body.
 
 ```python
-from wybthon import Props, component, create_signal, html, untrack
-
-
-class CounterProps(Props):
-    initial: int = 0
+from wybthon import component, create_signal, html, untrack
 
 
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.initial))
+def Counter(initial: int = 0):
+    count, set_count = create_signal(untrack(lambda: initial))
 
     def increment():
         set_count(lambda n: n + 1)
@@ -94,20 +123,16 @@ use the event.
 ### Values, expressions, and accessors
 
 A child never has to care how the parent produced a prop. The parent
-may pass a value, a template expression, or an accessor, and
-`props.count` returns the current value in every case:
+may pass a value, a template expression, or an accessor, and `count`
+reads as the current value in every case:
 
 ```python
-from wybthon import Props, component, create_signal, html
-
-
-class BadgeProps(Props):
-    count: int
+from wybthon import component, create_signal, html
 
 
 @component
-def Badge(props: BadgeProps):
-    return html(t"<span>count: {props.count}</span>")
+def Badge(count: int):
+    return html(t"<span>count: {count}</span>")
 
 
 n, set_n = create_signal(7)
@@ -126,30 +151,27 @@ works the same way at run time, but a type checker flags it against
 
 ### Top-level reads warn
 
-Reading a reactive prop or signal at the top level of the body isn't
-tracked, so later updates never reach it. In dev mode Wybthon warns
-once per component and value. A constant can't change, so reading one
-doesn't warn:
+Reading a parameter at the top level of the body reads it once, as
+destructuring props does in Solid: later updates never reach that
+value. The same goes for a signal. In dev mode Wybthon warns once per
+component and value. A constant can't change, so reading one doesn't
+warn:
 
 ```python
-class NameProps(Props):
-    name: str
-
-
 @component
-def Bad(props: NameProps):
-    greeting = f"Hello, {props.name}"  # warns when name is reactive: frozen at mount
+def Bad(name: str):
+    greeting = f"Hello, {name}"  # warns when name is reactive: frozen at mount
     return html(t"<p>{greeting}</p>")
 
 
 @component
-def Good(props: NameProps):
-    return html(t"<p>Hello, {props.name}</p>")  # one reactive binding
+def Good(name: str):
+    return html(t"<p>Hello, {name}</p>")  # one reactive binding
 
 
 @component
-def AlsoFine(props: NameProps):
-    initial = untrack(lambda: props.name)  # explicit one-time read, no warning
+def AlsoFine(name: str):
+    initial = untrack(lambda: name)  # explicit one-time read, no warning
     return html(t"<p>{initial}</p>")
 ```
 
@@ -158,10 +180,11 @@ def AlsoFine(props: NameProps):
 There are two ways to use a component in a template.
 
 **The call form.** Calling a `Component` returns a
-[`VNode`][wybthon.vnode.VNode]. Keyword arguments become props, and every
-component also accepts `key=`. Call it inside an interpolation and the
-type checker sees every prop, while the compiler still passes each
-dynamic argument as a getter:
+[`VNode`][wybthon.vnode.VNode]. Arguments bind to parameters as in an
+ordinary Python call: keyword arguments by name, and positional ones in
+order, so `Greeting("Ada")` is `Greeting(name="Ada")`. Call it inside an
+interpolation and the type checker sees every prop, while the compiler
+still passes each dynamic argument as a getter:
 
 ```python
 html(t"""
@@ -174,7 +197,8 @@ html(t"""
 ```
 
 The last line uses item syntax for children, which reads well when the
-props are long.
+props are long. Positional arguments are never children: content goes
+to the `children` parameter.
 
 **The tag form.** `<{Card} ...>` reads like the rest of the markup and
 passes the nested markup as the `children` prop. Close it with
@@ -190,18 +214,20 @@ html(t"""
 ```
 
 Attributes become keyword props, and a hyphen becomes an underscore
-(`user-id` is `user_id`). A quoted value is a string; pass anything
+(`user-id` is `user_id`). A handler attribute takes the Python spelling
+of a callback parameter: `onclick={save}` is `on_click`. A quoted value is a string; pass anything
 else, including numbers, expressions, and callbacks, with `{...}`. A
 dynamic value (`title={project().name}`) is passed as a getter. Type
-checkers can't see inside the template string, so the tag form's props
-are checked at run time in dev mode, like any component call. Use the
-call form when you want the checker's help.
+checkers can't see inside the template string, so on their own they
+don't check the tag form's props; [`wyb check`](../guides/typing.md#checking-tag-props-with-wyb-check)
+does, by checking each tag as the equivalent call, and dev mode checks
+them at run time, like any component call.
 
 In dev mode (the default), calling a component with an undeclared prop
 or without a required one raises `TypeError` at the call:
 `Counter(bogus=1)` fails immediately instead of silently rendering.
-Statically, a type checker sees the call as constructing the props
-class, so the same mistakes show up in your editor.
+Statically, a type checker checks the call against the component's
+signature, so the same mistakes show up in your editor.
 
 The low-level [`h`][wybthon.vnode.h] form still works (`h(Counter, {"initial": 5})`).
 
@@ -209,11 +235,11 @@ The low-level [`h`][wybthon.vnode.h] form still works (`h(Counter, {"initial": 5
 
 A function without `@component` whose only parameter is the props can be
 used as a tag too, with the tag form or `h(fn, props)`. It receives the
-props dictionary as it was passed, with no `Props` class, unwrapping, or
-validation: a dynamic attribute arrives as a getter. It can't observe
-later changes, so when a re-rendering hole patches it with changed
-props, it's remounted and its body runs again. Use `@component` when
-you want typed, reactive props.
+props dictionary as it was passed, with no unwrapping or validation: a
+dynamic attribute arrives as a getter. It can't observe later changes,
+so when a re-rendering hole patches it with changed props, it's
+remounted and its body runs again. Use `@component` when you want
+typed, reactive props.
 
 ```python
 def Note(props):
@@ -225,28 +251,23 @@ html(t'<{Note} text="Saved" />')
 
 ### Passing callbacks
 
-Annotate a callback field as callable. A field whose annotation is
-`Callable[...]` or [`Accessor[...]`][wybthon.Accessor], alone or in a
-union with `None`, returns exactly what the parent passed, and the read
-never calls it:
+Annotate a callback parameter as callable. A parameter whose annotation
+is `Callable[...]` or [`Accessor[...]`][wybthon.Accessor], alone or in a
+union with `None`, reads as exactly what the parent passed, and the
+read never calls it:
 
 ```python
 from collections.abc import Callable
 
-from wybthon import Props, component, html
-
-
-class PickerProps(Props):
-    on_pick: Callable[[str], None]
-    on_close: Callable[[], None] | None = None
+from wybthon import component, html
 
 
 @component
-def Picker(props: PickerProps):
+def Picker(on_pick: Callable[[str], None], on_close: Callable[[], None] | None = None):
     def pick():
-        props.on_pick("apple")
-        if props.on_close is not None:
-            props.on_close()
+        on_pick("apple")
+        if on_close is not None:
+            on_close()
 
     return html(t"<button onclick={pick}>Pick</button>")
 
@@ -254,12 +275,13 @@ def Picker(props: PickerProps):
 Picker(on_pick=print, on_close=lambda: print("closed"))
 ```
 
-Reading a prop never calls a function the parent passed: a callback
-such as `on_close` comes back exactly as it was passed, whatever its
-field is annotated. What a read does unwrap is an expression: a getter
-the compiler made from markup (`title={user().name}`), or an accessor
-the parent passed (a signal or memo). A field annotated as callable, or
-as `Accessor[T]`, gets the accessor itself rather than its value.
+Reading a parameter never calls a function the parent passed: a
+callback such as `on_close` comes back exactly as it was passed,
+whatever its parameter is annotated. What a read does unwrap is an
+expression: a getter the compiler made from markup
+(`title={user().name}`), or an accessor the parent passed (a signal or
+memo). A parameter annotated as callable, or as `Accessor[T]`, gets the
+accessor itself rather than its value.
 
 Outside markup, pass an accessor to make a prop reactive:
 `Card(title=create_memo(lambda: user().name))`. A lambda is a value.
@@ -271,79 +293,89 @@ allocates anything depends on whether the component can ever receive
 new props, which the renderer knows when it mounts the component:
 
 - **Most components can't be patched.** A component mounted in another component's output, in a list row, in a `Show` branch, or anywhere else that's mounted once never receives new props. For these, reading a prop that the parent passed as a constant tracks nothing: there's no signal, no subscription, and nothing to dispose. A prop passed as an expression or an accessor is read through it, so the reader subscribes to that source directly.
-- **A patchable component** is part of the tree a reactive hole returns, or of the tree passed to [`render`][wybthon.render], and not inside another component's output. When the hole re-runs (or you `render` into the same container again), the reconciler patches the component with the new props instead of remounting it. Its prop reads track one version signal per props instance, created on the first tracked read, and a patch that changes a prop bumps it.
+- **A patchable component** is part of the tree a reactive hole returns, or of the tree passed to [`render`][wybthon.render], and not inside another component's output. When the hole re-runs (or you `render` into the same container again), the reconciler patches the component with the new props instead of remounting it. Its prop reads track one version signal per instance, created on the first tracked read, and a patch that changes a prop bumps it.
 
 The difference is only in what's allocated. Both kinds behave the same
 for every prop passed as an expression or changed through a patch, so
 you never need to think about which one you have.
 
 Bindings get the same treatment. A binding whose expression makes no
-calls, such as `{props.title}`, first runs under a lightweight probe:
-when it reads nothing reactive, because the parent passed a constant,
-the value is applied and no computation is ever allocated. Any other
-binding or hole that reads nothing reactive on its first run is
-dropped after that run, keeping only the DOM it produced.
+calls, such as `{title}`, first runs under a lightweight probe: when it
+reads nothing reactive, because the parent passed a constant, the value
+is applied and no computation is ever allocated. Any other binding or
+hole that reads nothing reactive on its first run is dropped after that
+run, keeping only the DOM it produced.
 
 ### Checking for a static prop
 
-[`is_static(props, "name")`][wybthon.is_static] reports whether the
-parent passed a plain value rather than an expression, as Solid 2.0's
-`isStatic` does. Nothing is read or tracked. A component library can
-use it to take a cheaper path for a prop that can't change:
+[`is_static(name)`][wybthon.is_static] reports whether the parent
+passed a plain value rather than an expression, as Solid 2.0's
+`isStatic` does. Pass the parameter itself: the compiler turns the call
+into a question about the prop, not its value, so nothing is read or
+tracked. A component library can use it to take a cheaper path for a
+prop that can't change:
 
 ```python
-@component
-def Icon(props: IconProps):
-    if is_static(props, "name"):
-        return html(t"<i class={untrack(lambda: props.name)}></i>")
-    return html(t"<i class={props.name}></i>")
-```
-
-## Forwarding with `merge` and `omit`
-
-Every prop a component accepts is declared, and undeclared props can't
-be read. To forward props onto an element, combine sources with
-[`merge`][wybthon.merge] and drop the ones you handle yourself with
-[`omit`][wybthon.omit]. Both return views that read like props
-(`view.title` is the tracked value), and spreading a view onto an
-element with `<tag {attrs}>` binds each key reactively:
-
-```python
-from wybthon import ParentProps, component, html, merge, omit
-
-
-class ButtonProps(ParentProps):
-    variant: str = "solid"
-    disabled: bool = False
+from wybthon import component, html, is_static, untrack
 
 
 @component
-def Button(props: ButtonProps):
-    attrs = merge({"type": "button"}, omit(props, "variant", "children"))
-    return html(t'<button {attrs} class="btn btn-{props.variant}">{props.children}</button>')
+def Icon(name: str):
+    if is_static(name):
+        return html(t"<i class={untrack(lambda: name)}></i>")
+    return html(t"<i class={name}></i>")
 ```
 
-If the parent passes `disabled={is_busy()}`, the attribute follows the
-signal. `omit` also accepts a predicate, such as
-`omit(props, lambda key: key.startswith("on_"))`.
+For a key of a `**rest`, `merge`, or `omit` view, pass the view and the
+key: `is_static(attrs, "title")`.
+
+## Forwarding with `**rest`, `merge`, and `omit`
+
+A component accepts only the props it declares, unless it takes a
+`**rest` parameter. A `**rest` parameter (any name, such as
+`**attrs: Any`) collects the props the component doesn't declare as a
+reactive, read-only view. Reading a key of the view (`attrs.title`)
+returns the tracked value, and spreading the view onto an element with
+`<tag {attrs}>` binds each key reactively:
+
+```python
+from typing import Any
+
+from wybthon import Children, component, html, merge
+
+
+@component
+def Button(variant: str = "solid", children: Children = None, **attrs: Any):
+    forwarded = merge({"type": "button"}, attrs)
+    return html(t'<button {forwarded} class="btn btn-{variant}">{children}</button>')
+```
+
+[`merge`][wybthon.merge] combines sources (dicts, `**rest` views, and
+other views) into one reactive view; later sources win. Here the parent
+can override `type`, and every other prop it passes, such as
+`disabled={is_busy()}`, lands on the `<button>` and follows the signal.
+An event handler such as `on_click=save` is passed through as the
+callable itself.
+
+[`omit`][wybthon.omit] returns a view without some keys, for example to
+handle one of the forwarded props yourself: `omit(attrs, "title")`. It
+also accepts a predicate, such as
+`omit(attrs, lambda key: key.startswith("on_"))`.
 
 ## Children
 
-Subclass [`ParentProps`][wybthon.ParentProps] to accept children; it
-declares `children: Any = None`. Most layouts interpolate
-`props.children` where the content belongs:
+Declare a `children` parameter to accept children, annotated with
+[`Children`][wybthon.Children] (an alias of `Any`, for documentation)
+and defaulting to `None`. Most layouts interpolate `children` where the
+content belongs:
 
 ```python
-from wybthon import ParentProps, component, html
-
-
-class CardProps(ParentProps):
-    title: str
+from wybthon import Children, component, html
 
 
 @component
-def Card(props: CardProps):
-    return html(t'<section class="card"><h3>{props.title}</h3>{props.children}</section>')
+def Card(title: str, children: Children = None):
+    return html(t'<section class="card"><h3>{title}</h3>{children}</section>')
 
 
 html(t'<{Card} title="Hi"><p>a</p><p>b</p></{Card}>')  # tag form
@@ -360,12 +392,12 @@ returns a list. [`flatten`][wybthon.flatten] is the unmemoized form,
 for a one-off resolution:
 
 ```python
-from wybthon import ParentProps, resolve_children, component, html
+from wybthon import Children, component, html, resolve_children
 
 
 @component
-def List(props: ParentProps):
-    kids = resolve_children(lambda: props.children)
+def List(children: Children = None):
+    kids = resolve_children(lambda: children)
 
     def items():
         return [html(t"<li>{kid}</li>") for kid in kids.to_array()]
@@ -383,30 +415,26 @@ The body may return a template or any other `VNode`, a string, a list
 expression (mounted as a single hole):
 
 ```python
-class LabelProps(Props):
-    text: str
-
-
 @component
-def Label(props: LabelProps):
-    return create_memo(lambda: props.text.upper())  # a hole that tracks text
+def Label(text: str):
+    return create_memo(lambda: text.upper())  # a hole that tracks text
 ```
 
-## Keys force a remount
+## Remounting when an identity changes
 
-The reconciler patches a component in place when a hole re-renders it
-with the same tag and key: new props flow into the existing props
-instance and the body doesn't run again. Give it a different `key` to
-force a fresh instance with fresh local state:
+A component stays mounted while the value it depends on changes: a
+parameter reads the parent's current value, so `Editor` below keeps
+its local state (the draft) when its `doc_id` changes. When a different identity
+should get a fresh instance with fresh local state, show it through a
+keyed [`Show`][wybthon.Show], as in Solid:
 
 ```python
-class EditorProps(Props):
-    user_id: int
+from wybthon import Show, component, create_signal, html
 
 
 @component
-def Editor(props: EditorProps):
-    draft, set_draft = create_signal("")  # reset when the key changes
+def Editor(doc_id: str):
+    draft, set_draft = create_signal("")  # fresh for each document
 
     def update(event):
         set_draft(event.target.value)
@@ -414,36 +442,36 @@ def Editor(props: EditorProps):
     return html(t"<textarea value={draft()} oninput={update}></textarea>")
 
 
-def editor():
-    return Editor(user_id=current_id(), key=current_id())
-
-
-html(t"<div>{editor()}</div>")
+@component
+def Workspace():
+    doc_id, set_doc_id = create_signal("intro")
+    return html(t"<div>{Show(doc_id(), lambda current: Editor(doc_id=current), keyed=True)}</div>")
 ```
 
-`{editor()}` is a call with no arguments, so it's a reactive hole that
-re-runs when `current_id` changes.
+With `keyed=True`, `Show` re-creates its branch every time the value
+changes and hands the callback the raw value: the old `Editor` is
+disposed (its cleanups run) and a new one mounts. Like any `Show`, it
+renders nothing while the value is falsy. To render a list with one
+instance per item, use [`For`](#flow-control). Components don't take a
+`key`; [`h(tag, {"key": ...})`][wybthon.vnode.h] still keys any node,
+as a low-level escape hatch.
 
 ## Refs through components
 
-There's no `forward_ref`. Declare `ref` as a plain field and pass it
-on; an element's `ref` takes a [`Ref`][wybthon.Ref], a callback, or a
-list of either, so a component can forward the parent's ref and keep
-its own:
+There's no `forward_ref`. Declare `ref` as an ordinary parameter and
+pass it on; an element's `ref` takes a [`Ref`][wybthon.Ref], a callback,
+or a list of either, so a component can forward the parent's ref and
+keep its own:
 
 ```python
-from wybthon import Props, Ref, component, html, on_settled
-
-
-class FancyInputProps(Props):
-    ref: Ref | None = None
+from wybthon import Ref, component, html, on_settled
 
 
 @component
-def FancyInput(props: FancyInputProps):
+def FancyInput(ref: Ref | None = None):
     local = Ref()
     on_settled(lambda: local.current.element.focus())
-    return html(t'<input type="text" class="fancy" ref={[local, props.ref]}>')
+    return html(t'<input type="text" class="fancy" ref={[local, ref]}>')
 ```
 
 ## Fragments
@@ -474,32 +502,39 @@ the default is `"body"`) while keeping them in the current ownership
 tree, so context, signals, and cleanup work as usual:
 
 ```python
-from wybthon import Portal, Props, Show, component, html
-
-
-class ModalProps(Props):
-    open: bool
+from wybthon import Portal, Show, component, html
 
 
 @component
-def Modal(props: ModalProps):
+def Modal(open: bool):
     return html(t"""
-      {Show(props.open, Portal(html(t'<div class="modal"><p>Modal content</p></div>'), mount="#modal-root"))}
+      {Show(open, Portal(html(t'<div class="modal"><p>Modal content</p></div>'), mount="#modal-root"))}
     """)
 ```
 
-Writing the `Show` call in the template matters: there, `props.open`
-is passed as a getter, while `Show(props.open, ...)` in the body would
-read the prop once.
+Writing the `Show` call in the template matters: there, `open` is
+passed as a getter, while `Show(open, ...)` in the body would read the
+prop once. The `Portal` call is the branch's content, so the compiler
+makes it lazy: the portal and its markup are built only when `open` is
+truthy.
 
 ## Flow control
 
 `Show`, `For`, `Repeat`, and `Switch` aren't components: they're native
 regions the renderer mounts directly, with no component context or
-props object of their own. Each one owns a scope, so only the relevant
+props of their own. Each one owns a scope, so only the relevant
 subtree updates when a condition or list changes. Called in a template,
 each dynamic argument arrives as a getter; `children` and `fallback`
 slots are nodes or callables evaluated inside the region's scope.
+
+The compiler makes the content and fallback of `Show`, `Match`,
+`Switch` (its fallback), `Loading`, `Errored`, and `client_only` lazy
+when they're written as markup (`html(t"...")`) or as a component call
+(a call whose callee name is capitalized, such as `Panel()`): each
+becomes a zero-argument function, so a branch's markup and components
+are built only when it shows, as JSX children are in Solid. A component
+call in a branch still receives getters for its dynamic props. Names,
+lambdas, and lowercase calls are passed as written.
 
 ```python
 from wybthon import For, Match, Repeat, Show, Switch, html
@@ -564,15 +599,18 @@ With dev mode on (the default; check it with
 [`is_dev_mode`][wybthon.is_dev_mode]), Wybthon reports the common
 footguns:
 
-- **Unknown or missing props**: calling a component with an undeclared prop, or without a required one, raises `TypeError`. This covers the tag form too.
+- **Unknown or missing props**: calling a component with an undeclared prop (when it has no `**rest` parameter), or without a required one, raises `TypeError`. This covers the tag form too.
+- **`key=` on a component**: components take no `key`, so passing one raises `TypeError` that points to a keyed `Show`.
+- **Uncompiled component**: calling a component with parameters whose module wasn't compiled raises `TypeError`.
 - **Top-level reactive read** in a component body (warned once per component and value).
 - **Write in a tracking scope**: writing a signal or store from a memo, a tracked effect, or a hole raises [`WriteInScopeError`][wybthon.WriteInScopeError].
 - **Plain list in `For`**: the list renders once.
 - **Uncompiled template**: a template that reached `html()` without the compiler, with a dynamic expression that was evaluated once, raises [`TemplateError`][wybthon.TemplateError]. See [Templates that weren't compiled](compiler.md#templates-that-werent-compiled).
 
-Template markup errors aren't dev-only: markup the HTML parser would
-rewrite is an error in every mode, reported when the module is
-compiled. See [Templates](templates.md#markup-the-parser-would-rewrite-is-an-error).
+Template markup errors and writes to a parameter aren't dev-only: markup
+the HTML parser would rewrite, and a body that rebinds a parameter, are
+errors in every mode, reported when the module is compiled. See
+[Templates](templates.md#markup-the-parser-would-rewrite-is-an-error).
 
 Production builds made with `wyb build` turn dev mode off before your
 application imports. Call [`set_dev_mode`][wybthon.set_dev_mode] to
@@ -581,5 +619,5 @@ change it yourself, for example in tests.
 ## Next steps
 
 - Read [Templates](templates.md), [The compiler](compiler.md), [Mental model](mental-model.md), and [Lifecycle and ownership](lifecycle.md).
-- Browse the [`component`][wybthon.component] and [`Props`][wybthon.Props] API references.
+- Browse the [`component`][wybthon.component], [`Children`][wybthon.Children], and [`prop`][wybthon.prop] API references.
 - See [Authoring patterns](../guides/authoring-patterns.md) for recipes.

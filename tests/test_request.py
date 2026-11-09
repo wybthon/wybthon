@@ -5,7 +5,6 @@ import asyncio
 from wybthon import (
     Errored,
     Loading,
-    Props,
     RequestEvent,
     ResponseHead,
     Show,
@@ -22,13 +21,9 @@ from wybthon import (
 from wybthon.server import render_to_stream, render_to_string
 
 
-class StatusProps(Props):
-    code: int
-
-
 @component
-def Status(props: StatusProps):
-    http_status(untrack(lambda: props.code))
+def Status(code: int):
+    http_status(untrack(lambda: code))
     return html(t"<p>status</p>")
 
 

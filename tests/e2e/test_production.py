@@ -64,16 +64,12 @@ def _wait_ready(page):
 
 DEV_MODE_APP = '''
 import wybthon
-from wybthon import For, Props, Show, component, create_signal, html
-
-
-class LabelProps(Props):
-    text: str
+from wybthon import For, Show, component, create_signal, html
 
 
 @component
-def Label(props: LabelProps):
-    return html(t'<p id="label">{props.text}</p>')
+def Label(text: str):
+    return html(t'<p id="label">{text}</p>')
 
 
 def checked():

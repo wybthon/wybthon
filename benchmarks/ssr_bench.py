@@ -36,12 +36,12 @@ js = ModuleType("js")
 js.document = None
 sys.modules["js"] = js
 
-import wybthon  # noqa: E402,F401
+import wybthon  # noqa: E402
 from wybthon.compiler import compile_source  # noqa: E402
 from wybthon.server import render_to_string  # noqa: E402
 
 PAGES = '''
-from wybthon import Errored, For, Loading, ParentProps, Show, component, create_memo, create_signal, html
+from wybthon import Errored, For, Loading, Show, component, create_memo, create_signal, html
 
 ADJ = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome"]
 
@@ -65,19 +65,9 @@ def table(n):
     return html(t'<table class="table"><tbody id="tbody">{For(data(), row)}</tbody></table>')
 
 
-class CardProps(ParentProps):
-    title: str
-    count: int = 0
+CARD
 
 
-@component
-def Card(props: CardProps):
-    open_, _ = create_signal(True)
-    return html(t"""<article class="card">
-      <h3>{props.title}</h3>
-      {Show(open_(), html(t"<p>{props.count} items</p>"), fallback=html(t"<p>closed</p>"))}
-      <footer>{props.children}</footer>
-    </article>""")
 
 
 def cards():
@@ -110,6 +100,40 @@ def boundaries():
 
 pages = ModuleType("ssr_bench_pages")
 sys.modules["ssr_bench_pages"] = pages
+# The card in each checkout's idiom: parameters are props from Engine v10
+# (RFC 0011); a `ParentProps` class before it.
+CARD = '''
+from wybthon import Children
+
+
+@component
+def Card(title: str, count: int = 0, children: Children = None):
+    open_, _ = create_signal(True)
+    return html(t"""<article class="card">
+      <h3>{title}</h3>
+      {Show(open_(), html(t"<p>{count} items</p>"), fallback=html(t"<p>closed</p>"))}
+      <footer>{children}</footer>
+    </article>""")
+'''
+CARD_V9 = '''
+from wybthon import ParentProps
+
+
+class CardProps(ParentProps):
+    title: str
+    count: int = 0
+
+
+@component
+def Card(props: CardProps):
+    open_, _ = create_signal(True)
+    return html(t"""<article class="card">
+      <h3>{props.title}</h3>
+      {Show(open_(), html(t"<p>{props.count} items</p>"), fallback=html(t"<p>closed</p>"))}
+      <footer>{props.children}</footer>
+    </article>""")
+'''
+PAGES = PAGES.replace("\nCARD\n", CARD_V9 if hasattr(wybthon, "ParentProps") else CARD)
 exec(compile_source(PAGES, "ssr_bench_pages.py"), pages.__dict__)
 
 SCENARIOS = {

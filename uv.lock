@@ -1,10 +1,14 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
     "python_full_version < '3.15'",
 ]
+
+[options]
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P7D"
 
 [[package]]
 name = "ast-serialize"
@@ -1179,7 +1183,6 @@ wheels = [
 name = "wybthon"
 version = "0.45.0"
 source = { editable = "." }
-default-groups = []
 
 [package.dev-dependencies]
 dev = [

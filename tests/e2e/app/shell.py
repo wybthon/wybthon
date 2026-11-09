@@ -11,27 +11,22 @@ Each nav link is a plain anchor whose class follows `use_link_state`.
 from app.featuremeta import FEATURES
 from app.testkit import tid
 
-from wybthon import ParentProps, component, html
+from wybthon import Children, component, html
 from wybthon.router import use_link_state
 
 
-class NavLinkProps(ParentProps):
-    href: str
-    slug: str
-
-
 @component
-def NavLink(props: NavLinkProps):
-    state = use_link_state(lambda: props.href, end=True)
+def NavLink(href: str, slug: str, children: Children = None):
+    state = use_link_state(lambda: href, end=True)
     return html(t"""
-      <a href={props.href} class={"nav-link active" if state.active() else "nav-link"} {tid(f"nav-{props.slug}")}>
-        {props.children}
+      <a href={href} class={"nav-link active" if state.active() else "nav-link"} {tid(f"nav-{slug}")}>
+        {children}
       </a>
     """)
 
 
 @component
-def Shell(props: ParentProps):
+def Shell(children: Children = None):
     pages = [
         ("/", "Home", "home"),
         *((f"/{slug}", label, slug) for slug, label in FEATURES),
@@ -42,7 +37,7 @@ def Shell(props: ParentProps):
     return html(t"""
       <div data-testid="shell">
         <nav data-testid="nav">{links}</nav>
-        <div data-testid="outlet">{props.children}</div>
+        <div data-testid="outlet">{children}</div>
         <div data-testid="app-ready">ready</div>
       </div>
     """)

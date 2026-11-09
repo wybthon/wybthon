@@ -34,7 +34,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** [RFC 0004](../rfcs/0004-engine-v4.md) removed the element helpers. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. `wybthon.html` is the [`html`][wybthon.html] template function, not a module.
 
-    **Fix:** write markup as templates, `html(t'<div class="card">{props.title}</div>')`; `<svg>` works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use [`h(tag, props, *children)`][wybthon.vnode.h]. See [Templates](../concepts/templates.md).
+    **Fix:** write markup as templates, `html(t'<div class="card">{title}</div>')`; `<svg>` works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use [`h(tag, props, *children)`][wybthon.vnode.h]. See [Templates](../concepts/templates.md).
 
 ??? bug "Pyodide fails to load"
 
@@ -130,9 +130,9 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Symptoms:** a plain function used as `<{fn} ...>` gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in `<{Card} titel="Hi" />`.
 
-    **Likely cause:** the tag form calls a [`@component`][wybthon.component] with keyword props. Any other callable is called the way its signature takes children: with a `children` keyword (`Show`, `Loading`), with positional children (`Errored`, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.
+    **Likely cause:** the tag form calls a [`@component`][wybthon.component] with keyword props. Any other callable is called the way its signature takes children: with a `children` keyword (`Show`, `Loading`), with positional children (`Errored`, context providers), or, for a function whose only parameter is the props, with the props dictionary. A type checker run on its own can't see inside the template string, so it doesn't check tag props; `wyb check` does, by checking each `<{Card} title=...>` as a `Card(title=...)` call, and dev mode checks them at run time.
 
-    **Fix:** decorate the function with `@component` and give it a `Props` class, or call it inside an interpolation (`{Errored(Feed(), fallback=oops)}`), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so `{Card(title=user().name)}` stays reactive.
+    **Fix:** decorate the function with `@component` and declare its props as parameters, run `wyb check` to type-check tags, or call the component inside an interpolation (`{Errored(Feed(), fallback=oops)}`), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so `{Card(title=user().name)}` stays reactive.
 
 ## Components and props
 
@@ -140,46 +140,60 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Symptoms:** calling a component raises `TypeError` at the call site in dev mode.
 
-    **Likely cause:** the call passes a keyword its props class doesn't declare (often a typo), or leaves out a field with no default. There's no `**rest`: a component accepts only what it declares, plus `key` and `children`.
+    **Likely cause:** the call passes a keyword the component has no parameter for (often a typo), or leaves out a parameter with no default. A component accepts only the parameters it declares, so it takes `children` only when it has a `children` parameter, and `key` is rejected like any other unknown name (components don't take `key=`). A `**rest` parameter collects every keyword the component doesn't declare.
 
-    **Fix:** fix the name, add the field to the props class, or give it a default (`body: str = ""`). Pyright and mypy report the same mistakes before you run the code; see the [typing guide](../guides/typing.md).
+    **Fix:** fix the name, add the parameter, or give it a default (`body: str = ""`). To pass content, declare `children: Children = None`. To remount a component when a value changes, replace `key=` with a keyed `Show`: `{Show(doc_id(), lambda id: DocumentView(doc_id=id), keyed=True)}`. Pyright and mypy report unexpected and missing props before you run the code; see the [typing guide](../guides/typing.md).
 
-??? bug "`TypeError: Component X must take no parameters or one parameter annotated with a Props subclass`"
+??? bug "`SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name`"
 
-    **Symptoms:** a component raises when it's first called.
+    **Symptoms:** importing a module fails with a `SyntaxError` at a line inside an `@component` function, such as `title = title.strip()` or `count += 1`.
 
-    **Likely cause:** the function uses parameter-style props (`def Card(title: str)`), several parameters, `**rest`, or an annotation that isn't a `Props` subclass.
+    **Likely cause:** a component's parameters are its props, and props are read-only. The compiler rewrites every read of a parameter into a tracked read of the parent's current value, so it rejects anything that rebinds one: assignment, augmented assignment, `del`, a `for` target, an `import`, an `except ... as`, or a `nonlocal` declaration in a nested function (which gets the message `it can't be nonlocal`).
 
-    **Fix:** move the inputs onto a props class and take it as the only parameter:
+    **Fix:** put the derived value in a new name, and compute it where it stays reactive:
 
     ```python
-    from wybthon import Props, component, html
-
-
-    class CardProps(Props):
-        title: str = ""
+    from wybthon import component, create_memo, create_signal, html, untrack
 
 
     @component
-    def Card(props: CardProps):
-        return html(t"<h2>{props.title}</h2>")
+    def Greeting(name: str, initial: int = 0):
+        clean = create_memo(lambda: name.strip())  # derived, stays reactive
+        count, set_count = create_signal(untrack(lambda: initial))  # local state seeded once
+        return html(t"<p>Hello, {clean()} ({count()})</p>")
     ```
 
-    A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.
+    A nested function, lambda, comprehension, or class that binds the same name has its own variable, which shadows the parameter as normal Python scoping does.
 
-??? bug "`TypeError: prop() takes 0 positional arguments`, or `prop() takes exactly one of default= or default_factory=`"
+??? bug "`SyntaxError: Component Card can't take *args`"
 
-    **Likely cause:** `prop(0)` passes the default positionally, or `prop()` is called with neither (or both) of its keywords.
+    **Symptoms:** importing a module fails with a `SyntaxError` that ends ``declare a `children` parameter for its content``.
 
-    **Fix:** most fields don't need `prop()`: write an ordinary default (`step: int = 1`). Use `prop(default_factory=list)` for a mutable default, which runs once per component instance, and pass `default=` or `default_factory=` by keyword.
+    **Likely cause:** the component declares a `*args` parameter. Positional arguments bind to parameters as in an ordinary call (`Greeting("Ada")` is `Greeting(name="Ada")`), so they can't collect children.
+
+    **Fix:** declare `children: Children = None` (from `wybthon`) and place `{children}` in the markup. Callers pass children as nested markup in the tag form, with the `children=` keyword, or with item syntax: `Card(title="Hi")[html(t"<p>a</p>"), html(t"<p>b</p>")]`. To accept arbitrary keyword props, use `**rest` instead.
+
+??? bug "`TypeError: Component X takes props as parameters, which only Wybthon's compiler makes reactive, and its module wasn't compiled`"
+
+    **Symptoms:** in dev mode, calling a component that has parameters raises this `TypeError`.
+
+    **Likely cause:** Wybthon's compiler turns a component's parameters into tracked reads of its props, and this component's module wasn't compiled. The causes are the same as for an uncompiled template: a script run directly with `python script.py`, code typed at a REPL or built with `exec`, or a module that was already loading when `wybthon` was first imported. Outside dev mode, an uncompiled component runs with its props' current values, which never update.
+
+    **Fix:** run scripts with `wyb run script.py`, or import `wybthon` before the modules that define components. `wyb build`, `wyb dev`, and the pytest plugin compile everything. Code that builds a module's source at run time can compile it with [`compile_source`][wybthon.compiler.compile_source] before `exec`. See [The compiler](../concepts/compiler.md).
+
+??? bug "`TypeError: prop() takes 0 positional arguments` or `prop() got an unexpected keyword argument 'default'`"
+
+    **Likely cause:** `prop(0)` passes a default positionally, or `prop(default=0)` uses a keyword that no longer exists. [`prop`][wybthon.prop] takes only `default_factory=`.
+
+    **Fix:** most parameters don't need `prop()`: write an ordinary default (`step: int = 1`). Use `prop(default_factory=list)` for a mutable default, which runs once per component instance: `def TagList(tags: list[str] = prop(default_factory=list))`.
 
 ??? bug "A callback prop runs when it's read, or returns `None`"
 
-    **Symptoms:** reading `props.on_save` calls the function (and returns its result), or `props.render_row` returns a value instead of the function the parent passed.
+    **Symptoms:** reading the `on_save` parameter calls the function (and returns its result), or `render_row` returns a value instead of the function the parent passed.
 
-    **Likely cause:** reading a field unwraps an accessor or zero-argument function, so a prop the parent passes as `{user().name}` or as a signal reads as the value. A field whose annotation is callable (`Callable[...]` or `Accessor[...]`, alone or in a union with `None`) is exempt, and returns what the parent passed. A callback field annotated `Any` or `object` isn't.
+    **Likely cause:** reading a parameter unwraps an accessor or zero-argument function, so a prop the parent passes as `{user().name}` or as a signal reads as the value. A parameter whose annotation is callable (`Callable[...]` or `Accessor[...]`, alone or in a union with `None`) is exempt, and returns what the parent passed. A callback parameter annotated `Any` or `object`, or not annotated at all, isn't.
 
-    **Fix:** annotate callbacks as callables: `on_save: Callable[[], None] | None = None`. See the [typing guide](../guides/typing.md).
+    **Fix:** annotate callback parameters as callables: `on_save: Callable[[], None] | None = None`. See the [typing guide](../guides/typing.md).
 
 ??? bug "The error fallback shows an accessor instead of the message"
 
@@ -203,9 +217,9 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Symptoms:** the console shows `[wybthon] Warning: Component <X> read reactive value prop '<name>' at the top level of its body.` during the first render, and the value never changes afterwards.
 
-    **Likely cause:** you read `props.title` or `count()` in the component body before returning the tree, for example `label = props.title.upper()`. Components run once, so that read isn't tracked and its value is frozen.
+    **Likely cause:** you read a parameter or a signal in the component body before returning the tree, for example `label = title.upper()` or `total = count() * 2`. Components run once, so that read isn't tracked and its value is frozen. A parameter is reactive everywhere else (in the markup, a handler, a memo, an effect, or a nested function); only a read at the top level of the body is a one-time read.
 
-    **Fix:** move the read into the template, where the compiler keeps it reactive (`<span>{props.title.upper()}</span>`), or derive it with `create_memo`. If a one-time read is what you want (seeding local state, for example), make it explicit with [`untrack`][wybthon.untrack], `untrack(lambda: props.initial)`, or `count.peek()` for a signal; both silence the warning. Reading a prop the parent passed as a constant doesn't warn.
+    **Fix:** move the read into the template, where the compiler keeps it reactive (`<span>{title.upper()}</span>`), or derive it with `create_memo(lambda: title.upper())`. If a one-time read is what you want (seeding local state, for example), make it explicit with [`untrack`][wybthon.untrack], `create_signal(untrack(lambda: initial))`, or `count.peek()` for a signal; both silence the warning. Reading a prop the parent passed as a constant doesn't warn.
 
 ??? bug "My signal read shows the old value right after I set it"
 

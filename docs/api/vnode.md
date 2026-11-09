@@ -68,6 +68,11 @@ view = h(
 )
 ```
 
+A `key` in `h()` props keys the node it builds, element or component,
+so the reconciler remounts it when the key changes. It's the low-level
+escape hatch: a component call takes no `key=` (use a keyed `Show` to
+remount a component, and `For` for lists).
+
 `h()` evaluates its arguments before Wybthon sees them, so the compiler
 can't help here: pass an accessor (`name`) or a function
 (`lambda: name().upper()`) wherever a value should stay live. A

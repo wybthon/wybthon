@@ -558,16 +558,12 @@ def on_settled(fn: Callable[[], Any]) -> None:
 
     Example:
         ```python
-        class ChartProps(Props):
-            data: list[float]
-
-
         @component
-        def Chart(props: ChartProps):
+        def Chart(data: list[float]):
             canvas = Ref()
 
             def start():
-                handle = draw(canvas.current, props.data)
+                handle = draw(canvas.current, data)
                 return lambda: handle.destroy()
 
             on_settled(start)
@@ -1083,7 +1079,7 @@ def flatten(children: Any) -> list[Any]:
 def resolve_children(fn: Callable[[], Any]) -> ChildrenAccessor:
     """Resolve a component's children once, so it can inspect or reuse them.
 
-    Wraps a getter that returns children (typically `props.children`)
+    Wraps a getter that returns children (typically a `children` parameter)
     and returns a memoized accessor. Nested lists are flattened,
     reactive children (accessors and zero-argument functions) are called
     and their results resolved, and `None` and booleans are dropped.
@@ -1094,8 +1090,8 @@ def resolve_children(fn: Callable[[], Any]) -> ChildrenAccessor:
 
 
     @component
-    def Tabs(props: ParentProps):
-        tabs = resolve_children(lambda: props.children)
+    def Tabs(children: Children = None):
+        tabs = resolve_children(lambda: children)
         return html(t"<nav>{[html(t'<li>{tab}</li>') for tab in tabs.to_array()]}</nav>")
     ```
     """

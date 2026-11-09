@@ -1,15 +1,11 @@
 """Compiled t-string templates (`html`) in the real browser parser and kernel."""
 
-from wybthon import For, ParentProps, Show, component, create_memo, create_signal, html
-
-
-class CardProps(ParentProps):
-    title: str
+from wybthon import Children, For, Show, component, create_memo, create_signal, html
 
 
 @component
-def Card(props: CardProps):
-    return html(t'<section class="tpl-card" data-testid="tpl-card"><h3>{props.title}</h3>{props.children}</section>')
+def Card(title: str, children: Children = None):
+    return html(t'<section class="tpl-card" data-testid="tpl-card"><h3>{title}</h3>{children}</section>')
 
 
 @component

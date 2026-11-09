@@ -82,17 +82,17 @@ _SERVER_FILES: dict[str, str] = {
     "app/__init__.py": '"""Application package."""\n',
     "app/main.py": """\"\"\"The app's router and its root layout.\"\"\"
 
-from wybthon import ParentProps, component, html
+from wybthon import Children, component, html
 from wybthon.router import create_router, file_routes
 
 router = create_router(file_routes("app.routes"))
 
 
 @component
-def Shell(props: ParentProps):
+def Shell(children: Children = None):
     return html(t\"\"\"
       <header><nav><a href="/">Todos</a> <a href="/about">About</a></nav></header>
-      <main>{props.children}</main>
+      <main>{children}</main>
     \"\"\")
 
 

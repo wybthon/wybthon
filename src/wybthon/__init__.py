@@ -4,7 +4,7 @@ Wybthon brings SolidJS 2.0's signals-first reactive model to Python.
 Component bodies run **once** at mount and return markup written as a
 t-string template, [`html(t"...")`][wybthon.html]. Wybthon's compiler
 does what Solid's does for JSX: every dynamic expression in the markup
-(`{count() * 2}`, `{props.title}`) becomes a getter that updates only
+(`{count() * 2}`, `{title}`) becomes a getter that updates only
 the text node or attribute that reads it, and each literal's static
 markup becomes a native template the kernel clones. A virtual DOM
 batches every mutation into a single crossing of the Python-to-JavaScript
@@ -12,9 +12,11 @@ bridge.
 
 Highlights of the reactive model:
 
-- **Compiled templates.** The compiler runs when a module is imported
-  (`import wybthon` installs it), in `wyb build` and `wyb dev`, and under
-  pytest; see [`wybthon.compiler`][wybthon.compiler].
+- **Compiled templates and components.** The compiler runs when a
+  module is imported (`import wybthon` installs it), in `wyb build` and
+  `wyb dev`, and under pytest; see [`wybthon.compiler`][wybthon.compiler].
+  It also makes the content of `Show`, `Loading`, and the other flow
+  controls lazy, as JSX children are.
 - **Automatic batching.** Signal writes are staged and applied on the
   next flush (a microtask, and after each event handler). There is no
   `batch()`; everything batches. Call [`flush`][wybthon.flush] to
@@ -22,9 +24,11 @@ Highlights of the reactive model:
 - **Typed accessors.** [`create_signal`][wybthon.create_signal] returns
   `(Accessor[T], Setter[T])`; call the accessor to read (tracked),
   `.peek()` to read without subscribing.
-- **Typed props.** Components declare inputs on a
-  [`Props`][wybthon.Props] class with plain annotations; `props.title`
-  is a tracked read, as in Solid, and pyright and mypy check every call
+- **Parameters are props.** A component declares its inputs as
+  ordinary parameters (`def Card(title: str, body: str = "")`). The
+  compiler turns every read of one in the body into a tracked read of
+  the parent's current value, as reading Solid's props is, and pyright
+  and mypy check every call against the function's own signature
   without a plugin.
 - **Async-first, with transitions.** A memo whose body is `async def`
   (or an async generator) is an async computation:
@@ -65,16 +69,12 @@ Example:
     A minimal counter component:
 
     ```python
-    from wybthon import Props, component, create_signal, html, render, untrack
-
-
-    class CounterProps(Props):
-        initial: int = 0
+    from wybthon import component, create_signal, html, render, untrack
 
 
     @component
-    def Counter(props: CounterProps):
-        count, set_count = create_signal(untrack(lambda: props.initial))
+    def Counter(initial: int = 0):
+        count, set_count = create_signal(untrack(lambda: initial))
 
         def increment():
             set_count(lambda n: n + 1)
@@ -120,11 +120,10 @@ from .portal import Portal
 from .reactivity import (
     Accessor,
     Action,
+    Children,
     ChildrenAccessor,
     Memo,
     NotReadyError,
-    ParentProps,
-    Props,
     ServerError,
     Setter,
     Signal,
@@ -229,8 +228,7 @@ __all__ = [
     # Components and props
     "component",
     "Component",
-    "Props",
-    "ParentProps",
+    "Children",
     "prop",
     "merge",
     "omit",

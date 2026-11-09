@@ -6,10 +6,9 @@ from typing import TYPE_CHECKING, TypedDict, assert_type
 
 from wybthon import (
     Accessor,
+    Children,
     For,
     Node,
-    ParentProps,
-    Props,
     Show,
     action,
     component,
@@ -24,35 +23,33 @@ from wybthon import (
     snapshot,
     untrack,
 )
-from wybthon.router import RouteProps, SearchParams
+from wybthon.router import SearchParams
 from wybthon.vnode import VNode, h
 
 
-class GreetingProps(Props):
-    name: str
-    count: int = prop(default=1)
-    tags: list[str] = prop(default_factory=list)
-    on_wave: Callable[[], None] | None = None
-
-
 @component
-def Greeting(props: GreetingProps) -> VNode:
+def Greeting(
+    name: str,
+    count: int = 1,
+    tags: list[str] = prop(default_factory=list),
+    on_wave: Callable[[], None] | None = None,
+) -> VNode:
     if TYPE_CHECKING:
-        assert_type(props.name, str)
-        assert_type(props.count, int)
-        assert_type(untrack(lambda: props.tags), list[str])
-        assert_type(props.on_wave, Callable[[], None] | None)
-        assert_type(is_static(props, "name"), bool)
-    return html(t"<p>{props.name * props.count}</p>")
+        assert_type(name, str)
+        assert_type(count, int)
+        assert_type(untrack(lambda: tags), list[str])
+        assert_type(on_wave, Callable[[], None] | None)
+        assert_type(is_static(name), bool)
+    return html(t"<p>{name * count}</p>")
 
 
 name, _ = create_signal("Ada")
 count = create_memo(lambda: len(name()))
 Greeting(name="Ada")
+Greeting("Ada", 2)
 Greeting(name="Ada", count=2, tags=["a"])
-Greeting(name="Ada", key="greeting", on_wave=lambda: None)
-Greeting(name="Ada", key=3)
-# Inside a template, reactive values are checked against the field types;
+Greeting(name="Ada", on_wave=lambda: None)
+# Inside a template, reactive values are checked against the parameter types;
 # the compiler passes getters.
 reactive_greeting: VNode = html(t"<div>{Greeting(name=name(), count=count())}</div>")
 
@@ -70,22 +67,23 @@ def Divider() -> Node:
     return html(t"<hr>")
 
 
-# Every component takes `key`, props or not.
 Divider()
-Divider(key="divider")
-
-
-class SourceProps(Props):
-    source: Accessor[int]
-    format: Callable[[int], str] = str
 
 
 @component
-def Source(props: SourceProps) -> VNode:
+def Button(label: str, **attrs: object) -> Node:
+    return html(t"<button {attrs}>{label}</button>")
+
+
+Button(label="Save", id="save", disabled=True)
+
+
+@component
+def Source(source: Accessor[int], format: Callable[[int], str] = str) -> VNode:
     if TYPE_CHECKING:
-        assert_type(props.source, Accessor[int])
-        assert_type(props.format, Callable[[int], str])
-    return html(t"<p>{props.format(props.source())}</p>")
+        assert_type(source, Accessor[int])
+        assert_type(format, Callable[[int], str])
+    return html(t"<p>{format(source())}</p>")
 
 
 Source(source=count)
@@ -100,13 +98,9 @@ def App() -> VNode:
 App()
 
 
-class CardProps(ParentProps):
-    title: str
-
-
 @component
-def Card(props: CardProps) -> VNode:
-    return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
+def Card(title: str, children: Children = None) -> VNode:
+    return html(t"<div><h2>{title}</h2>{children}</div>")
 
 
 Card(title="Hi", children=[html(t"<p>a</p>"), html(t"<p>b</p>")])
@@ -116,15 +110,14 @@ h("div", {"class": "x"})[h("p", None, "item syntax on elements")]
 
 
 @component
-def User(props: RouteProps) -> VNode:
+def User(params: dict[str, str], search: SearchParams) -> VNode:
     if TYPE_CHECKING:
-        assert_type(props.params, dict[str, str])
-        assert_type(props.search, SearchParams)
-    return html(t"<p>{props.params['id']}</p>")
+        assert_type(params, dict[str, str])
+        assert_type(search, SearchParams)
+    return html(t"<p>{params['id']}</p>")
 
 
-User()
-User(params={"id": "1"})
+User(params={"id": "1"}, search=SearchParams())
 
 
 class Person(TypedDict):

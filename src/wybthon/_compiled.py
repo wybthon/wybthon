@@ -14,7 +14,7 @@ from .reactivity._core import _Getter as getter
 from .templates import Precompiled as template
 from .templates import formatted
 
-__all__ = ["getter", "template", "call", "fmt", "formatted", "is_component"]
+__all__ = ["getter", "template", "call", "fmt", "formatted", "is_component", "props"]
 
 
 def is_component(fn: Any) -> bool:
@@ -39,6 +39,22 @@ def call(fn: Any, deferred: Callable[[], Any], prepared: Callable[[], Any]) -> A
     if getattr(fn, "__wybthon_component__", False) is True:
         return prepared()
     return getter(deferred)
+
+
+def props[F: Callable[..., Any]](body: Callable[..., Any]) -> Callable[[F], F]:
+    """Attach a component's compiled body to the function whose signature declares its props.
+
+    The compiler keeps an `@component` function's signature on the
+    original `def` (emptied) and moves its body, with every parameter
+    read rewritten into a props read, to a function of one argument, the
+    props object. `@component` finds the body here.
+    """
+
+    def mark(signature: F) -> F:
+        signature.__wybthon_body__ = body  # type: ignore[attr-defined]
+        return signature
+
+    return mark
 
 
 def fmt(value: Any, conversion: str | None, spec: str) -> str:

@@ -78,8 +78,9 @@ with new props only in those two places; everywhere else their props
 can't change, which is why a constant prop costs nothing.
 
 For everything else, patching matches VNodes by type and key: a different tag or key
-unmounts and remounts at the same position (so `Leaf(key=user_id())`
-restarts its state when the id changes). Keyed children use an
+unmounts and remounts at the same position (so `h(Leaf, {"key": user_id()})`
+restarts its state when the id changes; in a template, use a keyed
+`Show` for the same effect). Keyed children use an
 identity, key, then type match with a longest-increasing-subsequence
 move pass to keep DOM moves minimal. `For` matches its rows natively:
 it skips the unchanged prefix and suffix by identity, detects swapped

@@ -1,7 +1,7 @@
 """Zero-cost components: constant props and inert bindings (the static probe), native regions, no placeholders.
 
 Under Engine v4 (RFC 0004), a binding the compiler deferred whose
-expression makes no calls (`{props.title}`, `{row["label"]}`) first runs
+expression makes no calls (a prop `{title}`, `{row["label"]}`) first runs
 as a static probe (`wybthon.reactivity._core._probe`). If it reads
 nothing reactive, its value is applied and no computation is ever
 allocated; if it returns an accessor without reading anything, the
@@ -15,7 +15,6 @@ import pytest
 from wybthon import (
     For,
     Match,
-    Props,
     Repeat,
     Show,
     Switch,
@@ -82,14 +81,9 @@ def live_computations(owner: Any) -> int:
     return sum(1 for node in graph["nodes"] if node["type"] == "Computation" and not node["disposed"])
 
 
-class LabelProps(Props):
-    text: str
-    tone: str = "plain"
-
-
 @component
-def Label(props: LabelProps):
-    return html(t"<span class={props.tone}>{props.text}</span>")
+def Label(text: str, tone: str = "plain"):
+    return html(t"<span class={tone}>{text}</span>")
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +94,7 @@ def Label(props: LabelProps):
 def test_a_fixed_component_with_constant_props_allocates_no_reactive_nodes():
     # The page root mounts in a patchable context; its component output (and
     # everything in it) doesn't, so the constant props subscribe to nothing,
-    # and each `{props.x}` binding is applied by the probe without a computation.
+    # and each `{x}` prop binding is applied by the probe without a computation.
     @component
     def Page():
         return html(t'<div><{Label} text="a" tone="loud" /><{Label} text="b" /></div>')
@@ -149,13 +143,10 @@ def test_a_patchable_component_receives_new_constants():
     n, set_n = create_signal(1)
     mounts: list[int] = []
 
-    class CountProps(Props):
-        value: int
-
     @component
-    def Count(props: CountProps):
+    def Count(value: int):
         mounts.append(1)
-        return html(t"<p>value {props.value}</p>")
+        return html(t"<p>value {value}</p>")
 
     # The hole returns a new node with a constant prop each time; the
     # mounted component is patched, not remounted.
@@ -171,12 +162,12 @@ def test_a_patch_with_unchanged_props_doesnt_notify():
     runs: list[str] = []
 
     @component
-    def Leaf(props: LabelProps):
-        def text() -> str:
-            runs.append(props.text)
-            return props.text
+    def Leaf(text: str, tone: str = "plain"):
+        def read() -> str:
+            runs.append(text)
+            return text
 
-        return html(t"<span>{text}</span>")
+        return html(t"<span>{read}</span>")
 
     render(html(t"<div>{(lambda: (other(), Leaf(text='same'))[1])}</div>"))
     set_other(1)

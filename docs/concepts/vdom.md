@@ -192,7 +192,7 @@ collector; see the
 [engine v5 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md).
 
 **A static probe before a computation.** A binding whose expression
-makes no calls (`{props.title}`, `{row["label"]}`) first runs under a
+makes no calls (a parameter such as `{title}`, or `{row["label"]}`) first runs under a
 lightweight observer. If it reads nothing reactive, creates nothing,
 and returns synchronously, the value is applied and no computation is
 ever allocated. The probe stops at the first reactive read, and the
@@ -248,16 +248,17 @@ inserts that are strictly necessary.
 ### Keys
 
 Give siblings a stable `key` when their order can change and they carry
-state (form inputs, components with local signals). Every component
-accepts `key=`. A component re-rendered with a different key remounts
-with fresh state:
+state (form inputs, components with local signals). In code that builds
+nodes with `h()`, the `key` prop keys any node, including a component:
+`h(Editor, {"user_id": uid, "key": uid})`.
+
+Components called from templates don't take `key=`. To remount a
+component with fresh state when a value changes, use a keyed
+[`Show`][wybthon.Show], as in Solid. It rebuilds its content whenever
+the value changes, and passes the value to the content function:
 
 ```python
-def editor():
-    return Editor(user_id=current_id(), key=current_id())
-
-
-html(t"<div>{editor()}</div>")
+html(t"<div>{Show(current_id(), lambda uid: Editor(user_id=uid), keyed=True)}</div>")
 ```
 
 Prefer [`For`][wybthon.For] for lists: it caches each row's node and

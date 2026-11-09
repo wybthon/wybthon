@@ -21,7 +21,7 @@ from wybthon.flow import (
     is_hydrating,
     on_hydration_end,
 )
-from wybthon.reactivity import Props, create_root, create_signal, flush, on_cleanup, untrack
+from wybthon.reactivity import create_root, create_signal, flush, on_cleanup, untrack
 
 
 def texts(node: StubNode) -> list[str]:
@@ -32,14 +32,6 @@ def texts(node: StubNode) -> list[str]:
     for child in node.childNodes:
         out.extend(texts(child))
     return out
-
-
-class RowProps(Props):
-    item: dict
-
-
-class LabelProps(Props):
-    label: str
 
 
 def elements(node: StubNode) -> list[StubNode]:
@@ -378,8 +370,8 @@ def test_for_inserted_rows_mount_in_document_order(wyb, root_element):
     order: list[int] = []
 
     @component
-    def Row(props: RowProps):
-        iid = untrack(lambda: props.item)["id"]
+    def Row(item: dict):
+        iid = untrack(lambda: item)["id"]
         on_settled(lambda: order.append(iid))
         return html(t"<li>{str(iid)}</li>")
 
@@ -402,8 +394,8 @@ def test_for_never_patches_a_new_row_into_a_removed_one(wyb, root_element):
     bodies: list[int] = []
 
     @component
-    def Row(props: RowProps):
-        iid = untrack(lambda: props.item)["id"]
+    def Row(item: dict):
+        iid = untrack(lambda: item)["id"]
         bodies.append(iid)
         return html(t"<li>{str(iid)}</li>")
 
@@ -580,12 +572,12 @@ def test_dynamic_switches_tag(wyb, root_element):
 
 def test_dynamic_switches_component_and_passes_props(wyb, root_element):
     @component
-    def A(props: LabelProps):
-        return html(t"<h1>A:{props.label}</h1>")
+    def A(label: str):
+        return html(t"<h1>A:{label}</h1>")
 
     @component
-    def B(props: LabelProps):
-        return html(t"<h2>B:{props.label}</h2>")
+    def B(label: str):
+        return html(t"<h2>B:{label}</h2>")
 
     which, set_which = create_signal(A)
     label, set_label = create_signal("x")
@@ -602,12 +594,12 @@ def test_dynamic_switches_component_and_passes_props(wyb, root_element):
 
 def test_dynamic_as_a_component_tag(wyb, root_element):
     @component
-    def A(props: LabelProps):
-        return html(t"<h1>A:{props.label}</h1>")
+    def A(label: str):
+        return html(t"<h1>A:{label}</h1>")
 
     @component
-    def B(props: LabelProps):
-        return html(t"<h2>B:{props.label}</h2>")
+    def B(label: str):
+        return html(t"<h2>B:{label}</h2>")
 
     which, set_which = create_signal(A)
     label, set_label = create_signal("x")
@@ -640,12 +632,12 @@ def test_dynamic_accepts_positional_children(wyb, root_element):
 
 def test_dynamic_factory_is_a_reusable_component(wyb, root_element):
     @component
-    def A(props: LabelProps):
-        return html(t"<h1>A:{props.label}</h1>")
+    def A(label: str):
+        return html(t"<h1>A:{label}</h1>")
 
     @component
-    def B(props: LabelProps):
-        return html(t"<h2>B:{props.label}</h2>")
+    def B(label: str):
+        return html(t"<h2>B:{label}</h2>")
 
     rich, set_rich = create_signal(False)
     Editor = dynamic(lambda: B if rich() else A)

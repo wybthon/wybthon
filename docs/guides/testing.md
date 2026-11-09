@@ -6,23 +6,19 @@ Three rules cover most of what's different about testing reactive code:
 
 1. **Writes are staged.** After `set_count(1)`, `count()` still returns the old value until the graph flushes. In the browser that happens on a microtask; in a test, [`fire`][wybthon.testing.fire] flushes for you, and [`flush`][wybthon.flush] does it explicitly.
 2. **Effects run after commit.** `create_effect`'s first run is deferred to the next flush, so assert after a flush.
-3. **Templates are compiled.** Wybthon's compiler turns each dynamic interpolation into a getter before a module runs. The pytest plugin compiles your test modules, so templates written in a test behave exactly as they do in an application (see [Compiling templates in tests](#compiling-templates-in-tests)).
+3. **Templates and components are compiled.** Wybthon's compiler turns each dynamic interpolation into a getter, and each component's parameters into its props, before a module runs. The pytest plugin compiles your test modules, so templates and components written in a test behave exactly as they do in an application (see [Compiling templates in tests](#compiling-templates-in-tests)).
 
 ## Rendering components
 
 [`render`][wybthon.testing.render] mounts a view into a fresh container, flushes it, and returns a [`Screen`][wybthon.testing.Screen]:
 
 ```python
-from wybthon import Props, component, create_signal, html
+from wybthon import component, create_signal, html
 from wybthon.testing import fire, render
 
 
-class CounterProps(Props):
-    label: str
-
-
 @component
-def Counter(props: CounterProps):
+def Counter(label: str):
     count, set_count = create_signal(0)
 
     def increment():
@@ -30,7 +26,7 @@ def Counter(props: CounterProps):
 
     return html(t"""
       <div>
-        <p>{props.label}: {count()}</p>
+        <p>{label}: {count()}</p>
         <button onclick={increment}>+</button>
       </div>
     """)
@@ -159,21 +155,17 @@ def test_input_updates_text():
 To drive a prop from the test, render the component from a template that reads a signal, then [`flush`][wybthon.flush] after writing it. The compiler passes `name={name()}` to the component as a getter, so the component body runs once and only the bound text updates:
 
 ```python
-from wybthon import Props, component, create_signal, flush, html
+from wybthon import component, create_signal, flush, html
 from wybthon.testing import render
-
-
-class GreetingProps(Props):
-    name: str
 
 
 runs: list[int] = []
 
 
 @component
-def Greeting(props: GreetingProps):
+def Greeting(name: str):
     runs.append(1)
-    return html(t"<p>Hello, {props.name}</p>")
+    return html(t"<p>Hello, {name}</p>")
 
 
 def test_prop_updates_without_rerunning_body():
@@ -185,7 +177,7 @@ def test_prop_updates_without_rerunning_body():
         assert runs == [1]
 ```
 
-`{Greeting(name=name())}` works the same way and is type-checked. Passing the signal itself in Python, `Greeting(name=name)`, works at run time too, but type checkers reject it when the field is annotated `name: str`. Callback fields (annotated `Callable[...]`) are returned as passed, so a test can pass a recording function and assert on its calls after firing events.
+`{Greeting(name=name())}` works the same way and is type-checked. Passing the signal itself in Python, `Greeting(name=name)`, works at run time too, but type checkers reject it when the parameter is annotated `name: str`. Callback parameters (annotated `Callable[...]`) are returned as passed, so a test can pass a recording function and assert on its calls after firing events.
 
 ## Async components
 
@@ -263,11 +255,11 @@ A write inside a memo raises `WriteInScopeError` when the memo is read (`pytest.
 
 ## Compiling templates in tests
 
-Installing Wybthon registers a pytest plugin (through the `pytest11` entry point) that adds the compiler to pytest's assertion rewriting, so every test module and `conftest.py` is compiled before it runs. Its cached bytecode gets a tag of its own, so a test module cached without the compiler is never reused. Helper modules that your tests import are compiled by the import hook that `import wybthon` installs. There's nothing to configure; disable the plugin with `-p no:wybthon`.
+Installing Wybthon registers a pytest plugin (through the `pytest11` entry point) that adds the compiler to pytest's assertion rewriting, so every test module and `conftest.py` is compiled before it runs: its templates, its components' parameters, and its flow controls' lazy branches. Its cached bytecode gets a tag of its own, so a test module cached without the compiler is never reused. Helper modules that your tests import are compiled by the import hook that `import wybthon` installs. There's nothing to configure; disable the plugin with `-p no:wybthon`.
 
 Two cases need a step of your own:
 
-- **Scripts.** A template in a script run with `python script.py` isn't compiled, and in dev mode `html()` raises [`TemplateError`][wybthon.TemplateError] when one of its dynamic expressions has already been evaluated once. Run the script with `wyb run script.py` instead; it compiles the script and everything it imports.
+- **Scripts.** A script run with `python script.py` isn't compiled. In dev mode, `html()` raises [`TemplateError`][wybthon.TemplateError] when one of its template's dynamic expressions has already been evaluated once, and calling one of its components that takes parameters raises `TypeError`. Run the script with `wyb run script.py` instead; it compiles the script and everything it imports.
 - **Templates built at run time.** A test that builds a module's source as a string (to check compiler output, for example) compiles it with [`compile_source`][wybthon.compiler.compile_source] before running it:
 
 ```python

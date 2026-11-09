@@ -12,12 +12,13 @@ from urllib.parse import urlsplit
 
 from .. import events
 from .. import server_functions as _sf
-from ..component import component
+from ..component import component, declared_props
 from ..context import Context, create_context, use_context
+from ..lazy import OPTIONAL, LazyComponent
 from ..reactivity import _core
 from ..reactivity._core import Accessor, Memo, _unwrap, untrack
 from ..reactivity._primitives import create_memo
-from ..reactivity._props import Props, prop
+from ..reactivity._props import Props
 from ..request import http_status
 from ..vnode import VNode, h
 from ._data import _apply_revalidation
@@ -26,7 +27,6 @@ from ._match import match_route, strip_base
 
 __all__ = [
     "Route",
-    "RouteProps",
     "PreloadArgs",
     "Router",
     "create_router",
@@ -70,9 +70,14 @@ class Route:
 
     Attributes:
         path: The path pattern.
-        component: The component to show. It receives `params`, `search`,
-            `data`, and `children` props (see
-            [`RouteProps`][wybthon.router.RouteProps]).
+        component: The component to show. It receives whichever of the
+            route props it declares as parameters: `params` (the matched
+            path parameters, a `dict[str, str]`), `search` (the parsed
+            query string, a [`SearchParams`][wybthon.router.SearchParams]),
+            `data` (what `preload` returned, resolved), and `children`
+            (the matched child route, for a layout). Navigating between
+            URLs the same route matches updates them in place instead of
+            remounting.
         children: Nested routes.
         preload: Called with [`PreloadArgs`][wybthon.router.PreloadArgs]
             when the route is about to show, or when a link to it is
@@ -84,23 +89,6 @@ class Route:
     component: Any = None
     children: list[Route] = field(default_factory=list)
     preload: Callable[[PreloadArgs], Any] | None = None
-
-
-class RouteProps(Props):
-    """Props for a route's component. Subclass it to add your own fields.
-
-    Attributes:
-        params: The matched path parameters. Navigating between URLs the
-            same route matches updates them in place instead of remounting.
-        search: The parsed query string.
-        data: What the route's `preload` returned (resolved).
-        children: The matched child route, for a layout.
-    """
-
-    params: dict[str, str] = prop(default_factory=dict)
-    search: SearchParams = prop(default_factory=SearchParams)
-    data: Any = None
-    children: Any = None
 
 
 class _RouterState:
@@ -395,7 +383,13 @@ def _RouteEntry(props: _RouteEntryProps) -> Any:
     child = use_context(_OutletContext)
     if route.component is None:
         return child
-    return h(route.component, {"params": params, "search": search, "data": data, "children": child})
+    given: dict[str, Any] = {"params": params, "search": search, "data": data, "children": child}
+    declared = declared_props(route.component)
+    if declared is not None:
+        given = {name: value for name, value in given.items() if name in declared}
+    elif isinstance(route.component, LazyComponent):
+        given[OPTIONAL] = frozenset(given)
+    return h(route.component, given)
 
 
 @component
@@ -403,7 +397,7 @@ def _Outlet() -> Any:
     return use_context(_OutletContext)
 
 
-_Outlet.__name__ = "Outlet"  # type: ignore[attr-defined]
+_Outlet.__name__ = "Outlet"
 
 
 def Outlet() -> VNode:

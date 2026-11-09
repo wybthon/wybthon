@@ -32,22 +32,18 @@ returns the match or `None`, and `get_all_by_*` returns every match.
 ```python
 import pytest
 
-from wybthon import Props, component, create_signal, html
+from wybthon import component, create_signal, html
 from wybthon.testing import cleanup, fire, render
 
 
-class CounterProps(Props):
-    label: str = "Count"
-
-
 @component
-def Counter(props: CounterProps):
+def Counter(label: str = "Count"):
     count, set_count = create_signal(0)
 
     def increment():
         set_count(lambda n: n + 1)
 
-    return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
+    return html(t"<div><p>{label}: {count()}</p><button onclick={increment}>+</button></div>")
 
 
 @pytest.fixture(autouse=True)

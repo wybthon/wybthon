@@ -1,4 +1,4 @@
-"""The run-once component model: typed `Props`, Solid-style prop reads, callable fields, and lifecycle."""
+"""The run-once component model: parameter props, Solid-style prop reads, callable props, and lifecycle."""
 
 from collections.abc import Callable
 from typing import Any
@@ -6,12 +6,11 @@ from typing import Any
 import pytest
 from conftest import StubNode, collect_texts
 
-from wybthon import _warnings, html
+from wybthon import Children, Show, _warnings, html
+from wybthon.compiler import compile_source
 from wybthon.component import Component, component
 from wybthon.reactivity import (
     ChildrenAccessor,
-    ParentProps,
-    Props,
     create_effect,
     create_memo,
     create_reaction,
@@ -56,20 +55,44 @@ def dev_mode():
 
 
 def test_component_call_returns_vnode_with_children_prop(wyb):
-    class CardProps(ParentProps):
-        title: str
-
     @component
-    def Card(props: CardProps):
-        return html(t"<div>{props.title}{props.children}</div>")
+    def Card(title: str, children: Children = None):
+        return html(t"<div>{title}{children}</div>")
 
     assert isinstance(Card, Component)
     assert component(Card) is Card
-    node = Card("a", "b", title="T")
+    node = Card(title="T")["a", "b"]
     assert isinstance(node, VNode)
     assert node.props["title"] == "T"
     assert node.props["children"] == ["a", "b"]
+    assert node.key is None
     assert repr(Card).startswith("<component ")
+
+
+def test_positional_arguments_bind_to_parameters(wyb, root_element, dev_mode):
+    @component
+    def Greeting(name: str, punctuation: str = "!", *, loud: bool = False):
+        return html(t"<p>{name.upper() if loud else name}{punctuation}</p>")
+
+    node = Greeting("Ada", "?")
+    assert node.props == {"name": "Ada", "punctuation": "?"}
+    with pytest.raises(TypeError, match=r"takes 2 positional argument\(s\) but 3 were given"):
+        Greeting("Ada", "?", True)
+    with pytest.raises(TypeError, match="multiple values for argument 'name'"):
+        Greeting("Ada", name="Grace")
+    wyb["reconciler"].render(html(t"<div>{node}{Greeting('Grace', loud=True)}</div>"), root_element)
+    assert text(root_element.element) == "Ada?GRACE!"
+
+
+def test_signature_is_the_function_s_own(wyb):
+    import inspect
+
+    @component
+    def Greeting(name: str, copies: int = 2):
+        return html(t"<p>{name * copies}</p>")
+
+    assert list(inspect.signature(Greeting).parameters) == ["name", "copies"]
+    assert inspect.signature(Greeting).parameters["copies"].default == 2
 
 
 def test_component_preserves_function_metadata(wyb):
@@ -83,12 +106,9 @@ def test_component_preserves_function_metadata(wyb):
 
 
 def test_children_keyword_and_item_syntax_on_components(wyb, root_element):
-    class CardProps(ParentProps):
-        title: str
-
     @component
-    def Card(props: CardProps):
-        return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
+    def Card(title: str, children: Children = None):
+        return html(t"<div><h2>{title}</h2>{children}</div>")
 
     a, b = html(t"<p>a</p>"), html(t"<p>b</p>")
     by_item = Card(title="Hi")[a, b]
@@ -112,44 +132,42 @@ def test_item_syntax_on_h_elements_sets_child_nodes(wyb, root_element):
 
 
 # ---------------------------------------------------------------------------
-# Typed Props: validation and declaration
+# Parameter props: validation and declaration
 # ---------------------------------------------------------------------------
 
 
 def test_missing_required_and_unknown_props_raise_in_dev_mode(wyb, dev_mode):
-    class GreetingProps(Props):
-        name: str
-        excited: bool = prop(default=False)
-
     @component
-    def Greeting(props: GreetingProps):
-        return html(t"<p>{props.name}</p>")
+    def Greeting(name: str, copies: int = 2):
+        return html(t"<p>{name}</p>")
 
     with pytest.raises(TypeError, match=r"missing required prop\(s\): name"):
         Greeting()
     with pytest.raises(TypeError, match=r"unexpected prop\(s\): bogus"):
         Greeting(name="x", bogus=1)
-    # `key` and the declared fields are always accepted.
-    assert isinstance(Greeting(name="x", excited=True, key="k"), VNode)
+    # Components take no `key`: it's an unknown prop like any other.
+    with pytest.raises(TypeError, match=r"unexpected prop\(s\): key"):
+        Greeting(name="x", key="k")
+    assert isinstance(Greeting(name="x", copies=3), VNode)
 
 
-def test_component_without_props_rejects_props_but_accepts_key(wyb, dev_mode):
+def test_component_without_props_rejects_props(wyb, dev_mode):
     @component
     def Plain():
         return html(t"<p>x</p>")
 
     with pytest.raises(TypeError, match="takes no props"):
         Plain(title="x")
-    assert Plain(key="k").key == "k"
+    with pytest.raises(TypeError, match="takes no props"):
+        Plain(key="k")
+    with pytest.raises(TypeError, match=r"takes 0 positional argument"):
+        Plain("x")
 
 
 def test_prop_validation_is_skipped_in_production_mode(wyb):
-    class GreetingProps(Props):
-        name: str
-
     @component
-    def Greeting(props: GreetingProps):
-        return html(t"<p>{props.name}</p>")
+    def Greeting(name: str, copies: int = 2):
+        return html(t"<p>{name}</p>")
 
     previous = _warnings.is_dev_mode()
     _warnings.set_dev_mode(False)
@@ -159,74 +177,89 @@ def test_prop_validation_is_skipped_in_production_mode(wyb):
         _warnings.set_dev_mode(previous)
 
 
-def test_parameters_that_are_not_a_props_class_are_rejected(wyb, dev_mode):
+def _compile_error(source: str) -> str:
+    with pytest.raises(SyntaxError) as info:
+        compile_source(source, "views.py")
+    return str(info.value.msg)
+
+
+def test_assigning_a_parameter_is_a_compile_error(wyb):
+    header = "from wybthon import component, html\n\n@component\n"
+    message = "'title' is a component parameter, which is a read-only prop; assign to a new name"
+    assert _compile_error(header + "def Card(title: str):\n    title = title.upper()\n    return title\n") == message
+    assert _compile_error(header + "def Card(title: str):\n    title += '!'\n    return title\n") == message
+    assert _compile_error(header + "def Card(title: str):\n    del title\n") == message
+    assert _compile_error(header + "def Card(title: str):\n    for title in 'ab': pass\n") == message
+    nonlocal_source = header + "def Card(title: str):\n    def edit():\n        nonlocal title\n        title = 'x'\n"
+    assert "can't be nonlocal" in _compile_error(nonlocal_source)
+    assert "declare a `children` parameter" in _compile_error(header + "def Row(*items):\n    return items\n")
+
+
+def test_nested_scopes_that_bind_a_parameter_name_shadow_it(wyb, root_element):
     @component
-    def Untyped(count):
-        return html(t"<p>{count}</p>")
+    def Card(title: str, items: list[str] = prop(default_factory=list)):
+        def heading(title: str) -> str:
+            return title.upper()
+
+        first = [title for title in ("comprehension",)][0]
+
+        class Box:
+            title = "class"
+
+        return html(t"<p>{heading(title)} {first} {Box.title} {(lambda title: title)('lambda')}</p>")
+
+    wyb["reconciler"].render(Card(title="t"), root_element)
+    assert texts(root_element.element) == ["T", "comprehension", "class", "lambda"]
+
+
+def test_a_module_that_was_not_compiled_raises_in_dev_mode(wyb, dev_mode):
+    namespace: dict[str, Any] = {}
+    exec(
+        compile("from wybthon import component\n\n@component\ndef Card(title: str):\n    return title\n", "x", "exec"),
+        namespace,
+    )
+    with pytest.raises(TypeError, match="wasn't compiled"):
+        namespace["Card"](title="x")
+
+
+def test_an_uncompiled_component_gets_values_outside_dev_mode(wyb, root_element):
+    namespace: dict[str, Any] = {}
+    exec(
+        compile("from wybthon import component\n\n@component\ndef Card(title: str):\n    return title\n", "x", "exec"),
+        namespace,
+    )
+    previous = _warnings.is_dev_mode()
+    _warnings.set_dev_mode(False)
+    try:
+        wyb["reconciler"].render(namespace["Card"](title="plain"), root_element)
+    finally:
+        _warnings.set_dev_mode(previous)
+    assert text(root_element.element) == "plain"
+
+
+def test_rest_parameter_collects_undeclared_props(wyb, root_element, dev_mode):
+    seen: list[list[str]] = []
 
     @component
-    def Keyword(*, props: Props):
-        return html(t"<p>x</p>")
+    def Button(label: str, **attrs: Any):
+        seen.append(sorted(attrs))
+        return html(t"<button {attrs}>{label}</button>")
 
-    @component
-    def Two(a: Props, b: Props):
-        return html(t"<p>x</p>")
-
-    for comp in (Untyped, Keyword, Two):
-        with pytest.raises(TypeError, match="must take no parameters or one parameter annotated with a Props subclass"):
-            comp()
-
-
-def test_base_props_annotation_accepts_only_key(wyb, root_element, dev_mode):
-    seen: list[Props] = []
-
-    @component
-    def Raw(props: Props):
-        seen.append(props)
-        return html(t"<p>raw</p>")
-
-    with pytest.raises(TypeError, match="unexpected prop"):
-        Raw(title="T")
-    wyb["reconciler"].render(Raw(key="k"), root_element)
-    assert isinstance(seen[0], Props)
-    assert texts(root_element.element) == ["raw"]
+    wyb["reconciler"].render(Button(label="Go", id="b1", title="t"), root_element)
+    assert seen == [["id", "title"]]
+    button = elements(root_element.element)[0]
+    assert button.attributes["id"] == "b1"
+    assert button.attributes["title"] == "t"
+    assert text(root_element.element) == "Go"
 
 
-def test_prop_requires_exactly_one_keyword_default(wyb):
+def test_prop_takes_only_a_default_factory(wyb):
     with pytest.raises(TypeError):
         prop()
     with pytest.raises(TypeError):
-        prop(default=1, default_factory=list)
-    with pytest.raises(TypeError):
         prop(1)
-
-    # A field specifier works on any plain field.
-    class Counts(Props):
-        count: int = prop(default=1)
-        seen: list[int] = prop(default_factory=list)
-
-    assert Counts().count == 1
-    assert Counts().seen == []
-
-
-def test_props_are_read_only(wyb, root_element):
-    class P(Props):
-        name: str = prop(default="x")
-        tag: str = "t"
-
-    errors: list[str] = []
-
-    @component
-    def Comp(props: P):
-        for field in ("name", "tag"):
-            try:
-                setattr(props, field, "y")
-            except AttributeError as exc:
-                errors.append(str(exc))
-        return html(t"<p>{props.name}</p>")
-
-    wyb["reconciler"].render(Comp(), root_element)
-    assert errors == ["Component props are read-only"] * 2
+    with pytest.raises(TypeError):
+        prop(default=1)
 
 
 # ---------------------------------------------------------------------------
@@ -237,16 +270,12 @@ def test_props_are_read_only(wyb, root_element):
 def test_prop_reads_return_values_with_defaults(wyb, root_element):
     seen: dict[str, object] = {}
 
-    class GreetingProps(Props):
-        name: str = prop(default="world")
-        excited: bool = False
-
     @component
-    def Greeting(props: GreetingProps):
+    def Greeting(name: str = "world", excited: bool = False):
         # Constants can't change, so reading them at the top level is fine.
-        seen["name"] = props.name
-        seen["excited"] = props.excited
-        return html(t"<p>Hello, {props.name}</p>")
+        seen["name"] = name
+        seen["excited"] = excited
+        return html(t"<p>Hello, {name}</p>")
 
     wyb["reconciler"].render(Greeting(), root_element)
     assert seen == {"name": "world", "excited": False}
@@ -256,12 +285,9 @@ def test_prop_reads_return_values_with_defaults(wyb, root_element):
 def test_prop_default_factory_gives_each_instance_its_own_value(wyb, root_element):
     lists: list[list[str]] = []
 
-    class TagsProps(Props):
-        tags: list[str] = prop(default_factory=list)
-
     @component
-    def Tags(props: TagsProps):
-        value = props.tags
+    def Tags(tags: list[str] = prop(default_factory=list)):
+        value = tags
         value.append("x")
         lists.append(value)
         return html(t"<p>{len(value)}</p>")
@@ -276,13 +302,9 @@ def test_prop_default_factory_gives_each_instance_its_own_value(wyb, root_elemen
 def test_plain_values_and_accessors_are_both_reactive_props(wyb, root_element):
     name, set_name = create_signal("Ada")
 
-    class GreetingProps(Props):
-        name: str
-        suffix: str = ""
-
     @component
-    def Greeting(props: GreetingProps):
-        return html(t"<p>{props.name}{props.suffix}</p>")
+    def Greeting(name: str, suffix: str = ""):
+        return html(t"<p>{name}{suffix}</p>")
 
     wyb["reconciler"].render(html(t'<{Greeting} name={name} suffix="!" />'), root_element)
     assert text(root_element.element) == "Ada!"
@@ -294,12 +316,9 @@ def test_plain_values_and_accessors_are_both_reactive_props(wyb, root_element):
 def test_compiled_expressions_are_reactive_props(wyb, root_element):
     first, set_first = create_signal("ada")
 
-    class GreetingProps(Props):
-        name: str
-
     @component
-    def Greeting(props: GreetingProps):
-        return html(t"<p>{props.name}</p>")
+    def Greeting(name: str, copies: int = 2):
+        return html(t"<p>{name}</p>")
 
     # A dynamic expression in a component tag or a component call becomes a getter.
     wyb["reconciler"].render(
@@ -315,13 +334,10 @@ def test_body_runs_once_even_when_props_change(wyb, root_element):
     count, set_count = create_signal(0)
     runs: list[int] = []
 
-    class CounterProps(Props):
-        value: int
-
     @component
-    def Counter(props: CounterProps):
+    def Counter(value: int):
         runs.append(1)
-        return html(t"<p>n={props.value}</p>")
+        return html(t"<p>n={value}</p>")
 
     wyb["reconciler"].render(html(t"<{Counter} value={count()} />"), root_element)
     set_count(1)
@@ -336,13 +352,10 @@ def test_parent_rerender_patches_child_props_without_remount(wyb, root_element):
     label, set_label = create_signal("a")
     runs: list[int] = []
 
-    class ChildProps(Props):
-        text: str
-
     @component
-    def Child(props: ChildProps):
+    def Child(text: str):
         runs.append(1)
-        return html(t"<span>{props.text}</span>")
+        return html(t"<span>{text}</span>")
 
     # The parent's hole re-renders a new VNode for Child with a plain value;
     # the mounted Child receives the new value through its live props.
@@ -360,16 +373,12 @@ def test_parent_updates_flow_into_every_field(wyb, root_element):
     seen: list[tuple[int, str]] = []
     reads: list[Callable[[], tuple[int, str]]] = []
 
-    class ChildProps(Props):
-        value: int
-        mode: str = "plain"
-
     @component
-    def Child(props: ChildProps):
+    def Child(value: int, mode: str = "plain"):
         runs.append(1)
-        create_effect(lambda: props.value, lambda v: seen.append((v, untrack(lambda: props.mode))))
-        reads.append(lambda: untrack(lambda: (props.value, props.mode)))
-        return html(t"<span>{props.value * 10}</span>")
+        create_effect(lambda: value, lambda v: seen.append((v, untrack(lambda: mode))))
+        reads.append(lambda: untrack(lambda: (value, mode)))
+        return html(t"<span>{value * 10}</span>")
 
     wyb["reconciler"].render(html(t"<div>{(lambda: Child(value=n(), mode=f'm{n()}'))}</div>"), root_element)
     flush()
@@ -386,12 +395,9 @@ def test_parent_updates_flow_into_every_field(wyb, root_element):
 def test_omitted_prop_falls_back_to_default_after_parent_update(wyb, root_element):
     with_label, set_with_label = create_signal(True)
 
-    class LabelProps(Props):
-        label: str = "default"
-
     @component
-    def Label(props: LabelProps):
-        return html(t"<span>{props.label}</span>")
+    def Label(label: str = "default"):
+        return html(t"<span>{label}</span>")
 
     wyb["reconciler"].render(
         html(t"<div>{(lambda: Label(label='given') if with_label() else Label())}</div>"), root_element
@@ -402,26 +408,18 @@ def test_omitted_prop_falls_back_to_default_after_parent_update(wyb, root_elemen
     assert texts(root_element.element) == ["default"]
 
 
-def test_omit_props_with_names_and_predicate_spreads_onto_elements(wyb, root_element):
+def test_omit_on_a_rest_parameter_spreads_onto_elements(wyb, root_element):
     from wybthon.reactivity import omit
 
     cls, set_cls = create_signal("primary")
-
-    class ButtonProps(Props):
-        label: str
-        class_: str | None = None
-        id: str | None = None
-        title: str | None = None
-
     rest_keys: list[list[str]] = []
 
     @component
-    def Button(props: ButtonProps):
-        rest = omit(props, "label")
+    def Button(label: str, **rest: Any):
         rest_keys.append(sorted(rest))
-        no_title = omit(props, lambda key: key in ("label", "title"))
+        no_title = omit(rest, lambda key: key == "title")
         rest_keys.append(sorted(no_title))
-        return html(t"<button {no_title}>{props.label}</button>")
+        return html(t"<button {no_title}>{label}</button>")
 
     wyb["reconciler"].render(Button(label="Go", class_=cls, id="b1", title="t"), root_element)
     assert rest_keys == [["class_", "id", "title"], ["class_", "id"]]
@@ -438,14 +436,11 @@ def test_untracked_prop_read_is_untracked(wyb, root_element):
     count, set_count = create_signal(0)
     runs: list[int] = []
 
-    class PeekerProps(Props):
-        value: int
-
     @component
-    def Peeker(props: PeekerProps):
+    def Peeker(value: int):
         def view():
             runs.append(1)
-            return str(untrack(lambda: props.value))
+            return str(untrack(lambda: value))
 
         return html(t"<p>{view}</p>")
 
@@ -459,13 +454,10 @@ def test_untracked_prop_read_is_untracked(wyb, root_element):
 def test_callback_fields_pass_through_untouched(wyb, root_element):
     calls: list[str] = []
 
-    class ClickerProps(Props):
-        on_pick: Callable[[str], None]
-
     @component
-    def Clicker(props: ClickerProps):
+    def Clicker(on_pick: Callable[[str], None]):
         def click(event: Any) -> None:
-            props.on_pick("picked")
+            on_pick("picked")
 
         return html(t"<button onclick={click}>x</button>")
 
@@ -480,19 +472,15 @@ def test_zero_arg_callable_fields_are_never_called_on_read(wyb, root_element):
     seen: list[Any] = []
     close = lambda: calls.append("closed")  # noqa: E731
 
-    class DialogProps(Props):
-        on_close: Callable[[], None] | None = None
-        make_label: Callable[[], str] = lambda: "default"
-
     @component
-    def Dialog(props: DialogProps):
-        seen.append(props.on_close)
-        seen.append(props.on_close)
-        seen.append(props.make_label())
+    def Dialog(on_close: Callable[[], None] | None = None, make_label: Callable[[], str] = lambda: "default"):
+        seen.append(on_close)
+        seen.append(on_close)
+        seen.append(make_label())
 
         def click() -> None:
-            if props.on_close:
-                props.on_close()
+            if on_close:
+                on_close()
 
         return html(t"<button onclick={click}>close</button>")
 
@@ -507,14 +495,10 @@ def test_zero_arg_callable_fields_are_never_called_on_read(wyb, root_element):
 def test_plain_field_default_is_returned_when_not_passed(wyb, root_element):
     seen: list[Any] = []
 
-    class P(Props):
-        size: int = 3
-        handler: Callable[[], None] | None = None
-
     @component
-    def Comp(props: P):
-        seen.extend([props.size, props.handler])
-        return html(t"<p>{props.size}</p>")
+    def Comp(size: int = 3, handler: Callable[[], None] | None = None):
+        seen.extend([size, handler])
+        return html(t"<p>{size}</p>")
 
     wyb["reconciler"].render(Comp(), root_element)
     assert seen == [3, None]
@@ -562,8 +546,8 @@ def test_children_helper_resolves_props_children_and_to_array(wyb, root_element)
     counts: list[int] = []
 
     @component
-    def Tabs(props: ParentProps):
-        kids = resolve_children(lambda: props.children)
+    def Tabs(children: Children = None):
+        kids = resolve_children(lambda: children)
         assert isinstance(kids, ChildrenAccessor)
         counts.append(len(untrack(kids.to_array)))
 
@@ -717,12 +701,9 @@ def test_top_level_read_of_a_reactive_prop_warns_in_dev_mode(wyb, root_element, 
     _warnings._reset_warning_dedupe()
     name, _ = create_signal("x")
 
-    class BadProps(Props):
-        name: str
-
     @component
-    def Bad(props: BadProps):
-        value = props.name
+    def Bad(name: str):
+        value = name
         return html(t"<p>{value}</p>")
 
     wyb["reconciler"].render(html(t"<{Bad} name={name()} />"), root_element)
@@ -735,12 +716,9 @@ def test_top_level_read_of_a_reactive_prop_warns_in_dev_mode(wyb, root_element, 
 def test_top_level_read_of_a_constant_prop_does_not_warn(wyb, root_element, capsys, dev_mode):
     _warnings._reset_warning_dedupe()
 
-    class FineProps(Props):
-        name: str
-
     @component
-    def Fine(props: FineProps):
-        value = props.name
+    def Fine(name: str, on_done: Callable[[], None] | None = None):
+        value = name
         return html(t"<p>{value}</p>")
 
     wyb["reconciler"].render(html(t'<div><{Fine} name="x" />{Fine(name="y")}</div>'), root_element)
@@ -752,14 +730,10 @@ def test_top_level_read_does_not_warn_when_untracked_or_a_callback(wyb, root_ele
     _warnings._reset_warning_dedupe()
     name, _ = create_signal("x")
 
-    class FineProps(Props):
-        name: str
-        on_done: Callable[[], None] | None = None
-
     @component
-    def Fine(props: FineProps):
-        value = untrack(lambda: props.name)
-        _ = props.on_done
+    def Fine(name: str, on_done: Callable[[], None] | None = None):
+        value = untrack(lambda: name)
+        _ = on_done
         return html(t"<p>{value}</p>")
 
     done = lambda: None  # noqa: E731
@@ -772,19 +746,17 @@ def test_nested_components_and_keyed_remount(wyb, root_element):
     key, set_key = create_signal("a")
     mounted: list[str] = []
 
-    class LeafProps(Props):
-        tag: str
-
     @component
-    def Leaf(props: LeafProps):
-        tag = untrack(lambda: props.tag)
-        mounted.append(tag)
-        on_cleanup(lambda: mounted.append(f"-{tag}"))
-        return html(t"<span>{props.tag}</span>")
+    def Leaf(tag: str):
+        name = untrack(lambda: tag)
+        mounted.append(name)
+        on_cleanup(lambda: mounted.append(f"-{name}"))
+        return html(t"<span>{tag}</span>")
 
     @component
     def Tree():
-        return html(t"<div>{(lambda: Leaf(tag=key(), key=key()))}</div>")
+        # A keyed `Show` remounts its content when the value changes, as in Solid.
+        return html(t"<div>{Show(key(), lambda k: Leaf(tag=k), keyed=True)}</div>")
 
     wyb["reconciler"].render(Tree(), root_element)
     set_key("b")
@@ -797,15 +769,15 @@ def test_same_key_patches_and_new_key_remounts(wyb, root_element):
     state, set_state = create_signal(("k1", "a"))
     mounted: list[str] = []
 
-    class LeafProps(Props):
-        text: str
-
     @component
-    def Leaf(props: LeafProps):
-        mounted.append(untrack(lambda: props.text))
-        return html(t"<span>{props.text}</span>")
+    def Leaf(text: str):
+        mounted.append(untrack(lambda: text))
+        return html(t"<span>{text}</span>")
 
-    wyb["reconciler"].render(html(t"<div>{(lambda: Leaf(text=state()[1], key=state()[0]))}</div>"), root_element)
+    # `h()` keys any node, a component's included.
+    wyb["reconciler"].render(
+        html(t"<div>{(lambda: h(Leaf, {'text': state()[1], 'key': state()[0]}))}</div>"), root_element
+    )
     set_state(("k1", "b"))
     flush()
     assert texts(root_element.element) == ["b"]
@@ -823,13 +795,9 @@ def test_typed_default_and_memo_props_render(wyb, root_element):
         def name(self):
             return name()
 
-    class GreetingProps(Props):
-        name: str
-        copies: int = prop(default=2)
-
     @component
-    def Greeting(props: GreetingProps):
-        return html(t"<p>{props.name * props.copies}</p>")
+    def Greeting(name: str, copies: int = 2):
+        return html(t"<p>{name * copies}</p>")
 
     wyb["reconciler"].render(Greeting(name=create_memo(Model().name)), root_element)
     assert texts(root_element.element) == ["AdaAda"]
@@ -838,14 +806,17 @@ def test_typed_default_and_memo_props_render(wyb, root_element):
     assert texts(root_element.element) == ["GraceGrace"]
 
 
-def test_string_annotation_resolves_to_module_level_props(wyb, root_element):
+def test_annotations_may_name_types_defined_later(wyb, root_element):
     @component
-    def Card(props: "_ModuleCardProps"):
-        return html(t"<p>{props.title}</p>")
+    def Card(title: str, on_pick: _Later | None = None, render_row: "_LaterCallback | None" = None):
+        return html(t"<p>{title}{str(on_pick is None)}{str(render_row is None)}</p>")
 
     wyb["reconciler"].render(Card(title="bound"), root_element)
-    assert texts(root_element.element) == ["bound"]
+    assert texts(root_element.element) == ["bound", "True", "True"]
 
 
-class _ModuleCardProps(Props):
-    title: str
+class _Later:
+    pass
+
+
+type _LaterCallback = Callable[[], None]

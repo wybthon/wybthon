@@ -181,7 +181,7 @@ Async memos and async effects do this for you: every resume after an
 
 - **Forgetting cleanups.** If you attach a listener or start an interval, return a cleanup from `apply` or register one with `on_cleanup`, so re-runs and unmounts don't leak.
 - **Touching the DOM in the body.** The body runs before the DOM exists. Use `on_settled` or an effect.
-- **Reading props at the top level.** The read is frozen at mount, and dev mode warns when the parent passed an expression. Read props in the returned markup, a memo, or an effect, or use `untrack(lambda: props.initial)` deliberately.
+- **Reading parameters at the top level.** A component's parameters are its props, and a read at the top level of the body is frozen at mount; dev mode warns when the parent passed an expression. Read parameters in the returned markup, a handler, a memo, or an effect, or use `untrack(lambda: initial)` deliberately.
 - **Expecting effects to run at creation.** The first run is deferred to the next flush. In tests, call [`flush`][wybthon.flush] after `render` before asserting on effect output.
 
 ## Next steps

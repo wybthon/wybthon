@@ -8,11 +8,10 @@ import pytest
 
 import wybthon
 from wybthon import (
+    Children,
     Errored,
     For,
     Loading,
-    ParentProps,
-    Props,
     Show,
     TemplateError,
     compiler,
@@ -382,7 +381,7 @@ def test_the_uncompiled_check_is_skipped_outside_dev_mode():
 # ---------------------------------------------------------------------------
 
 PRECOMPILED_MODULE = """
-from wybthon import create_signal, html
+from wybthon import Children, create_signal, html
 
 count, set_count = create_signal(1)
 
@@ -434,14 +433,9 @@ def test_a_precompiled_entry_loads_once():
 # ---------------------------------------------------------------------------
 
 
-class CardProps(ParentProps):
-    title: str
-    tone: str = "plain"
-
-
 @component
-def Card(props: CardProps):
-    return html(t'<section class="card {props.tone}"><h2>{props.title}</h2>{props.children}</section>')
+def Card(title: str, tone: str = "plain", children: Children = None):
+    return html(t'<section class="card {tone}"><h2>{title}</h2>{children}</section>')
 
 
 def test_component_tags_pass_attributes_and_children():
@@ -469,10 +463,10 @@ def test_component_tag_content_is_one_child_per_top_level_node():
     seen: list[int] = []
 
     @component
-    def Counted(props: ParentProps):
-        resolved = resolve_children(lambda: props.children)
+    def Counted(children: Children = None):
+        resolved = resolve_children(lambda: children)
         seen.append(len(resolved.to_array()))
-        return html(t"<div>{props.children}</div>")
+        return html(t"<div>{children}</div>")
 
     screen = render(html(t"<main><{Counted}><b>a</b><i>b</i>text</{Counted}></main>"))
     assert seen == [3]
@@ -494,9 +488,9 @@ def test_interpolated_component_calls_receive_getters_for_dynamic_arguments():
     mounts: list[int] = []
 
     @component
-    def Leaf(props: CardProps):
+    def Leaf(title: str, tone: str = "plain", children: Children = None):
         mounts.append(1)
-        return html(t"<b>{props.title}</b>")
+        return html(t"<b>{title}</b>")
 
     screen = render(html(t"<div>{Leaf(title=name().upper())}</div>"))
     set_name("b")
@@ -620,13 +614,10 @@ def test_patching_a_component_slot_keeps_its_state():
     n, set_n = create_signal("a")
     mounts: list[int] = []
 
-    class LeafProps(Props):
-        label: str
-
     @component
-    def Leaf(props: LeafProps):
+    def Leaf(label: str):
         mounts.append(1)
-        return html(t"<b>{props.label}</b>")
+        return html(t"<b>{label}</b>")
 
     def view() -> Any:
         label = n()

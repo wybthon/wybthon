@@ -64,7 +64,7 @@ template or other `VNode`, a list of either (mounted as a fragment),
 `None` (nothing), or another accessor (nested hole). When it returns a
 template from the same literal as last time, the mounted instance is
 patched slot by slot instead of replaced. A binding whose expression
-makes no calls (`{props.title}`, `{row["label"]}`) first runs under a
+makes no calls (a parameter such as `{title}`, or `{row["label"]}`) first runs under a
 lightweight probe, and when it reads nothing reactive, its value is
 applied and no computation is allocated. Any other hole that reads
 nothing reactive on its first run is dropped after that run, keeping
@@ -245,9 +245,10 @@ create_effect(lambda: (a(), untrack(b)), lambda pair: print(pair))  # depends on
 count.peek()  # the same idea for one read
 ```
 
-Both silence the dev-mode top-level-read warning. A prop read returns
-the value, not an accessor, so `untrack(lambda: props.initial)` is the
-explicit way to seed local state from a prop.
+Both silence the dev-mode top-level-read warning. Reading a component
+parameter returns the value, not an accessor, so
+`untrack(lambda: initial)` is the explicit way to seed local state from
+a prop.
 
 ## `on_settled`
 
@@ -256,19 +257,15 @@ mounted the current component has committed, so refs are assigned and
 the DOM is live. It may return a cleanup that runs on unmount.
 
 ```python
-from wybthon import Props, Ref, component, html, on_settled
-
-
-class ChartProps(Props):
-    data: list[float]
+from wybthon import Ref, component, html, on_settled
 
 
 @component
-def Chart(props: ChartProps):
+def Chart(data: list[float]):
     ref = Ref()
 
     def start():
-        handle = draw(ref.current, props.data)
+        handle = draw(ref.current, data)
         return lambda: handle.destroy()
 
     on_settled(start)
@@ -326,25 +323,31 @@ async def later():
 Every reactive read goes through [`Accessor[T]`][wybthon.Accessor]:
 signal getters are [`Signal[T]`][wybthon.Signal], memos are `Memo[T]`,
 and setters are `Setter[T]`. Annotate function parameters as
-`Accessor[T]` when they accept any of these. A props field is a plain
-annotation, so `props.title` is typed as the field's type (`str`), and
-a type checker checks a component call's arguments against it. See the
-[Typing guide](../guides/typing.md).
+`Accessor[T]` when they accept any of these. A component's props are
+its parameters, so inside the body `title` has its annotated type
+(`str`), and a type checker checks a component call's arguments against
+the function's own signature. See the [Typing guide](../guides/typing.md).
 
 ## Props helpers
 
-- [`prop(default_factory=...)`][wybthon.prop] declares a mutable default on a [`Props`][wybthon.Props] class (the factory runs once per instance); `prop(default=...)` works too, though an ordinary default (`step: int = 1`) needs no `prop()`.
-- [`merge(*sources)`][wybthon.merge] merges props instances, dicts, and zero-arg functions returning dicts into one reactive view; later sources win, and `None` is a real value.
+- [`prop(default_factory=...)`][wybthon.prop] declares a mutable parameter default (`tags: list[str] = prop(default_factory=list)`); the factory runs once per component instance. An ordinary default (`step: int = 1`) needs no `prop()`.
+- A `**rest` parameter (`**attrs: Any`) collects the props a component doesn't declare as a reactive, read-only view. It covers most of what `omit` was used for.
+- [`merge(*sources)`][wybthon.merge] merges dicts, views (including a `**rest` parameter), and zero-arg functions returning dicts into one reactive view; later sources win, and `None` is a real value.
 - [`omit(source, *keys)`][wybthon.omit] returns a reactive view without the given keys, or without every key a predicate accepts (the replacement for `split_props`).
 - A view reads like props: `view.title` is the tracked value, and item access (`view["title"]`) returns an accessor. Spreading a view onto an element (`<button {attrs}>`) binds each key reactively.
-- [`is_static(props, key)`][wybthon.is_static] reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's `isStatic` does.
-- [`children(fn)`][wybthon.resolve_children] resolves a getter for a children prop (`lambda: props.children`) into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list. [`flatten(children)`][wybthon.flatten] is the unmemoized form, matching Solid 2.0's `flatten`.
+- [`is_static(param)`][wybthon.is_static] reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's `isStatic` does. Inside a component, pass the parameter itself (`is_static(title)`); the compiler turns it into a question about the prop. For a view, pass the view and a key: `is_static(attrs, "title")`.
+- [`resolve_children(fn)`][wybthon.resolve_children] resolves a getter for a children prop (`lambda: children`) into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list. [`flatten(children)`][wybthon.flatten] is the unmemoized form, matching Solid 2.0's `flatten`.
 
 ```python
-from wybthon import merge, omit
+from typing import Any
 
-attrs = merge({"type": "button"}, omit(props, "label", "children"))
-handlers = omit(props, lambda key: not key.startswith("on_"))
+from wybthon import component, html, merge, omit
+
+
+@component
+def Button(label: str, **attrs: Any):
+    rest = merge({"type": "button"}, omit(attrs, "title"))  # drop one key, add a default
+    return html(t"<button {rest}>{label}</button>")
 ```
 
 ## `map_array`

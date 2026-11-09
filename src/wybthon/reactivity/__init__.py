@@ -50,7 +50,7 @@ from ._primitives import (
     resolve,
     resolve_children,
 )
-from ._props import ParentProps, Props, is_static, merge, omit, prop
+from ._props import Children, is_static, merge, omit, prop
 from ._session import ServerError
 
 __all__ = [
@@ -59,8 +59,7 @@ __all__ = [
     "Setter",
     "Signal",
     "Memo",
-    "Props",
-    "ParentProps",
+    "Children",
     "Owner",
     "Computation",
     "Transition",

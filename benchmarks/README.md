@@ -115,6 +115,8 @@ The [runtime overhaul evaluation](results/runtime-overhaul.md) records local bas
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
 
+The [engine v10 evaluation](results/engine-v10.md) records parameter props and lazy flow-control branches against v0.45.0.
+
 The [engine v9 evaluation](results/engine-v9.md) records components mounted straight into their slots, marker-free regions, and one-command hydration against v0.44.0.
 
 The [engine v8 evaluation](results/engine-v8.md) records the leaner reactive core, SVG templates on the clone path, and lighter hydration against v0.43.0.

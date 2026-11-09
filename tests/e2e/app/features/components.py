@@ -2,28 +2,19 @@
 
 from typing import Any
 
-from wybthon import ParentProps, Props, Ref, Show, component, create_signal, html, on_cleanup, on_settled
-
-
-class DisplayProps(Props):
-    text: str = ""
-
-
-class FancyProps(Props):
-    # A plain field: the ref object is handed through untouched.
-    ref: Any = None
+from wybthon import Children, Ref, Show, component, create_signal, html, on_cleanup, on_settled
 
 
 @component
-def Fancy(props: FancyProps):
+def Fancy(ref: Any = None):
     # Refs pass through like any other plain field; no forward_ref needed.
-    return html(t'<input type="text" ref={props.ref} data-testid="comp-ref-input">')
+    return html(t'<input type="text" ref={ref} data-testid="comp-ref-input">')
 
 
 @component
-def Card(props: ParentProps):
+def Card(children: Children = None):
     return html(t"""
-      <div data-testid="comp-card"><span data-testid="comp-card-label">card:</span>{props.children}</div>
+      <div data-testid="comp-card"><span data-testid="comp-card-label">card:</span>{children}</div>
     """)
 
 
@@ -33,9 +24,9 @@ def Page():
     display_mounts, set_display_mounts = create_signal(0)
 
     @component
-    def Display(props: DisplayProps):
+    def Display(text: str = ""):
         on_settled(lambda: set_display_mounts(lambda n: n + 1))
-        return html(t'<span data-testid="comp-display">{props.text}</span>')
+        return html(t'<span data-testid="comp-display">{text}</span>')
 
     input_ref = Ref()
     ref_attached, set_ref_attached = create_signal(False)

@@ -6,7 +6,7 @@
 
 `wybthon.reactivity` is the pure-Python reactive graph: signals, memos,
 effects, ownership, the scheduler, async computations, actions, and the
-props that components are built on. Nothing here touches the
+props helpers that components use. Nothing here touches the
 DOM, so everything works in CPython as well as Pyodide. Import from
 `wybthon` in application code; the `_core`, `_primitives`, `_actions`,
 `_list`, and `_props` submodules are implementation detail.
@@ -29,9 +29,8 @@ holds on the old state until the new value lands, and an
 | [`Setter`][wybthon.Setter] | Protocol for the write half of a signal; accepts a value or an updater. |
 | [`Signal`][wybthon.Signal] | Mutable container behind `create_signal`; the getter is a `Signal`. |
 | [`Memo`][wybthon.Memo] | Read-only derived value returned by `create_memo`. |
-| [`Props`][wybthon.Props] | Base class for a component's typed inputs: plain annotations, read as `props.title` (the value, tracked). A PEP 681 `dataclass_transform` base, so pyright and mypy check calls without a plugin. |
-| [`ParentProps`][wybthon.ParentProps] | `Props` with a `children` field. |
-| [`ChildrenAccessor`][wybthon.ChildrenAccessor] | What `children()` returns: call it for one child or a list, or `.to_array()` for a list. |
+| [`Children`][wybthon.Children] | The annotation for a component's `children` parameter (`children: Children = None`); an alias of `Any`, for documentation. |
+| [`ChildrenAccessor`][wybthon.ChildrenAccessor] | What `resolve_children()` returns: call it for one child or a list, or `.to_array()` for a list. |
 | [`Owner`][wybthon.reactivity.Owner] | Ownership scope; disposing it disposes children and runs cleanups. |
 | [`Computation`][wybthon.reactivity.Computation] | Tracked function node behind memos and effects; `.dispose()` stops it. Import from `wybthon.reactivity`. |
 | [`Action`][wybthon.Action] | Wrapped mutation returned by `action`; `.pending` is a tracked accessor. |
@@ -69,11 +68,11 @@ holds on the old state until the new value lands, and an
 | [`create_optimistic`][wybthon.create_optimistic] | Value override that reveals now and reverts when the action settles. |
 | [`affects`][wybthon.affects] | Inside an action, mark values as pending before they're written. |
 | [`until`][wybthon.until] | Awaitable for a predicate to become truthy on the authoritative (non-optimistic) view; `timeout=` raises the built-in `TimeoutError`. |
-| [`prop`][wybthon.prop] | `prop(default=...)` or `prop(default_factory=...)`: declare a field's default, like `dataclasses.field`. An ordinary default (`step: int = 1`) needs no `prop()`. |
-| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive views over props instances or dicts (later sources win; drop keys, or keys matching a predicate). `view.title` reads the tracked value; spread a view onto an element to bind every key. |
-| [`is_static`][wybthon.is_static] | `is_static(props, key)`: whether the parent passed a plain value rather than an expression, so a component can take a cheaper path. Reads nothing. |
-| [`resolve_children`][wybthon.resolve_children] | `children(lambda: props.children)`: a memoized `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
-| [`flatten`][wybthon.flatten] | The unmemoized form of `children`: resolve a children value to the list it renders. |
+| [`prop`][wybthon.prop] | `prop(default_factory=...)`: a parameter default created once per component instance, like `dataclasses.field`'s. An ordinary default (`step: int = 1`) needs no `prop()`. |
+| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive views over dicts, a component's `**rest` view, or other views (later sources win; drop keys, or keys matching a predicate). `view.title` reads the tracked value; spread a view onto an element to bind every key. |
+| [`is_static`][wybthon.is_static] | `is_static(param)` inside a component, or `is_static(view, key)`: whether the parent passed a plain value rather than an expression, so a component can take a cheaper path. Reads nothing. |
+| [`resolve_children`][wybthon.resolve_children] | `resolve_children(lambda: children)`: a memoized `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
+| [`flatten`][wybthon.flatten] | The unmemoized form of `resolve_children`: resolve a children value to the list it renders. |
 | [`map_array`][wybthon.reactivity.map_array] | Reactive value mapping with per-row scopes and an optional `fallback`; DOM lists use `For`'s native regions. |
 | [`repeat`][wybthon.reactivity.repeat] | `repeat(count, fn, *, start=0, fallback=None)`: reactive mapping over a range of indices. |
 | [`create_unique_id`][wybthon.create_unique_id] | Process-unique id string for `id`/`for` pairs. |

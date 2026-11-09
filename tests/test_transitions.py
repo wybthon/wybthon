@@ -13,7 +13,6 @@ from wybthon.loading import Loading
 from wybthon.reactivity import (
     Memo,
     NotReadyError,
-    Props,
     Setter,
     action,
     affects,
@@ -103,13 +102,9 @@ def test_input_change_and_async_result_reveal_together(wyb, root_element):
     asyncio.run(main())
 
 
-class CardProps(Props):
-    title: str
-
-
 @component
-def Card(props: CardProps):
-    return html(t"<p class={'long' if len(props.title) > 5 else 'short'}>{props.title}</p>")
+def Card(title: str):
+    return html(t"<p class={'long' if len(title) > 5 else 'short'}>{title}</p>")
 
 
 def test_compiled_getters_hold_with_the_async_value_they_entangle_with(wyb, root_element):

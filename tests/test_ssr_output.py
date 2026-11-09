@@ -13,12 +13,12 @@ import asyncio
 import pytest
 
 from wybthon import (
+    Children,
     Errored,
     For,
     Loading,
     Match,
     NoHydration,
-    ParentProps,
     Portal,
     Repeat,
     Reveal,
@@ -36,13 +36,9 @@ from wybthon.server import render_to_stream, render_to_string
 from wybthon.vnode import Fragment, h
 
 
-class CardProps(ParentProps):
-    title: str = ""
-
-
 @component
-def Card(props: CardProps):
-    return html(t"<section><h3>{props.title}</h3>{props.children}</section>")
+def Card(title: str = "", children: Children = None):
+    return html(t"<section><h3>{title}</h3>{children}</section>")
 
 
 @component

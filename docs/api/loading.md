@@ -28,17 +28,13 @@ at once.
 ```python
 from typing import Any
 
-from wybthon import Loading, Props, Reveal, component, create_memo, html, is_pending
-
-
-class UserCardProps(Props):
-    user_id: int
+from wybthon import Loading, Reveal, component, create_memo, html, is_pending
 
 
 @component
-def UserCard(props: UserCardProps):
+def UserCard(user_id: int):
     async def load_user():
-        uid = props.user_id  # tracked: refetches when it changes
+        uid = user_id  # tracked: refetches when it changes
         return await fetch_json(f"/api/users/{uid}")
 
     user = create_memo(load_user)
@@ -54,23 +50,19 @@ def UserCard(props: UserCardProps):
     )
 
 
-class DashboardProps(Props):
-    settings: dict[str, Any]
-
-
 @component
-def Dashboard(props: DashboardProps):
+def Dashboard(settings: dict[str, Any]):
     return Reveal(
         [
             Loading(UserCard(user_id=1), fallback=html(t"<p>Loading user...</p>")),
-            Loading(Activity(), fallback=html(t"<p>Loading activity...</p>"), on=lambda: props.settings),
+            Loading(Activity(), fallback=html(t"<p>Loading activity...</p>"), on=lambda: settings),
         ],
         collapsed=True,
     )
 ```
 
-- `on=` takes accessors, so wrap a prop in a function
-  (`on=lambda: props.settings`) to watch it.
+- `on=` takes accessors, so wrap a parameter in a function
+  (`on=lambda: settings`) to watch the prop.
 - `on=` makes the boundary wait for specific accessors even if the
   children never read them, and when one of them changes while data
   under the boundary is pending, the fallback shows again instead of

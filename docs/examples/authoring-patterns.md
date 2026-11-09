@@ -3,7 +3,7 @@
 A single page that exercises the idioms from the [Authoring patterns guide](../guides/authoring-patterns.md):
 
 - Markup written as [`html`][wybthon.html] templates, with components used as tags.
-- Composition through `children` (a `Card` component built on `ParentProps` that forwards an `id` with `omit`).
+- Composition through `children` (a `Card` component with a `children` parameter that forwards an `id` through `**attrs`).
 - State with `create_signal` and derived values with `create_memo`.
 - Reactive list rendering with `For` over a draft-first store.
 - A mutation wrapped in `action` with a pending indicator.
@@ -13,10 +13,11 @@ A single page that exercises the idioms from the [Authoring patterns guide](../g
 
 ```python
 import asyncio
+from typing import Any
 
 from wybthon import (
+    Children,
     For,
-    ParentProps,
     Show,
     action,
     component,
@@ -24,24 +25,18 @@ from wybthon import (
     create_signal,
     create_store,
     html,
-    omit,
     on_cleanup,
     on_settled,
     render,
 )
 
 
-class CardProps(ParentProps):
-    title: str = ""
-    id: str | None = None
-
-
 @component
-def Card(props: CardProps):
+def Card(title: str = "", children: Children = None, **attrs: Any):
     return html(t"""
-      <section class="card" {omit(props, "title", "children")}>
-        <h3>{props.title}</h3>
-        {props.children}
+      <section class="card" {attrs}>
+        <h3>{title}</h3>
+        {children}
       </section>
     """)
 
@@ -137,8 +132,8 @@ render(Page(), "#app")
 
 ## What to notice
 
-- `Card` subclasses `ParentProps`, so it accepts children, and declares the props it handles as plain annotations with defaults. `{props.title}` is a tracked read the compiler turns into a getter. It forwards `id` by spreading `omit(props, "title", "children")` onto the `<section>` (`<section {...}>` is a spread), so the parent's `id="names"` lands there, and each forwarded key stays reactive. A `None` value removes the attribute.
-- `Page` uses the component tag form: `<{Card} title="...">...</{Card}>` passes the attributes as props and the nested markup as `children`, and `<{NamesList} />` takes none. The call form, `{Card(title="Cleanup", children=[...])}` or `Card(title=...)[...]`, does the same and is fully type-checked; dev mode checks the tag form's props at run time.
+- `Card` declares its props as parameters with defaults, and its `children` parameter accepts the nested markup. `{title}` is a parameter, so it's a tracked read the compiler turns into a getter. `**attrs` collects every prop `Card` doesn't declare, and spreading it onto the `<section>` (`<section {attrs}>` is a spread) puts the parent's `id="names"` there; each forwarded key stays reactive. A `None` value removes the attribute.
+- `Page` uses the component tag form: `<{Card} title="...">...</{Card}>` passes the attributes as props and the nested markup as `children`, and `<{NamesList} />` takes none. The call form, `{Card(title="Cleanup", children=[...])}` or `Card(title=...)[...]`, does the same and is fully type-checked; `wyb check` checks the tag form's props, and dev mode checks them at run time.
 - `NamesList` keeps its list in a store. `set_store(lambda s: s["names"].append(...))` mutates a draft; only the fields that changed notify, and `For` matches rows by `id` so existing `<li>` elements are kept.
 - The store list goes to `For` as is: `For(store["names"], ...)` tracks it without a wrapping lambda. A dict store is read with subscripts; use a dataclass when you'd rather write `store.names`.
 - With a key function, `For` hands the row callback accessors for both the item and the index, so `row` reads `item()` and `index()` right in its template; the expression is one hole.
@@ -146,8 +141,8 @@ render(Page(), "#app")
 - `add` is an [`action`][wybthon.action]. While it's in flight, `add.pending()` is `True`, which disables the button (`disabled={add.pending()}`) and shows the "Saving..." line.
 - `save` reads `draft()` in an event handler, which isn't a tracking scope, so the read doesn't subscribe anything.
 - Handlers that don't need the event take no arguments (`onclick={clear}`); `edit` takes the event to read `e.target.value`. The compiler never wraps a handler. Every handler is a named function, since Python doesn't allow a bare `lambda` inside a t-string interpolation (an inline one needs parentheses: `onclick={(lambda: set_draft(""))}`).
-- `Show` and `For` mount as native regions, not wrapper components: each is one computation that selects what to render, with no component scope or props of its own.
-- `Timer` starts its interval in [`on_settled`][wybthon.on_settled] and returns a cleanup from it, so the interval stops when `Show` unmounts the timer. [`on_cleanup`][wybthon.on_cleanup] in the body runs at the same time. Showing it again mounts a fresh `Timer` with its own state.
+- `Show` and `For` mount as native regions, not wrapper components: each is one computation that selects what to render, with no component scope or props of its own. A `Show` branch written as markup or a component call, such as `Timer()`, is lazy: the compiler wraps it in a function, so it's built only when the branch shows.
+- `Timer` starts its interval in [`on_settled`][wybthon.on_settled] and returns a cleanup from it, so the interval stops when `Show` unmounts the timer. [`on_cleanup`][wybthon.on_cleanup] in the body runs at the same time. Showing it again calls the lazy branch again, which mounts a fresh `Timer` with its own state.
 
 ## Next steps
 

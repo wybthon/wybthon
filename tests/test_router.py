@@ -1,16 +1,17 @@
 """The router: routes, plain-anchor navigation, layouts, preloading, and matching."""
 
 import asyncio
+from typing import Any
 
 import pytest
 
-from wybthon import Loading, component, create_signal, flush, html, http_status, untrack
+from wybthon import Children, Loading, component, create_signal, flush, html, http_status, untrack
 from wybthon.router import (
     Outlet,
     PreloadArgs,
     Route,
-    RouteProps,
     RouteSpec,
+    SearchParams,
     create_router,
     match_route,
     navigate,
@@ -40,8 +41,8 @@ def Home():
 
 
 @component
-def User(props: RouteProps):
-    return html(t"<h1>User {props.params['id']} tab={props.search.get('tab', '-')}</h1>")
+def User(params: dict[str, str], search: SearchParams):
+    return html(t"<h1>User {params['id']} tab={search.get('tab', '-')}</h1>")
 
 
 @component
@@ -74,9 +75,9 @@ def test_param_changes_update_props_in_place():
     mounted: list[str] = []
 
     @component
-    def Tracked(props: RouteProps):
-        mounted.append(untrack(lambda: props.params["id"]))
-        return html(t"<span>{props.params['id']}</span>")
+    def Tracked(params: dict[str, str]):
+        mounted.append(untrack(lambda: params["id"]))
+        return html(t"<span>{params['id']}</span>")
 
     router = create_router([Route("/users/:id", Tracked)])
     with render(router()) as screen:
@@ -101,9 +102,9 @@ def test_a_layout_receives_its_matched_child_as_children_and_outlet():
     mounted: list[str] = []
 
     @component
-    def Layout(props: RouteProps):
+    def Layout(children: Children):
         mounted.append("layout")
-        return html(t"<section><header>top</header>{props.children}</section>")
+        return html(t"<section><header>top</header>{children}</section>")
 
     @component
     def OutletLayout():
@@ -114,8 +115,8 @@ def test_a_layout_receives_its_matched_child_as_children_and_outlet():
         return html(t"<p>overview</p>")
 
     @component
-    def Settings(props: RouteProps):
-        return html(t"<p>settings {props.params['id']}</p>")
+    def Settings(params: dict[str, str]):
+        return html(t"<p>settings {params['id']}</p>")
 
     routes = [
         Route("/users/:id", Layout, children=[Route("/", Overview), Route("/settings", Settings)]),
@@ -134,8 +135,8 @@ def test_a_layout_receives_its_matched_child_as_children_and_outlet():
 
 def test_a_route_without_a_component_renders_its_children():
     @component
-    def Doc(props: RouteProps):
-        return html(t"<p>doc {props.params['page']}</p>")
+    def Doc(params: dict[str, str]):
+        return html(t"<p>doc {params['page']}</p>")
 
     router = create_router([Route("/docs", children=[Route("/:page", Doc)])])
     with render(router()) as screen:
@@ -147,9 +148,9 @@ def test_a_root_layout_stays_mounted_around_every_route():
     mounted: list[int] = []
 
     @component
-    def Shell(props: RouteProps):
+    def Shell(children: Children):
         mounted.append(1)
-        return html(t"<main><nav>nav</nav>{props.children}</main>")
+        return html(t"<main><nav>nav</nav>{children}</main>")
 
     router = create_router([Route("/", Home), Route("/users/:id", User)])
     with render(router(root=Shell)) as screen:
@@ -295,9 +296,9 @@ def test_a_route_table_in_a_template_keeps_route_identity():
     mounted: list[str] = []
 
     @component
-    def Page(props: RouteProps):
-        mounted.append(untrack(lambda: props.params["id"]))
-        return html(t"<p>page {props.params['id']}</p>")
+    def Page(params: dict[str, str]):
+        mounted.append(untrack(lambda: params["id"]))
+        return html(t"<p>page {params['id']}</p>")
 
     router = create_router([Route("/", Home), Route("/p/:id", Page)])
     with render(html(t"<main>{router()}</main>")) as screen:
@@ -320,8 +321,8 @@ def test_preload_runs_with_its_intent_and_its_result_is_data():
         return f"data for {args.params['id']}"
 
     @component
-    def Page(props: RouteProps):
-        return html(t"<p>{props.data}</p>")
+    def Page(data: Any):
+        return html(t"<p>{data}</p>")
 
     router = create_router([Route("/", Home), Route("/users/:id", Page, preload=preload)])
     with render(router()) as screen:
@@ -458,10 +459,19 @@ def test_resolve_strips_the_base_path():
     assert match_route(routes, "/x/docs/guide", base_path="/app") is None
 
 
-def test_route_props_fields():
-    fields = RouteProps._wyb_fields
-    assert {"params", "search", "data", "children"} <= set(fields)
-    assert not any(fields[name].required for name in fields)
+def test_a_route_component_receives_only_the_route_props_it_declares():
+    seen: list[str] = []
+
+    @component
+    def Page(params: dict[str, str], extra: str = "default"):
+        seen.append(f"{params['id']}:{extra}")
+        return html(t"<p>{params['id']}</p>")
+
+    router = create_router([Route("/", Home), Route("/users/:id", Page)])
+    with render(router()) as screen:
+        go("/users/3")
+        assert screen.text() == "3"
+    assert seen == ["3:default"]
 
 
 def test_a_hash_change_alone_doesnt_preload_again():
@@ -472,8 +482,8 @@ def test_a_hash_change_alone_doesnt_preload_again():
         return "data"
 
     @component
-    def Page(props: RouteProps):
-        return html(t"<p>{props.data}</p>")
+    def Page(data: Any):
+        return html(t"<p>{data}</p>")
 
     router = create_router([Route("/", Home), Route("/users/:id", Page, preload=preload)])
     with render(router()) as screen:

@@ -8,10 +8,9 @@ import pytest
 from conftest import StubNode, _StubHTMLParser, collect_texts
 
 from wybthon import (
+    Children,
     Loading,
     Memo,
-    ParentProps,
-    Props,
     component,
     create_deferred,
     create_effect,
@@ -269,21 +268,31 @@ def test_is_equal_is_the_default_signal_policy(wyb):
 # ---------------------------------------------------------------------------
 
 
-class ProbeProps(ParentProps):
-    label: str = ""
-    count: int = 0
-    tone: str = "plain"
-    on_pick: Callable[[], None] | None = None
-    render_row: Callable[[str], Any] | None = None
-
-
 _KEYS = ("label", "count", "tone", "on_pick", "render_row", "children", "missing")
 reports: list[dict[str, bool]] = []
 
 
 @component
-def Probe(props: ProbeProps):
-    reports.append({key: is_static(props, key) for key in _KEYS})
+def Probe(
+    label: str = "",
+    count: int = 0,
+    tone: str = "plain",
+    on_pick: Callable[[], None] | None = None,
+    render_row: Callable[[str], Any] | None = None,
+    children: Children = None,
+    **rest: Any,
+):
+    reports.append(
+        {
+            "label": is_static(label),
+            "count": is_static(count),
+            "tone": is_static(tone),
+            "on_pick": is_static(on_pick),
+            "render_row": is_static(render_row),
+            "children": is_static(children),
+            "missing": is_static(rest, "missing"),
+        }
+    )
     return html(t"<i></i>")
 
 
@@ -354,12 +363,8 @@ def test_is_static_on_merge_and_omit_views():
     count, _ = create_signal(1)
     seen: dict[str, bool] = {}
 
-    class ViewProps(Props):
-        label: str = ""
-        count: int = 0
-
     @component
-    def Viewer(props: ViewProps):
+    def Viewer(**props: Any):
         merged = merge({"label": "default", "extra": 1}, props)
         rest = omit(props, "label")
         seen.update(
@@ -395,12 +400,9 @@ def test_is_static_reads_nothing():
     count, set_count = create_signal(1)
     runs: list[bool] = []
 
-    class OneProps(Props):
-        count: int = 0
-
     @component
-    def One(props: OneProps):
-        create_effect(lambda: is_static(props, "count"), runs.append)
+    def One(count: int = 0):
+        create_effect(lambda: is_static(count), runs.append)
         return html(t"<i></i>")
 
     from wybthon.testing import cleanup, render
@@ -448,8 +450,8 @@ def test_flatten_resolves_component_children():
     seen: list[list[Any]] = []
 
     @component
-    def Count(props: ParentProps):
-        seen.append(flatten(props.children))
+    def Count(children: Children = None):
+        seen.append(flatten(children))
         return html(t"<i></i>")
 
     from wybthon.testing import cleanup, render

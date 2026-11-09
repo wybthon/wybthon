@@ -1,20 +1,16 @@
 """Context API: provider value propagation, nested override, and default fallback."""
 
-from wybthon import Props, component, create_context, create_signal, html, use_context
+from wybthon import component, create_context, create_signal, html, use_context
 
 Theme = create_context("default-theme")
 
 
-class ThemeLabelProps(Props):
-    test_id: str
-
-
 @component
-def ThemeLabel(props: ThemeLabelProps):
+def ThemeLabel(test_id: str):
     # The provided value is handed back as is: an accessor stays live, a
     # plain string renders once.
     theme = use_context(Theme)
-    return html(t"<span data-testid={props.test_id}>{theme}</span>")
+    return html(t"<span data-testid={test_id}>{theme}</span>")
 
 
 @component

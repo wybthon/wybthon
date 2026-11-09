@@ -1264,7 +1264,19 @@ def _call_style(comp: Any) -> tuple[int, tuple[str, ...]]:
 
 
 def _prop_name(name: str) -> str:
-    return _KEYWORD_PROPS.get(name) or name.replace("-", "_")
+    """A component tag attribute's prop name: `class` is `class_`, and a handler (`onclick`) is `on_click`.
+
+    Handlers take the Python spelling a callback parameter and a spread
+    use, so `<{Button} onclick={save}>` reaches `on_click: Callable[...]`
+    and, through `**rest`, binds on the element the rest spreads onto.
+    """
+    keyword = _KEYWORD_PROPS.get(name)
+    if keyword is not None:
+        return keyword
+    name = name.replace("-", "_")
+    if len(name) > 2 and name[:2] == "on" and name[2] != "_":
+        return "on_" + (name[3:] if name[2] == ":" else name[2:]).lower()
+    return name
 
 
 # `wybthon.component.Component`, bound on first use (it imports this module's dependents).
@@ -1322,7 +1334,7 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
             props["children"] = content
         if _warnings.DEV_MODE:
             return comp(**props)
-        return VNode(comp, props, [], props.get("key"))
+        return VNode(comp, props, [])
     style, leading = _call_style(comp)
     if style == _CALL_POSITIONAL:
         # Parameters before `*children` (a provider's `value`) go first.

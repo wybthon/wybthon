@@ -6,13 +6,14 @@ only imports [`wybthon.compiler`][wybthon.compiler] (and `ast`) when a
 module actually needs compiling.
 
 - **Candidates.** A source file outside the standard library whose text
-  mentions `wybthon` and `html` and contains a t-string. Everything else
-  loads exactly as it would without the hook.
+  mentions `wybthon` and either a t-string with `html`, `component`, or
+  one of the flow controls whose branches the compiler makes lazy.
+  Everything else loads exactly as it would without the hook.
 - **Built bytecode.** `wyb build` writes compiled, unchecked-hash bytecode
   into the archives. The hook uses it as is, so a production page never
   compiles anything.
 - **Cache.** Compiled code is cached next to the normal bytecode under its
-  own optimization tag (`module.cpython-314.opt-wyb3.pyc`), validated
+  own optimization tag (`module.cpython-314.opt-wyb4.pyc`), validated
   against the source's modification time and size. A plain compile cached
   before the hook was installed is never mistaken for a compiled one.
 """
@@ -30,16 +31,25 @@ from typing import Any
 __all__ = ["install", "uninstall", "is_candidate", "COMPILER_TAG"]
 
 # Bump when the compiler's output changes, so cached compiled code is rebuilt.
-COMPILER_TAG = "wyb3"
+COMPILER_TAG = "wyb4"
 
 _STDLIB = os.path.dirname(os.__file__) + os.sep
 # Wybthon's own modules never use the compiler.
 _PACKAGE = os.path.dirname(os.path.abspath(__file__)) + os.sep
 
 
+# Names whose presence makes a module that mentions `wybthon` worth compiling,
+# besides a template: components and the flow controls with lazy branches.
+_NAMES = (b"component", b"Show", b"Match", b"Switch", b"Loading", b"Errored", b"client_only")
+
+
 def is_candidate(source: bytes) -> bool:
-    """Whether a module's source may contain `html(t"...")` calls for the compiler."""
-    return b"wybthon" in source and b"html" in source and (b't"' in source or b"t'" in source)
+    """Whether a module's source may contain components, flow controls, or `html(t"...")` calls for the compiler."""
+    if b"wybthon" not in source:
+        return False
+    if b"html" in source and (b't"' in source or b"t'" in source):
+        return True
+    return any(name in source for name in _NAMES)
 
 
 def _skipped(path: str) -> bool:

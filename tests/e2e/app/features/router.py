@@ -4,12 +4,12 @@ The ``Index`` page links to sub-routes resolved by the app-level router
 (see :func:`app.routes.create_routes`). Each sub-page renders a marker plus
 the value the router extracted from the URL. The links are plain anchors,
 which the router follows without reloading the page.
-Routed pages that read the URL take ``RouteProps``, whose ``params`` and
-``query`` read as values; the rest take nothing.
+Routed pages that read the URL declare a ``params`` or ``search``
+parameter, which reads as a value; the rest take nothing.
 """
 
 from wybthon import component, html
-from wybthon.router import Outlet, RouteProps
+from wybthon.router import Outlet, SearchParams
 
 
 @component
@@ -28,27 +28,27 @@ def Index():
 
 
 @component
-def User(props: RouteProps):
+def User(params: dict[str, str]):
     return html(t"""
       <div data-testid="page-router-user">
         <span data-testid="router-user-marker">user</span>
-        <span data-testid="router-user-id">{props.params.get("id", "")}</span>
+        <span data-testid="router-user-id">{params.get("id", "")}</span>
       </div>
     """)
 
 
 @component
-def Search(props: RouteProps):
+def Search(search: SearchParams):
     return html(t"""
-      <div data-testid="page-router-search"><span data-testid="router-search-q">{props.search.get("q", "")}</span></div>
+      <div data-testid="page-router-search"><span data-testid="router-search-q">{search.get("q", "")}</span></div>
     """)
 
 
 @component
-def Docs(props: RouteProps):
+def Docs(params: dict[str, str]):
     return html(t"""
       <div data-testid="page-router-docs">
-        <span data-testid="router-docs-rest">{props.params.get("wildcard", "")}</span>
+        <span data-testid="router-docs-rest">{params.get("wildcard", "")}</span>
       </div>
     """)
 

@@ -1,11 +1,10 @@
-"""Typed Props instances, merge/omit, children(), map_array, repeat, and projection selection."""
+"""Props objects built from signatures, merge/omit, children(), map_array, repeat, and projection selection."""
 
+import inspect
 from collections.abc import Callable
-
-import pytest
+from typing import Any
 
 from wybthon.reactivity import (
-    Props,
     create_effect,
     create_memo,
     create_root,
@@ -21,19 +20,30 @@ from wybthon.reactivity import (
     resolve_children,
     untrack,
 )
+from wybthon.reactivity._props import Props
 from wybthon.store import create_projection
 
+
+def props_class(name: str, fn: Callable[..., Any]) -> Any:
+    """The props class a component with `fn`'s signature reads."""
+    return Props._wyb_from_signature(name, list(inspect.signature(fn).parameters.values()))
+
+
 # ---------------------------------------------------------------------------
-# Typed Props instances
+# Props objects
 # ---------------------------------------------------------------------------
 
 
-class NameProps(Props):
-    name: str
-    greeting: str = "hello"
-    tags: list[str] = prop(default_factory=list)
-    on_click: Callable[..., None] | None = None
-    size: int = 1
+def _name(
+    name: str,
+    greeting: str = "hello",
+    tags: list[str] = prop(default_factory=list),
+    on_click: Callable[..., None] | None = None,
+    size: int = 1,
+) -> None: ...
+
+
+NameProps = props_class("Name", _name)
 
 
 def test_prop_field_reads_return_the_value(wyb):
@@ -91,10 +101,9 @@ def test_props_update_pushes_new_values_into_tracked_reads(wyb):
 
 
 def test_props_tracked_read_subscribes_memo(wyb):
-    class N(Props):
-        n: int
+    def _n(n: int) -> None: ...
 
-    props = N(n=1)
+    props = props_class("N", _n)(n=1)
     doubled = create_memo(lambda: props.n * 2)
     assert doubled() == 2
     props._wyb_update({"n": 3})
@@ -111,9 +120,14 @@ def test_is_static_reports_whether_the_parent_passed_a_plain_value(wyb):
     assert is_static(NameProps(name="Ada", on_click=lambda: None), "on_click")
 
 
-def test_props_instances_reject_item_syntax(wyb):
-    with pytest.raises(TypeError, match="don't take children"):
-        NameProps(name="x")["child"]
+def test_signature_props_know_their_positional_names_and_rest(wyb):
+    def _card(title: str, /, body: str = "", *, tone: str = "plain", **rest: Any) -> None: ...
+
+    cls = props_class("Card", _card)
+    assert cls._wyb_positional == ("title", "body")
+    assert cls._wyb_open
+    props = cls(title="t", id="x")
+    assert sorted(props._wyb_rest()) == ["id"]
 
 
 # ---------------------------------------------------------------------------
@@ -121,9 +135,10 @@ def test_props_instances_reject_item_syntax(wyb):
 # ---------------------------------------------------------------------------
 
 
-class ShapeProps(Props):
-    size: int = 0
-    color: str = "black"
+def _shape(size: int = 0, color: str = "black") -> None: ...
+
+
+ShapeProps = props_class("Shape", _shape)
 
 
 def test_merge_later_sources_win_and_stay_reactive(wyb):

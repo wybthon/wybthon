@@ -23,7 +23,7 @@ Import it from `wybthon.router`:
 
 ```python
 from wybthon import FormData, component, create_memo, html, server_function
-from wybthon.router import Route, RouteProps, create_router, form_action, query
+from wybthon.router import Route, create_router, form_action, query
 
 
 @query
@@ -39,8 +39,8 @@ async def rename(user_id: int, form: FormData) -> None:
 
 
 @component
-def Profile(props: RouteProps):
-    user = create_memo(lambda: get_user(int(props.params["id"])))
+def Profile(params: dict[str, str]):
+    user = create_memo(lambda: get_user(int(params["id"])))
     return html(t'''
       <h1>{user().name}</h1>
       <form action={rename.bind(user().id)} method="post">
@@ -67,7 +67,6 @@ from ._router import (
     Params,
     PreloadArgs,
     Route,
-    RouteProps,
     Router,
     SearchParamsView,
     create_router,
@@ -87,7 +86,6 @@ __all__ = [
     "PreloadArgs",
     "Query",
     "Route",
-    "RouteProps",
     "RouteSpec",
     "Router",
     "SearchParams",

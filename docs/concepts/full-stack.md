@@ -195,7 +195,7 @@ app/routes/
     [...404].py       anything else
 ```
 
-A page module defines a `Page` component and may define `preload(args)`. A `_layout.py` defines a `Layout` component, which receives the matched page as `props.children`. Other files starting with `_` are private to the directory, and a module without a `Page` isn't a route. Pages load lazily, so a page's startup imports only what it shows.
+A page module defines a `Page` component and may define `preload(args)`. A `_layout.py` defines a `Layout` component, which receives the matched page through its `children` parameter. Like any route component, a `Page` or `Layout` declares the route props it needs (`params`, `search`, `data`, `children`) as parameters. Other files starting with `_` are private to the directory, and a module without a `Page` isn't a route. Pages load lazily, so a page's startup imports only what it shows.
 
 ```python
 from wybthon.router import create_router, file_routes

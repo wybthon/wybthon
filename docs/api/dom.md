@@ -23,15 +23,11 @@ node from another API, and `Element(node_id=42)` wraps a kernel id
 (what refs and event targets hand you).
 
 ```python
-from wybthon import Props, Ref, component, html, on_settled
-
-
-class FancyInputProps(Props):
-    ref: Ref | None = None  # a ref is returned as the parent passed it
+from wybthon import Ref, component, html, on_settled
 
 
 @component
-def FancyInput(props: FancyInputProps):
+def FancyInput(ref: Ref | None = None):
     local = Ref()
 
     def focus():
@@ -39,7 +35,7 @@ def FancyInput(props: FancyInputProps):
 
     on_settled(focus)
     # Forward the parent's ref (if any) and keep a local one.
-    return html(t'<input type="text" ref={[local, props.ref]}>')
+    return html(t'<input type="text" ref={[local, ref]}>')
 ```
 
 Refs are assigned during mount, so read them in

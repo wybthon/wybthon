@@ -17,27 +17,27 @@ from wybthon.testing import render, tick
 FILES = {
     "__init__.py": "",
     "_layout.py": (
-        "from wybthon import component, html\nfrom wybthon.router import RouteProps\n\n@component\ndef Layout(props: RouteProps):\n"
-        '    return html(t"<main>{props.children}</main>")\n'
+        "from wybthon import component, html\n@component\ndef Layout(children):\n"
+        '    return html(t"<main>{children}</main>")\n'
     ),
     "index.py": 'from wybthon import component, html\n\n@component\ndef Page():\n    return html(t"<h1>home</h1>")\n',
     "about.py": 'from wybthon import component, html\n\n@component\ndef Page():\n    return html(t"<h1>about</h1>")\n',
     "_helpers.py": "VALUE = 1\n",
     "notes.py": "VALUE = 'not a page'\n",
     "users/_layout.py": (
-        "from wybthon import component, html\nfrom wybthon.router import RouteProps\n\n@component\ndef Layout(props: RouteProps):\n"
-        '    return html(t"<section>users:{props.children}</section>")\n'
+        "from wybthon import component, html\n@component\ndef Layout(children):\n"
+        '    return html(t"<section>users:{children}</section>")\n'
     ),
     "users/index.py": 'from wybthon import component, html\n\n@component\ndef Page():\n    return html(t"<p>all</p>")\n',
     "users/[id].py": (
-        "from wybthon import component, html\nfrom wybthon.router import RouteProps\n\nseen = []\n\n"
+        "from wybthon import component, html\nseen = []\n\n"
         "def preload(args):\n    seen.append(args.params['id'])\n\n"
-        "@component\ndef Page(props: RouteProps):\n    return html(t\"<p>user {props.params['id']}</p>\")\n"
+        "@component\ndef Page(params: dict[str, str]):\n    return html(t\"<p>user {params['id']}</p>\")\n"
     ),
     "(marketing)/pricing.py": 'from wybthon import component, html\n\n@component\ndef Page():\n    return html(t"<p>pricing</p>")\n',
     "docs/[[section]].py": (
-        "from wybthon import component, html\nfrom wybthon.router import RouteProps\n\n@component\ndef Page(props: RouteProps):\n"
-        "    return html(t\"<p>docs [{props.params['section']}]</p>\")\n"
+        "from wybthon import component, html\n@component\ndef Page(params: dict[str, str]):\n"
+        "    return html(t\"<p>docs [{params['section']}]</p>\")\n"
     ),
     "[...404].py": 'from wybthon import component, html\n\n@component\ndef Page():\n    return html(t"<p>missing</p>")\n',
     "api/health.py": "async def GET(event):\n    return {'ok': True}\n\nasync def POST(event):\n    return None\n",

@@ -48,7 +48,7 @@ def app():
 
 [`html`][wybthon.html] takes a `t"..."` template string (new in Python 3.14) and returns a node. The markup is ordinary HTML, and each `{...}` is a Python expression placed where it appears.
 
-`App` runs once. `{count()}` and `{count() * 2}` are *dynamic* expressions: they call something, so Wybthon's [compiler](concepts/compiler.md) turns each one into a getter before the module runs, the way Solid's compiler treats an expression in JSX. When `count` changes, those two text nodes update and nothing else runs. An expression that's just a name or a constant, such as `{title}`, is placed once. `onclick={increment}` binds a delegated click handler; event handlers are never wrapped. The handler takes no arguments because it doesn't need the event, and writes made in a handler batch automatically.
+`App` runs once. `{count()}` and `{count() * 2}` are *dynamic* expressions: they call something, so Wybthon's [compiler](concepts/compiler.md) turns each one into a getter before the module runs, the way Solid's compiler treats an expression in JSX. When `count` changes, those two text nodes update and nothing else runs. An expression that's just a local name or a constant, such as `{title}`, is placed once. `onclick={increment}` binds a delegated click handler; event handlers are never wrapped. The handler takes no arguments because it doesn't need the event, and writes made in a handler batch automatically.
 
 The compiler runs wherever your code does: in `wyb dev` and `wyb build`, in modules imported after `wybthon`, under pytest, and for scripts run with `wyb run script.py`. You don't call it yourself.
 
@@ -58,27 +58,22 @@ The compiler runs wherever your code does: in `wyb dev` and `wyb build`, in modu
 
 ## Add props
 
-A component that takes inputs declares them on a [`Props`][wybthon.Props] class. Fields are plain annotations, and pyright and mypy check every call without a plugin:
+A component that takes inputs declares them as ordinary parameters, with annotations and defaults. These are its props, and pyright and mypy check every call against the function's own signature without a plugin:
 
 ```python
-from wybthon import Props, component, create_signal, html, untrack
-
-
-class CounterProps(Props):
-    label: str
-    initial: int = 0
+from wybthon import component, create_signal, html, untrack
 
 
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.initial))
+def Counter(label: str, initial: int = 0):
+    count, set_count = create_signal(untrack(lambda: initial))
 
     def increment():
         set_count(lambda n: n + 1)
 
     return html(t"""
       <div>
-        <p>{props.label}: {count()}</p>
+        <p>{label}: {count()}</p>
         <button onclick={increment}>+1</button>
       </div>
     """)
@@ -94,9 +89,9 @@ def App():
     """)
 ```
 
-Reading `props.label` returns the parent's value, tracked, as in Solid. In the template, `{props.label}` is dynamic, so it updates if the parent passes an expression that changes. `initial` only seeds the signal, so it's read once with [`untrack`][wybthon.untrack]; reading a prop at the top level of the body without it would warn in dev mode, because that read never updates.
+The compiler rewrites every read of a parameter in the body into a tracked read of the parent's current value, as reading Solid's props object does. So `{label}` in the template is dynamic, unlike other bare names, and updates if the parent passes an expression that changes. `initial` only seeds the signal, so it's read once with [`untrack`][wybthon.untrack]; reading a parameter at the top level of the body without it would warn in dev mode, because that read never updates. Parameters are read-only: assigning to one is a `SyntaxError`, so copy a value into a signal when the component needs to change it.
 
-Calling `Counter(...)` inside an interpolation keeps full type checking of its props. Templates also accept a tag form, `<{Counter} label="Clicks" initial={5} />`, which reads like the surrounding markup and is checked at run time in dev mode. See [Components](concepts/components.md) for children, callbacks, and defaults.
+Calling `Counter(...)` inside an interpolation keeps full type checking of its props. Templates also accept a tag form, `<{Counter} label="Clicks" initial={5} />`, which reads like the surrounding markup and is checked at run time in dev mode (and by `wyb check`). See [Components](concepts/components.md) for children, callbacks, and defaults.
 
 ## Test it
 

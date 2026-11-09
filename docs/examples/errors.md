@@ -3,19 +3,15 @@
 Catch errors raised while rendering with [`Errored`][wybthon.Errored], show a fallback, and recover with a reset callback or automatically when a route changes.
 
 ```python
-from wybthon import Errored, Props, component, create_signal, html, render
+from wybthon import Errored, component, create_signal, html, render
 from wybthon.router import url
 
 
-class RiskyPanelProps(Props):
-    should_fail: bool = False
-
-
 @component
-def RiskyPanel(props: RiskyPanelProps):
+def RiskyPanel(should_fail: bool = False):
     # A hole that raises routes the error to the nearest Errored boundary.
     def body():
-        if props.should_fail:
+        if should_fail:
             raise RuntimeError("the panel exploded")
         return "Everything is fine."
 
@@ -56,8 +52,8 @@ render(App(), "#app")
 ## How it works
 
 - `Errored` installs an error handler on its owner scope. Errors raised in a descendant hole, component body, effect, or async memo route to the nearest boundary; sibling trees are untouched.
-- Its children can be a node, as here: `RiskyPanel(...)` doesn't run until the boundary mounts it, so there's no need to wrap it in a lambda. Because the call sits in a template, the compiler passes `should_fail` as a getter, so the panel reads the current value of `fail()` each time `body()` runs.
-- `body()` is a plain function call in the template, so the whole call is one reactive hole: it reruns when `props.should_fail` changes, and when it raises, the error goes to the boundary.
+- Its children can be a node, as here. `RiskyPanel(...)` is a component call in `Errored`'s content, so the compiler makes it a zero-argument function and the panel is built only when the boundary builds it; there's no need to wrap it in a lambda. Because the call sits in a template, the compiler still passes `should_fail` as a getter, so the panel reads the current value of `fail()` each time `body()` runs.
+- `body()` is a plain function call in the template, so the whole call is one reactive hole: it reruns when the `should_fail` prop changes, and when it raises, the error goes to the boundary.
 - `fallback` may be a node, a string, or a callable. A callable receives `(err, reset)` (or just `(err)`). `err` is an accessor for the caught exception, as in Solid 2.0, so `{err()}` in the fallback's template shows the message. Calling `reset()` clears the error and re-renders the children; it takes no arguments, so it works directly as a click handler.
 - `on_error` is a plain callback for logging or reporting. It receives the exception itself.
 - `reset_on` is an accessor whose change clears the error automatically. Passing the [`url`][wybthon.router.url] accessor from `wybthon.router` resets the boundary on every navigation, which is the usual behavior for a page-level boundary.
