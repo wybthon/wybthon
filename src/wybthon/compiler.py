@@ -454,11 +454,8 @@ def _declaration(body: list[ast.stmt], name: str) -> ast.AST | None:
     return None
 
 
-def _binding(body: list[ast.stmt], name: str, imports: bool = True) -> ast.AST | None:
-    """The first node in a body (not in nested scopes) that binds `name`, for error locations.
-
-    With `imports` false, importing `name` from Wybthon doesn't count.
-    """
+def _binding(body: list[ast.stmt], name: str) -> ast.AST | None:
+    """The first node in a function body (not in nested scopes) that binds `name`, for error locations."""
     stack: list[ast.AST] = list(reversed(body))
     while stack:
         node = stack.pop()
@@ -473,8 +470,7 @@ def _binding(body: list[ast.stmt], name: str, imports: bool = True) -> ast.AST |
         if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
             (alias.asname or alias.name).split(".")[0] == name for alias in node.names
         ):
-            if imports or not (isinstance(node, ast.ImportFrom) and node.level == 0 and _is_wybthon(node.module)):
-                return node
+            return node
         if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name == name:
             return node
         stack.extend(reversed(list(ast.iter_child_nodes(node))))
@@ -1140,9 +1136,6 @@ def transform(tree: ast.Module, filename: str = "<unknown>", source: str = "") -
     names, packages = _wybthon_imports(tree)
     if not names and not packages:
         return tree
-    # A module that defines its own `Show` (or assigns one) after importing
-    # Wybthon's means its own at its call sites.
-    names = {local: name for local, name in names.items() if _binding(tree.body, local, imports=False) is None}
     lines = source.splitlines()
     components = _Components(filename, lines, names, packages)
     components.visit(tree)

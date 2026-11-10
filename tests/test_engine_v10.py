@@ -677,19 +677,22 @@ def test_a_local_name_that_shadows_a_flow_control_is_left_alone():
     assert "__wybthon__.content(Panel(), __wybthon_args__)" in out.split("def other")[1]
 
 
-def test_a_module_level_definition_that_replaces_a_flow_control_is_left_alone():
+def test_an_import_with_a_fallback_is_still_compiled():
+    # `try: from wybthon import ... except ImportError: ... = None` keeps the names recognized.
     out = compiled(
         """
-        from wybthon import Show
+        try:
+            from wybthon import Show, component, html
+        except ImportError:
+            Show = component = html = None
 
-        def Show(cond, a, b=None):
-            return a if cond else b
-
-        def page():
-            return Show(1, Panel())
+        @component
+        def Card(title: str):
+            return Show(title, Panel())
         """
     )
-    assert "return Show(1, Panel())" in out
+    assert "__wybthon_props0__" in out
+    assert "__wybthon__.content(Panel(), __wybthon_args__)" in out
 
 
 def test_a_zero_argument_callable_as_content_is_called():

@@ -153,7 +153,7 @@ Content stays eager where deferring it would change what it means:
 - in the tag form (`<{Show} when={...}>content</{Show}>`), which builds its content when the tag is created;
 - at module level, where names are globals that a deferred call would read after they changed (a loop variable, a name assigned again);
 - in a class body, where a deferred function couldn't see the class's names;
-- in a call of a local name that hides the import (a nested `def Show(...)`, or a module's own `Show` defined after the import), which isn't Wybthon's flow control.
+- in a call of a local name that hides the import (a nested `def Show(...)`), which isn't Wybthon's flow control.
 
 A lazy branch runs later, so it captures by value the loop variables and other names whose binding can change, the same way [a getter's names are captured](#captured-names):
 
