@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.46.0 (2026-11-10)
+
+### Features
+
+- **component,compiler**: Add engine v10 ([#57](https://github.com/wybthon/wybthon/pull/57),
+  [`3fe514d`](https://github.com/wybthon/wybthon/commit/3fe514deaabf2ccd62446a876febef1f40e95207))
+
+
 ## v0.45.0 (2026-11-08)
 
 ### Features
