@@ -11,10 +11,12 @@ from collections.abc import Callable
 from typing import Any
 
 from .reactivity._core import _Getter as getter
+from .reactivity._core import _positional_count
 from .templates import Precompiled as template
 from .templates import formatted
+from .vnode import Node
 
-__all__ = ["getter", "template", "call", "fmt", "formatted", "is_component", "props"]
+__all__ = ["getter", "template", "call", "content", "fmt", "formatted", "is_component", "props"]
 
 
 def is_component(fn: Any) -> bool:
@@ -39,6 +41,31 @@ def call(fn: Any, deferred: Callable[[], Any], prepared: Callable[[], Any]) -> A
     if getattr(fn, "__wybthon_component__", False) is True:
         return prepared()
     return getter(deferred)
+
+
+def content(build: Callable[[], Any]) -> Callable[..., Any]:
+    """A flow control's lazy content: a capitalized call the compiler deferred until its branch shows.
+
+    The call usually builds a component, whose node is the content. It
+    may instead build a callable, such as an instance of a class with
+    `__call__`, that the flow control would have called with its
+    arguments (`Show`'s accessor, `Errored`'s error and reset); that
+    callable receives them, as many as it takes.
+    """
+
+    def lazy(*args: Any) -> Any:
+        value = build()
+        if type(value) is getter:
+            # In a template the call was dispatched, and a call that doesn't
+            # build a component came back as an expression: its value is the
+            # content, as a branch's slot is (see `_regions`).
+            value = value.fn()
+        if not args or not callable(value) or isinstance(value, Node):
+            return value
+        count = _positional_count(value)
+        return value(*args) if count < 0 else value(*args[:count])
+
+    return lazy
 
 
 def props[F: Callable[..., Any]](body: Callable[..., Any]) -> Callable[[F], F]:

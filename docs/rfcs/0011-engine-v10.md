@@ -61,7 +61,8 @@ npm's `next` is still `solid-js@2.0.0-rc.21` and `latest` is `1.9.18`; no stable
 
 - Positional-or-keyword and keyword-only parameters are props, with ordinary defaults. Positional-only parameters are rejected, because a tag passes every prop by name. `prop(default_factory=list)` gives a parameter a default created once per instance; `prop(default=...)` is removed.
 - A `**rest` parameter collects the props the component doesn't declare, as a reactive read-only view (the view `omit` returns), which spreads onto an element. It makes the component accept any props.
-- `*args` is rejected (by the compiler, and at run time for an uncompiled function).
+- `*args` is rejected (by the compiler, and at run time for an uncompiled function), and so is declaring a parameter `global` or `nonlocal`, which Python itself rejects.
+- A missing `children` isn't a dev-mode error at the call, because item syntax (`Card(title="Hi")[...]`) supplies it afterward; it reads as `None`, and type checkers and `wyb check` still report it.
 - A parameter annotated as callable (`Callable[...]`, `Accessor[T]`, alone or in a union with `None`) returns exactly what the parent passed; any other parameter unwraps a getter or accessor the parent passed, as fields did.
 - Calls bind as Python calls do: positional arguments fill positional parameters (`Greeting("Ada")`), with Python's errors for too many arguments and multiple values. Positional arguments are no longer children.
 - `children` is an ordinary parameter, annotated with the new [`Children`][wybthon.Children] type (an alias of `Any`). A tag's content, the `children` keyword, and item syntax (`Card(title="Hi")[...]`) fill it.
@@ -110,9 +111,9 @@ An uncompiled component with parameters (a module imported before `wybthon`, `ex
 
 ### The compiler: lazy branches
 
-For a call of `Show`, `Match`, `Switch`, `Loading`, `Errored`, or `client_only` imported from Wybthon, the arguments that hold content (`Show`'s `children` and `fallback`, `Match`'s `children`, `Switch`'s `fallback`, and the `children` and `fallback` of the others, by position or keyword) become zero-argument functions when they're markup (`html(t"...")`) or a call whose callee's name is capitalized (a component). The flow controls already accepted zero-argument functions, which their regions call when a branch mounts, inside the branch's scope. Inside a template, a component call in content is first prepared as one in a child position is (`wybthon._compiled.call`), so it still receives getters for its dynamic props. Names, lambdas, and lowercase calls, which may produce callbacks (`Show(user, greeting)`), are passed as written, and captured names follow the getters' rule (captured by value when their binding can change, as in a loop).
+For a call of `Show`, `Match`, `Switch`, `Loading`, `Errored`, or `client_only` imported from Wybthon, the arguments that hold content (`Show`'s `children` and `fallback`, `Match`'s `children`, `Switch`'s `fallback`, and the `children` and `fallback` of the others, by position or keyword) become zero-argument functions when they're markup (`html(t"...")`) or a call whose callee's name is capitalized, ignoring leading underscores (a component). A deferred call goes through `__wybthon__.content`, so a capitalized call that builds a callable instead of a node (an instance whose `__call__` takes `Show`'s accessor, or `Errored`'s error and reset) still receives the flow control's arguments. The flow controls already accepted zero-argument functions, which their regions call when a branch mounts, inside the branch's scope. Inside a template, a component call in content is first prepared as one in a child position is (`wybthon._compiled.call`), so it still receives getters for its dynamic props. Names, lambdas, and lowercase calls, which may produce callbacks (`Show(user, greeting)`), are passed as written, and captured names follow the getters' rule (captured by value when their binding can change, as in a loop).
 
-The tag form (`<{Show} when={...}>content</{Show}>`) still builds its content when the tag is created, and so does a call written directly in a class body, since a function there can't see the class's names.
+The tag form (`<{Show} when={...}>content</{Show}>`) still builds its content when the tag is created. So does a call written directly in a class body, since a function there can't see the class's names; one in a loop at module level outside any function, whose variables are globals a deferred call would read late; and one whose callee is a local name hiding the import.
 
 ### Handlers on component tags
 
@@ -175,7 +176,7 @@ A candidate module mentions `wybthon` and either contains a t-string with `html`
 
 ## Testing
 
-- The unit suite (3,261 tests, 82% branch coverage), including `tests/test_engine_v10.py` (the compiled form, aliases, nested components, handlers reading current props, pass-through, `is_static(param)`, `**rest` updates and `key`, every lazy flow control, content components receiving getters, loop captures, laziness outside templates, lazy route components) and a rewritten `tests/test_component.py` (positional binding, signatures, read-only parameters, shadowing, uncompiled modules, `prop()`).
+- The unit suite (3,268 tests, 82% branch coverage), including `tests/test_engine_v10.py` (the compiled form, aliases, nested components, handlers reading current props, pass-through, `is_static(param)`, `**rest` updates and `key`, every lazy flow control, content components receiving getters, loop captures, laziness outside templates, lazy route components) and a rewritten `tests/test_component.py` (positional binding, signatures, read-only parameters, shadowing, uncompiled modules, `prop()`).
 - The typing fixtures under mypy and pyright, with the new `no-key` case and messages that name the component.
 - `wyb check` against parameter components.
 - The browser suite (95 tests in Chromium on Pyodide), including the full-stack, hydration, and production-build suites, whose apps now declare parameters.

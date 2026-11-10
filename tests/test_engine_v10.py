@@ -583,3 +583,113 @@ def test_an_uncompiled_component_with_positional_only_parameters_is_rejected():
     exec("def Badge(text, /):\n    return text\n", namespace)
     with pytest.raises(TypeError, match="positional-only"):
         Component(namespace["Badge"])._resolve()
+
+
+def test_a_tag_prop_starting_with_on_stays_reactive():
+    up, set_up = create_signal(True)
+
+    @component
+    def Status(online: bool):
+        return html(t"<p>{'up' if online else 'down'}</p>")
+
+    with render(html(t"<{Status} online={up()} />")) as screen:
+        set_up(False)
+        flush()
+        assert screen.text() == "down"
+
+
+class _Greeter:
+    """A callable instance used as content: the flow control passes it its arguments."""
+
+    def __init__(self, greeting: str) -> None:
+        self.greeting = greeting
+
+    def __call__(self, name: Callable[[], str]) -> Any:
+        return html(t"<p>{self.greeting}, {name()}</p>")
+
+
+class _ErrorView:
+    def __init__(self, label: str) -> None:
+        self.label = label
+
+    def __call__(self, err: Callable[[], BaseException], reset: Callable[[], None]) -> Any:
+        return html(t"<p>{self.label}: {str(err())}</p>")
+
+
+def test_a_callable_instance_as_content_receives_the_flow_controls_arguments():
+    name, _set_name = create_signal("Ada")
+
+    @component
+    def Boom():
+        raise ValueError("bad")
+
+    view = html(t"<div>{Show(name, _Greeter('Hello'))}{Errored(Boom(), fallback=_ErrorView('Failed'))}</div>")
+    with render(view) as screen:
+        assert "Hello, Ada" in screen.text()
+        assert "Failed: bad" in screen.text()
+
+
+def test_content_in_a_module_level_loop_stays_eager():
+    out = compiled(
+        """
+        from wybthon import Show
+
+        rows = []
+        for i in range(3):
+            rows.append(Show(flag, Row(i=i)))
+        listed = [Show(flag, Row(i=i)) for i in range(3)]
+
+        def build():
+            for i in range(3):
+                rows.append(Show(flag, Row(i=i)))
+        """
+    )
+    assert "rows.append(Show(flag, Row(i=i)))" in out.split("listed")[0]
+    assert "listed = [Show(flag, __wybthon__.content(lambda *, i=i: Row(i=i)))" in out
+    assert "rows.append(Show(flag, __wybthon__.content(lambda *, i=i: Row(i=i))))" in out.split("def build")[1]
+
+
+def test_a_local_name_that_shadows_a_flow_control_is_left_alone():
+    out = compiled(
+        """
+        from wybthon import Show
+
+        def page():
+            def Show(x, y):
+                return y
+            return Show(1, Panel())
+
+        def other():
+            from wybthon import Show
+            return Show(1, Panel())
+        """
+    )
+    assert "return Show(1, Panel())" in out.split("def other")[0]
+    assert "content(lambda: Panel())" in out.split("def other")[1]
+
+
+@pytest.mark.parametrize("declaration", ["global", "nonlocal"])
+def test_a_parameter_declared_global_or_nonlocal_is_rejected(declaration: str):
+    with pytest.raises(SyntaxError, match="can't be global"):
+        compiled(
+            f"""
+            from wybthon import component
+
+            def outer():
+                title = 1
+
+                @component
+                def Card(title: str):
+                    {declaration} title
+                    return title
+            """
+        )
+
+
+def test_item_syntax_supplies_a_required_children_parameter(dev_mode):
+    @component
+    def Card(title: str, children: Children):
+        return html(t"<section><h2>{title}</h2>{children}</section>")
+
+    with render(Card(title="Hi")[html(t"<p>Body</p>")]) as screen:
+        assert screen.text() == "HiBody"

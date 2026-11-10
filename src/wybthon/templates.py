@@ -1045,8 +1045,10 @@ def slot_positions(nodes: list[Any]) -> dict[int, str]:
             elif kind == _A_VALUE or kind == _A_PARTS:
                 name = attr[1]
                 indices = (attr[2],) if kind == _A_VALUE else tuple(p for p in attr[2] if type(p) is int)
-                handler = _event_prop(name) is not None or name == "ref"
                 if component:
+                    # The prop's name decides: `onclick` is the handler `on_click`,
+                    # while `online` is an ordinary (reactive) prop.
+                    handler = name == "ref" or _prop_name(name).startswith("on_")
                     position = "prop_event" if handler else "prop"
                 else:
                     position = "event" if _event_prop(name) is not None else "ref" if name == "ref" else "attr"

@@ -112,28 +112,42 @@ def is_dynamic(node: ast.AST) -> bool:
     """Whether an expression may read reactive state: it contains a call, attribute access, or subscript.
 
     The bodies of lambdas inside the expression don't count; they run
-    whenever their caller decides.
+    whenever their caller decides. Nor does lazy content the compiler
+    made (`__wybthon__.content(lambda: ...)`), which is a function too.
     """
     stack = [node]
     while stack:
         current = stack.pop()
+        if isinstance(current, ast.Lambda) or _is_content(current):
+            continue
         if isinstance(current, (ast.Call, ast.Attribute, ast.Subscript)):
             return True
-        if isinstance(current, ast.Lambda):
-            continue
         stack.extend(ast.iter_child_nodes(current))
     return False
 
 
+def _is_content(node: ast.AST) -> bool:
+    """Whether `node` is lazy content the compiler made: `__wybthon__.content(lambda: ...)`."""
+    if not isinstance(node, ast.Call) or len(node.args) != 1 or not isinstance(node.args[0], ast.Lambda):
+        return False
+    func = node.func
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr == "content"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == _RUNTIME
+    )
+
+
 def _calls(node: ast.AST) -> bool:
-    """Whether an expression makes a call (outside the lambdas inside it)."""
+    """Whether an expression makes a call (outside the lambdas, and lazy content, inside it)."""
     stack = [node]
     while stack:
         current = stack.pop()
+        if isinstance(current, ast.Lambda) or _is_content(current):
+            continue
         if isinstance(current, ast.Call):
             return True
-        if isinstance(current, ast.Lambda):
-            continue
         stack.extend(ast.iter_child_nodes(current))
     return False
 
@@ -427,6 +441,31 @@ def _declarations(body: list[ast.stmt]) -> tuple[set[str], set[str]]:
     return globals_, nonlocals
 
 
+def _wybthon_imported(body: list[ast.stmt]) -> set[str]:
+    """The local names a scope's body binds by importing them from Wybthon (not in nested scopes)."""
+    out: set[str] = set()
+    stack: list[ast.AST] = list(body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, ast.ImportFrom) and node.level == 0 and _is_wybthon(node.module):
+            out.update(alias.asname or alias.name for alias in node.names)
+        elif not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            stack.extend(ast.iter_child_nodes(node))
+    return out
+
+
+def _declaration(body: list[ast.stmt], name: str) -> ast.AST | None:
+    """The `global` or `nonlocal` statement in a function body (not in nested scopes) naming `name`."""
+    stack: list[ast.AST] = list(reversed(body))
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.Global, ast.Nonlocal)) and name in node.names:
+            return node
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            stack.extend(reversed(list(ast.iter_child_nodes(node))))
+    return None
+
+
 def _binding(body: list[ast.stmt], name: str) -> ast.AST | None:
     """The first node in a function body (not in nested scopes) that binds `name`, for error locations."""
     stack: list[ast.AST] = list(reversed(body))
@@ -639,6 +678,12 @@ class _Components(ast.NodeTransformer):
         if not params and args.kwarg is None:
             return self.generic_visit(node)
         names = frozenset(params)
+        # Python rejects `global title` for a parameter; the split function
+        # has no parameter of that name, so reject it here.
+        globals_, nonlocals = _declarations(node.body)
+        for name in sorted((globals_ | nonlocals) & names):
+            where = _declaration(node.body, name) or node
+            raise self.fail(where, f"{name!r} is a component parameter, which is a read-only prop; it can't be global")
         scope = _Scope("function")
         _collect(scope, node.body, False)
         for name in params:
@@ -760,6 +805,11 @@ class _Compiler(ast.NodeTransformer):
         # The enclosing function, class, and comprehension scopes, innermost
         # last; the module scope isn't tracked (its names are globals).
         self.scopes: list[_Scope] = []
+        # For each scope, the names it binds by importing them from Wybthon.
+        self.imports: list[set[str]] = []
+        # Loops at module level enclosing the current node: their variables
+        # are globals, which lazy content would read late.
+        self.module_loops = 0
         self.header: list[ast.stmt] = []
         self.count = 0
         self.mounts = 0
@@ -768,6 +818,8 @@ class _Compiler(ast.NodeTransformer):
 
     def _visit_scope(self, node: ast.AST, scope: _Scope) -> ast.AST:
         self.scopes.append(scope)
+        body = getattr(node, "body", None)
+        self.imports.append(_wybthon_imported(body) if isinstance(body, list) else set())
         depth = self.template_depth
         if scope.kind != "comprehension":
             self.template_depth = 0
@@ -775,7 +827,33 @@ class _Compiler(ast.NodeTransformer):
             return self.generic_visit(node)
         finally:
             self.scopes.pop()
+            self.imports.pop()
             self.template_depth = depth
+
+    def _loop(self, node: ast.AST) -> ast.AST:
+        module = not self.scopes
+        self.module_loops += module
+        try:
+            return self.generic_visit(node)
+        finally:
+            self.module_loops -= module
+
+    visit_For = _loop
+    visit_AsyncFor = _loop
+    visit_While = _loop
+
+    def _shadowed(self, func: ast.expr) -> bool:
+        """Whether a call's callee is a local name that hides the Wybthon import of the same name."""
+        if not isinstance(func, ast.Name):
+            return False
+        innermost = True
+        for scope, imported in zip(reversed(self.scopes), reversed(self.imports), strict=True):
+            if scope.kind == "class" and not innermost:
+                continue
+            innermost = False
+            if func.id in scope.names:
+                return func.id not in imported
+        return False
 
     def _function_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> _Scope:
         scope = _Scope("function")
@@ -857,6 +935,8 @@ class _Compiler(ast.NodeTransformer):
     def visit_Call(self, node: ast.Call) -> ast.AST:
         if not self._is_html(node, compiled=False):
             lazy = _LAZY_ARGS.get(_recognized(node.func, self.names, self.packages) or "")
+            if lazy is not None and self._shadowed(node.func):
+                lazy = None
             self.generic_visit(node)
             if lazy is not None:
                 self._lazy(node, *lazy)
@@ -901,11 +981,14 @@ class _Compiler(ast.NodeTransformer):
 
         The arguments have been compiled already. In a template, a
         component call in content is prepared as one in a child position
-        is, so it still receives getters for its dynamic props. In a class
-        body content stays eager: a function there can't see the class's
-        names.
+        is, so it still receives getters for its dynamic props. Content
+        stays eager in a class body, where a function can't see the class's
+        names, and in a loop at module level outside any function, whose
+        variables are globals a deferred call would read late.
         """
         if self.scopes and self.scopes[-1].kind == "class":
+            return
+        if self.module_loops and not any(scope.kind == "function" for scope in self.scopes):
             return
         for index in positions:
             if index < len(call.args) and self._content(call.args[index]):
@@ -914,10 +997,14 @@ class _Compiler(ast.NodeTransformer):
             if kw.arg in keywords and self._content(kw.value):
                 kw.value = self._thunk(kw.value)
 
-    def _thunk(self, expr: ast.expr) -> ast.Lambda:
-        if self.template_depth and isinstance(expr, ast.Call) and not self._is_html(expr) and _dispatchable(expr):
+    def _thunk(self, expr: ast.expr) -> ast.expr:
+        """Markup becomes a zero-argument function; a call becomes `__wybthon__.content(lambda: ...)`."""
+        if self._is_html(expr):
+            return self._lambda(expr, capture=True)
+        if self.template_depth and isinstance(expr, ast.Call) and _dispatchable(expr):
             expr = self._dispatch(expr)
-        return self._lambda(expr, capture=True)
+        thunk = self._lambda(expr, capture=True)
+        return ast.copy_location(ast.Call(func=_runtime("content"), args=[thunk], keywords=[]), thunk)
 
     def _content(self, expr: ast.expr) -> bool:
         """Whether an argument builds content: markup, or a call of a component-like (capitalized) callee."""
@@ -927,7 +1014,8 @@ class _Compiler(ast.NodeTransformer):
             return True
         func = expr.func
         name = func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else ""
-        return name[:1].isupper()
+        # A private component (`_Card`) counts as capitalized.
+        return name.lstrip("_")[:1].isupper()
 
     def _interpolation(self, item: ast.Interpolation, position: str) -> int:
         """Compile one interpolation; returns whether it made the slot's value a getter, and of which kind.

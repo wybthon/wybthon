@@ -132,15 +132,19 @@ In JSX, `<Show when={open()}><Dialog /></Show>` doesn't create `Dialog` until th
 | [`Errored`][wybthon.Errored] | Content (first positional argument or `children=`) and `fallback` |
 | [`client_only`][wybthon.client_only] | Content (first positional argument or `children=`) and `fallback` |
 
-An argument counts as content when it's markup (`html(t"...")`) or a component call, meaning a call whose callee's name is capitalized (`Dialog(...)`, `ui.Dialog(...)`):
+An argument counts as content when it's markup (`html(t"...")`) or a component call, meaning a call whose callee's name is capitalized, ignoring leading underscores (`Dialog(...)`, `ui.Dialog(...)`, `_Dialog(...)`):
 
 ```python
 Show(open(), Dialog(title=name()), fallback=html(t"<p>Closed</p>"))
 # compiles to, roughly
-Show(open(), lambda: Dialog(title=name()), fallback=lambda: __wybthon_t0__.render(()))
+Show(open(), __wybthon__.content(lambda: Dialog(title=name())), fallback=lambda: __wybthon_t0__.render(()))
 ```
 
+A capitalized call doesn't always build a component: `ErrorView("Retry")` may make an instance of a class whose `__call__` takes the arguments the flow control passes (`Show`'s accessor, `Errored`'s error and reset). `__wybthon__.content` handles both: when the deferred call returns a node, that's the content, and when it returns such a callable, the callable receives the flow control's arguments, as many as it takes.
+
 The rule applies anywhere the flow control is called, in a template or in ordinary code. Inside a template, a component call in content is still prepared the way [a call in a child position](#calls-in-a-child-position) is, so the component receives getters for its dynamic props when the branch builds. Anything else (a name such as `rows`, a lambda, or a lowercase call such as `render_rows()`) is passed as written, since it may already be a function or a value built on purpose. The flow controls accept a value or a zero-argument function in these positions, so code that passes its own function keeps working.
+
+Content stays eager where deferring it would change what it means: in the tag form (`<{Show} when={...}>content</{Show}>`), which builds its content when the tag is created; in a class body, where a deferred function couldn't see the class's names; in a loop at module level outside any function, whose variables are globals a deferred call would read after the loop moved on; and in a call of a local name that hides the import (a nested `def Show(...)`), which isn't Wybthon's flow control.
 
 A lazy branch runs later, so it captures by value the loop variables and other names whose binding can change, the same way [a getter's names are captured](#captured-names):
 

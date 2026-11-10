@@ -239,7 +239,10 @@ class Props:
             unknown = values.keys() - cls._wyb_names
             if unknown:
                 raise TypeError(f"{component}() got unexpected prop(s): {', '.join(sorted(unknown))}")
-        missing = cls._wyb_required - values.keys()
+        # Item syntax (`Card(title="Hi")[...]`) sets `children` after the call,
+        # so a missing `children` isn't an error here (it reads as `None`);
+        # type checkers and `wyb check` still report it.
+        missing = cls._wyb_required - values.keys() - {"children"}
         if missing:
             raise TypeError(f"{component}() is missing required prop(s): {', '.join(sorted(missing))}")
 
