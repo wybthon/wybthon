@@ -106,6 +106,17 @@ class Component[**P]:
         self._resolved = True
         return cls
 
+    def _wyb_check_children(self) -> None:
+        """Dev mode: reject item syntax (`Card(title="Hi")[...]`) on a component that takes no `children`."""
+        if not _warnings.DEV_MODE:
+            return
+        cls = self._resolve()
+        if cls is None or not (cls._wyb_open or cls._wyb_internal or "children" in cls._wyb_names):
+            raise TypeError(
+                f"{self.__qualname__}() got unexpected prop(s): children "
+                "(declare a `children: Children = None` parameter to take content)"
+            )
+
     def _hot_replace(self, other: Component[Any]) -> None:
         """Take on another component's code, keeping this object's identity (hot module replacement)."""
         self.signature = other.signature

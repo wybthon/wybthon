@@ -117,7 +117,7 @@ def Greeting():
 
 A function call in a child position is dispatched when the template is created: a component or built-in (`{Card(title=user().name)}`, `{Show(...)}`, `{For(...)}`) is built with a getter for each dynamic argument, and any other call (`{badge(user())}`, `{str(n())}`) becomes one reactive hole. See [The compiler](../concepts/compiler.md) for the full rule.
 
-The content and fallback of `Show`, `Match`, `Switch`, `Loading`, `Errored`, and `client_only` are lazy when they're written as markup or as a component call (a capitalized callee, such as `{Show(open(), Panel())}`): the compiler makes each a zero-argument function, so a branch's markup and components are built only when it shows, as JSX children are in Solid. Names, lambdas, and lowercase calls are passed as written.
+The content and fallback of `Show`, `Match`, `Switch`, `Loading`, `Errored`, and `client_only` are lazy when they're written as markup or as a component call (a capitalized callee, such as `{Show(open(), Panel())}`): the compiler makes each a zero-argument function, so a branch's markup and components are built only when it shows, as JSX children are in Solid. Names, lambdas, and lowercase calls are passed as written, and content at module level stays eager.
 
 Keep holes small. A hole that produces a subtree runs again on every change: if it returns a template from the same literal, Wybthon patches the mounted instance slot by slot, but anything else is rebuilt. A hole around a single text node patches one node. Use [`hole`][wybthon.vnode.hole] when you need an explicit `key` for a hole inside a fragment.
 

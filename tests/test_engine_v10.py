@@ -629,7 +629,8 @@ def test_a_callable_instance_as_content_receives_the_flow_controls_arguments():
         assert "Failed: bad" in screen.text()
 
 
-def test_content_in_a_module_level_loop_stays_eager():
+def test_content_at_module_level_stays_eager():
+    # Module-level names are globals, which deferred content would read after they changed.
     out = compiled(
         """
         from wybthon import Show
@@ -638,15 +639,23 @@ def test_content_in_a_module_level_loop_stays_eager():
         for i in range(3):
             rows.append(Show(flag, Row(i=i)))
         listed = [Show(flag, Row(i=i)) for i in range(3)]
+        label = "a"
+        first = Show(flag, Badge(text=label))
+        label = "b"
 
         def build():
             for i in range(3):
                 rows.append(Show(flag, Row(i=i)))
         """
     )
-    assert "rows.append(Show(flag, Row(i=i)))" in out.split("listed")[0]
-    assert "listed = [Show(flag, __wybthon__.content(lambda *, i=i: Row(i=i)))" in out
-    assert "rows.append(Show(flag, __wybthon__.content(lambda *, i=i: Row(i=i))))" in out.split("def build")[1]
+    module, function = out.split("def build")
+    assert "rows.append(Show(flag, Row(i=i)))" in module
+    assert "listed = [Show(flag, Row(i=i)) for i in range(3)]" in module
+    assert "first = Show(flag, Badge(text=label))" in module
+    assert (
+        "rows.append(Show(flag, lambda *__wybthon_args__, i=i: __wybthon__.content(Row(i=i), __wybthon_args__)))"
+        in function
+    )
 
 
 def test_a_local_name_that_shadows_a_flow_control_is_left_alone():
@@ -665,12 +674,48 @@ def test_a_local_name_that_shadows_a_flow_control_is_left_alone():
         """
     )
     assert "return Show(1, Panel())" in out.split("def other")[0]
-    assert "content(lambda: Panel())" in out.split("def other")[1]
+    assert "__wybthon__.content(Panel(), __wybthon_args__)" in out.split("def other")[1]
+
+
+def test_a_module_level_definition_that_replaces_a_flow_control_is_left_alone():
+    out = compiled(
+        """
+        from wybthon import Show
+
+        def Show(cond, a, b=None):
+            return a if cond else b
+
+        def page():
+            return Show(1, Panel())
+        """
+    )
+    assert "return Show(1, Panel())" in out
+
+
+def test_a_zero_argument_callable_as_content_is_called():
+    class Placeholder:
+        def __call__(self) -> Any:
+            return html(t"<p>off</p>")
+
+    def build(on: bool) -> Any:
+        return Show(on, html(t"<b>on</b>"), Placeholder())
+
+    with render(html(t"<div>{build(False)}</div>")) as screen:
+        assert screen.text() == "off"
+
+
+def test_item_syntax_on_a_component_without_children_is_rejected(dev_mode):
+    @component
+    def Card(title: str):
+        return html(t"<p>{title}</p>")
+
+    with pytest.raises(TypeError, match="unexpected prop.*children"):
+        Card(title="x")[html(t"<i>lost</i>")]
 
 
 @pytest.mark.parametrize("declaration", ["global", "nonlocal"])
 def test_a_parameter_declared_global_or_nonlocal_is_rejected(declaration: str):
-    with pytest.raises(SyntaxError, match="can't be global"):
+    with pytest.raises(SyntaxError, match=f"can't be {declaration}"):
         compiled(
             f"""
             from wybthon import component

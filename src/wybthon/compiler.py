@@ -103,6 +103,8 @@ __all__ = [
 ]
 
 _RUNTIME = "__wybthon__"
+# The arguments a flow control passes lazy content (see `_compiled.content`).
+_CONTENT_ARGS = "__wybthon_args__"
 
 # Positions whose interpolations are always passed as they are.
 _VERBATIM = frozenset({"event", "ref", "spread", "tag", "prop_event"})
@@ -112,13 +114,12 @@ def is_dynamic(node: ast.AST) -> bool:
     """Whether an expression may read reactive state: it contains a call, attribute access, or subscript.
 
     The bodies of lambdas inside the expression don't count; they run
-    whenever their caller decides. Nor does lazy content the compiler
-    made (`__wybthon__.content(lambda: ...)`), which is a function too.
+    whenever their caller decides.
     """
     stack = [node]
     while stack:
         current = stack.pop()
-        if isinstance(current, ast.Lambda) or _is_content(current):
+        if isinstance(current, ast.Lambda):
             continue
         if isinstance(current, (ast.Call, ast.Attribute, ast.Subscript)):
             return True
@@ -126,25 +127,12 @@ def is_dynamic(node: ast.AST) -> bool:
     return False
 
 
-def _is_content(node: ast.AST) -> bool:
-    """Whether `node` is lazy content the compiler made: `__wybthon__.content(lambda: ...)`."""
-    if not isinstance(node, ast.Call) or len(node.args) != 1 or not isinstance(node.args[0], ast.Lambda):
-        return False
-    func = node.func
-    return (
-        isinstance(func, ast.Attribute)
-        and func.attr == "content"
-        and isinstance(func.value, ast.Name)
-        and func.value.id == _RUNTIME
-    )
-
-
 def _calls(node: ast.AST) -> bool:
-    """Whether an expression makes a call (outside the lambdas, and lazy content, inside it)."""
+    """Whether an expression makes a call (outside the lambdas inside it)."""
     stack = [node]
     while stack:
         current = stack.pop()
-        if isinstance(current, ast.Lambda) or _is_content(current):
+        if isinstance(current, ast.Lambda):
             continue
         if isinstance(current, ast.Call):
             return True
@@ -466,8 +454,11 @@ def _declaration(body: list[ast.stmt], name: str) -> ast.AST | None:
     return None
 
 
-def _binding(body: list[ast.stmt], name: str) -> ast.AST | None:
-    """The first node in a function body (not in nested scopes) that binds `name`, for error locations."""
+def _binding(body: list[ast.stmt], name: str, imports: bool = True) -> ast.AST | None:
+    """The first node in a body (not in nested scopes) that binds `name`, for error locations.
+
+    With `imports` false, importing `name` from Wybthon doesn't count.
+    """
     stack: list[ast.AST] = list(reversed(body))
     while stack:
         node = stack.pop()
@@ -482,7 +473,8 @@ def _binding(body: list[ast.stmt], name: str) -> ast.AST | None:
         if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
             (alias.asname or alias.name).split(".")[0] == name for alias in node.names
         ):
-            return node
+            if imports or not (isinstance(node, ast.ImportFrom) and node.level == 0 and _is_wybthon(node.module)):
+                return node
         if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name == name:
             return node
         stack.extend(reversed(list(ast.iter_child_nodes(node))))
@@ -683,7 +675,10 @@ class _Components(ast.NodeTransformer):
         globals_, nonlocals = _declarations(node.body)
         for name in sorted((globals_ | nonlocals) & names):
             where = _declaration(node.body, name) or node
-            raise self.fail(where, f"{name!r} is a component parameter, which is a read-only prop; it can't be global")
+            statement = "nonlocal" if isinstance(where, ast.Nonlocal) else "global"
+            raise self.fail(
+                where, f"{name!r} is a component parameter, which is a read-only prop; it can't be {statement}"
+            )
         scope = _Scope("function")
         _collect(scope, node.body, False)
         for name in params:
@@ -805,11 +800,9 @@ class _Compiler(ast.NodeTransformer):
         # The enclosing function, class, and comprehension scopes, innermost
         # last; the module scope isn't tracked (its names are globals).
         self.scopes: list[_Scope] = []
-        # For each scope, the names it binds by importing them from Wybthon.
-        self.imports: list[set[str]] = []
-        # Loops at module level enclosing the current node: their variables
-        # are globals, which lazy content would read late.
-        self.module_loops = 0
+        # For each scope, its body (a function's or class's statements), for
+        # telling a local name from a local import of a Wybthon name.
+        self.bodies: list[list[ast.stmt]] = []
         self.header: list[ast.stmt] = []
         self.count = 0
         self.mounts = 0
@@ -819,7 +812,7 @@ class _Compiler(ast.NodeTransformer):
     def _visit_scope(self, node: ast.AST, scope: _Scope) -> ast.AST:
         self.scopes.append(scope)
         body = getattr(node, "body", None)
-        self.imports.append(_wybthon_imported(body) if isinstance(body, list) else set())
+        self.bodies.append(body if isinstance(body, list) else [])
         depth = self.template_depth
         if scope.kind != "comprehension":
             self.template_depth = 0
@@ -827,32 +820,21 @@ class _Compiler(ast.NodeTransformer):
             return self.generic_visit(node)
         finally:
             self.scopes.pop()
-            self.imports.pop()
+            self.bodies.pop()
             self.template_depth = depth
-
-    def _loop(self, node: ast.AST) -> ast.AST:
-        module = not self.scopes
-        self.module_loops += module
-        try:
-            return self.generic_visit(node)
-        finally:
-            self.module_loops -= module
-
-    visit_For = _loop
-    visit_AsyncFor = _loop
-    visit_While = _loop
 
     def _shadowed(self, func: ast.expr) -> bool:
         """Whether a call's callee is a local name that hides the Wybthon import of the same name."""
         if not isinstance(func, ast.Name):
             return False
         innermost = True
-        for scope, imported in zip(reversed(self.scopes), reversed(self.imports), strict=True):
+        for scope, body in zip(reversed(self.scopes), reversed(self.bodies), strict=True):
             if scope.kind == "class" and not innermost:
                 continue
             innermost = False
             if func.id in scope.names:
-                return func.id not in imported
+                # Rare, so the scope's imports are only looked at here.
+                return func.id not in _wybthon_imported(body)
         return False
 
     def _function_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> _Scope:
@@ -981,14 +963,13 @@ class _Compiler(ast.NodeTransformer):
 
         The arguments have been compiled already. In a template, a
         component call in content is prepared as one in a child position
-        is, so it still receives getters for its dynamic props. Content
-        stays eager in a class body, where a function can't see the class's
-        names, and in a loop at module level outside any function, whose
-        variables are globals a deferred call would read late.
+        is, so it still receives getters for its dynamic props. Content is
+        only deferred inside a function: names at module level are globals,
+        which a deferred call would read after they changed (a loop
+        variable, a name assigned again), and a function in a class body
+        can't see the class's names.
         """
-        if self.scopes and self.scopes[-1].kind == "class":
-            return
-        if self.module_loops and not any(scope.kind == "function" for scope in self.scopes):
+        if not any(scope.kind == "function" for scope in self.scopes) or self.scopes[-1].kind == "class":
             return
         for index in positions:
             if index < len(call.args) and self._content(call.args[index]):
@@ -997,14 +978,17 @@ class _Compiler(ast.NodeTransformer):
             if kw.arg in keywords and self._content(kw.value):
                 kw.value = self._thunk(kw.value)
 
-    def _thunk(self, expr: ast.expr) -> ast.expr:
-        """Markup becomes a zero-argument function; a call becomes `__wybthon__.content(lambda: ...)`."""
+    def _thunk(self, expr: ast.expr) -> ast.Lambda:
+        """Markup becomes `lambda: ...`; a call becomes `lambda *args: __wybthon__.content(..., args)`."""
         if self._is_html(expr):
             return self._lambda(expr, capture=True)
         if self.template_depth and isinstance(expr, ast.Call) and _dispatchable(expr):
             expr = self._dispatch(expr)
-        thunk = self._lambda(expr, capture=True)
-        return ast.copy_location(ast.Call(func=_runtime("content"), args=[thunk], keywords=[]), thunk)
+        args = ast.Name(id=_CONTENT_ARGS, ctx=ast.Load())
+        body = ast.copy_location(ast.Call(func=_runtime("content"), args=[expr, args], keywords=[]), expr)
+        thunk = self._lambda(body, capture=True)
+        thunk.args.vararg = ast.arg(arg=_CONTENT_ARGS)
+        return thunk
 
     def _content(self, expr: ast.expr) -> bool:
         """Whether an argument builds content: markup, or a call of a component-like (capitalized) callee."""
@@ -1156,6 +1140,9 @@ def transform(tree: ast.Module, filename: str = "<unknown>", source: str = "") -
     names, packages = _wybthon_imports(tree)
     if not names and not packages:
         return tree
+    # A module that defines its own `Show` (or assigns one) after importing
+    # Wybthon's means its own at its call sites.
+    names = {local: name for local, name in names.items() if _binding(tree.body, local, imports=False) is None}
     lines = source.splitlines()
     components = _Components(filename, lines, names, packages)
     components.visit(tree)

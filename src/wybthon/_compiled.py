@@ -43,29 +43,26 @@ def call(fn: Any, deferred: Callable[[], Any], prepared: Callable[[], Any]) -> A
     return getter(deferred)
 
 
-def content(build: Callable[[], Any]) -> Callable[..., Any]:
-    """A flow control's lazy content: a capitalized call the compiler deferred until its branch shows.
+def content(value: Any, args: tuple[Any, ...]) -> Any:
+    """The content a deferred capitalized call built, once its branch shows.
 
-    The call usually builds a component, whose node is the content. It
-    may instead build a callable, such as an instance of a class with
-    `__call__`, that the flow control would have called with its
-    arguments (`Show`'s accessor, `Errored`'s error and reset); that
-    callable receives them, as many as it takes.
+    The compiler turns `Show(x, Panel())` into
+    `Show(x, lambda *args: content(Panel(), args))`. The call usually
+    builds a component, whose node is the content. It may instead build a
+    callable, such as an instance of a class with `__call__`, that the
+    flow control would have called itself, as it calls any function it's
+    given: that callable is called with the flow control's arguments
+    (`Show`'s accessor, `Errored`'s error and reset), as many as it takes.
     """
-
-    def lazy(*args: Any) -> Any:
-        value = build()
-        if type(value) is getter:
-            # In a template the call was dispatched, and a call that doesn't
-            # build a component came back as an expression: its value is the
-            # content, as a branch's slot is (see `_regions`).
-            value = value.fn()
-        if not args or not callable(value) or isinstance(value, Node):
-            return value
-        count = _positional_count(value)
-        return value(*args) if count < 0 else value(*args[:count])
-
-    return lazy
+    if type(value) is getter:
+        # In a template the call was dispatched, and a call that doesn't
+        # build a component came back as an expression: its value is the
+        # content, as a branch's slot is (see `_regions`).
+        value = value.fn()
+    if not callable(value) or isinstance(value, Node):
+        return value
+    count = _positional_count(value)
+    return value(*args) if count < 0 else value(*args[:count])
 
 
 def props[F: Callable[..., Any]](body: Callable[..., Any]) -> Callable[[F], F]:

@@ -157,6 +157,9 @@ class VNode(Node):
         """
         kids = flatten_children(children if isinstance(children, tuple) else (children,))
         if callable(self.tag):
+            check = getattr(self.tag, "_wyb_check_children", None)
+            if check is not None:
+                check()
             self.props["children"] = kids
         else:
             self.children = kids
