@@ -7,7 +7,7 @@ from wybthon import html
 from wybthon.component import component
 from wybthon.context import Context, ContextNotFoundError, create_context, use_context
 from wybthon.flow import Show
-from wybthon.reactivity import Props, create_signal, flush, prop
+from wybthon.reactivity import create_signal, flush
 
 
 def texts(node):
@@ -51,13 +51,10 @@ def test_use_context_without_provider_or_default_raises(wyb):
 def test_nested_providers_shadow_outer_value(wyb, root_element):
     Theme = create_context("light")
 
-    class ChildProps(Props):
-        label: str = prop(default="")
-
     @component
-    def Child(props: ChildProps):
+    def Child(label: str = ""):
         theme = use_context(Theme)
-        return html(t"<span>{props.label}={theme}</span>")
+        return html(t"<span>{label}={theme}</span>")
 
     view = html(t"""<div>
         {Child(label="a")}
@@ -125,13 +122,10 @@ def test_provider_children_by_item_syntax_and_reactive_context_prop(wyb, root_el
     Theme = create_context("light")
     theme, set_theme = create_signal("dark")
 
-    class LabelProps(Props):
-        prefix: str
-
     @component
-    def Label(props: LabelProps):
+    def Label(prefix: str):
         current = use_context(Theme)
-        return html(t"<p>{f'{props.prefix}:{current() if callable(current) else current}'}</p>")
+        return html(t"<p>{f'{prefix}:{current() if callable(current) else current}'}</p>")
 
     labels = [Label(prefix="a"), Label(prefix="b")]
     root = wyb["reconciler"].render(Theme(theme, html(t"<div>{labels}</div>")), root_element)

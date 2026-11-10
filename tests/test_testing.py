@@ -12,9 +12,8 @@ from pathlib import Path
 import pytest
 
 from wybthon import (
+    Children,
     For,
-    ParentProps,
-    Props,
     Show,
     component,
     create_effect,
@@ -33,27 +32,21 @@ def _cleanup():
     cleanup()
 
 
-class CounterProps(Props):
-    label: str
-    initial: int = 0
-    on_change: Callable[[int], None] | None = None
-
-
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.initial))
+def Counter(label: str, initial: int = 0, on_change: Callable[[int], None] | None = None):
+    count, set_count = create_signal(untrack(lambda: initial))
 
     def increment():
         set_count(lambda n: n + 1)
-        if props.on_change is not None:
-            props.on_change(count.peek() + 1)
+        if on_change is not None:
+            on_change(count.peek() + 1)
 
     def reset():
         set_count(0)
 
     return html(t"""
       <div>
-        <p>{props.label}: {count}</p>
+        <p>{label}: {count}</p>
         <button onclick={increment} aria-label="increment">+</button>
         <button onclick={reset}>reset</button>
       </div>
@@ -314,12 +307,9 @@ def test_zero_argument_handlers_and_flushed_updates():
 
 
 def test_fire_with_children_props_component():
-    class CardProps(ParentProps):
-        title: str
-
     @component
-    def Card(props: CardProps):
-        return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
+    def Card(title: str, children: Children = None):
+        return html(t"<div><h2>{title}</h2>{children}</div>")
 
     clicks: list[int] = []
 
@@ -437,22 +427,17 @@ def test_works_in_a_fresh_cpython_process(tmp_path):
     (tmp_path / "counter_app.py").write_text(
         textwrap.dedent(
             """
-            from wybthon import Props, component, create_signal, html, untrack
-
-
-            class CounterProps(Props):
-                label: str
-                initial: int = 0
+            from wybthon import component, create_signal, html, untrack
 
 
             @component
-            def Counter(props: CounterProps):
-                count, set_count = create_signal(untrack(lambda: props.initial))
+            def Counter(label: str, initial: int = 0):
+                count, set_count = create_signal(untrack(lambda: initial))
 
                 def increment():
                     set_count(lambda n: n + 1)
 
-                return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
+                return html(t"<div><p>{label}: {count()}</p><button onclick={increment}>+</button></div>")
 
 
             def second():

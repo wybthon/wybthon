@@ -77,15 +77,15 @@ effects, by contrast, run immediately at creation.
 ## Reading without tracking
 
 [`untrack`][wybthon.untrack] runs a function with tracking suppressed;
-every accessor's `.peek()` does the same for a single read. Props have
-no `.peek()`, because `props.initial` is already the value: wrap the
-read in `untrack`:
+every accessor's `.peek()` does the same for a single read. A
+component parameter has no `.peek()`, because reading `initial` already
+returns the value: wrap the read in `untrack`:
 
 ```python
 from wybthon import create_effect, untrack
 
 create_effect(lambda: (a(), untrack(b)), lambda pair: print("a changed:", pair))
-seed = untrack(lambda: props.initial)
+seed = untrack(lambda: initial)  # in a component with an `initial` parameter
 count.peek()
 ```
 
@@ -96,7 +96,7 @@ in a row:
 from wybthon import untrack
 
 with untrack():
-    start, step = props.start, props.step
+    start, step = a(), b()
 ```
 
 For explicit dependencies prefer the **split effect**: the compute stage
@@ -192,15 +192,11 @@ after the `await` are tracked exactly like reads before it.
 | A `For` row | the row's owner | the row leaves the list |
 
 ```python
-from wybthon import Props, component, create_effect, create_signal, html
-
-
-class TimerProps(Props):
-    interval: int = 1000
+from wybthon import component, create_effect, create_signal, html
 
 
 @component
-def Timer(props: TimerProps):
+def Timer(interval: int = 1000):
     count, set_count = create_signal(0)
 
     # Body effect: lives until the component unmounts.
@@ -213,12 +209,12 @@ def Timer(props: TimerProps):
 A binding or hole whose first run reads nothing reactive, and creates
 no children, cleanups, or async work, can never run again. The renderer
 disposes it right away and keeps only the DOM it produced. A binding
-whose expression makes no calls goes further: `{props.label}` first
-runs under a lightweight probe, and when it reads nothing reactive
-(the parent passed a constant), the value is applied and no
-computation is allocated at all. So `{props.label}` over a constant
-prop costs no computation, and `{props.label.upper()}` costs nothing
-after its first run.
+whose expression makes no calls goes further: a parameter such as
+`{label}` first runs under a lightweight probe, and when it reads
+nothing reactive (the parent passed a constant), the value is applied
+and no computation is allocated at all. So `{label}` over a constant
+prop costs no computation, and `{label.upper()}` costs nothing after
+its first run.
 
 ## Disposal
 

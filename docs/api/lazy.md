@@ -53,7 +53,9 @@ def App():
 - The loader runs at most once; the resolved component is cached across
   unmounts.
 - Props and children passed to the lazy component are forwarded to the
-  loaded component unchanged.
+  loaded component unchanged. As a route's component, it gets only the
+  route props (`params`, `search`, `data`, `children`) that the loaded
+  component declares as parameters.
 - A lazy route component is preloaded when the pointer rests on (or
   focus reaches) a link to its route, so `<a href="/chart">` above
   starts the import before the click. Call `.preload()` yourself for

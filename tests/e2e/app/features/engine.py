@@ -5,48 +5,44 @@
   ``title="count is {count()}"``) are compiled into getters, so each one
   updates its own text node or attribute; names and constants render
   as they are.
-- ``Badge`` declares its inputs on a ``Props`` class with plain
-  annotations. The parent feeds them with a compiled expression, a
-  signal, a derived expression, and plain values, plus a callback field
-  that's handed through untouched.
+- ``Badge`` declares its inputs as parameters. The parent feeds them
+  with a compiled expression, a signal, a derived expression, and plain
+  values, plus a callback parameter that's handed through untouched.
 """
 
 import asyncio
 from collections.abc import Callable
 
-from wybthon import Props, component, create_memo, create_signal, html
-
-
-class BadgeProps(Props):
-    label: str
-    count: int = 0
-    tone: str = "plain"
-    on_ping: Callable[[int], None] | None = None
-    test_id: str = "eng-badge"
-
+from wybthon import component, create_memo, create_signal, html
 
 mounts = 0
 
 
 @component
-def Badge(props: BadgeProps):
+def Badge(
+    label: str,
+    count: int = 0,
+    tone: str = "plain",
+    on_ping: Callable[[int], None] | None = None,
+    test_id: str = "eng-badge",
+):
     global mounts
     mounts += 1
     pings, set_pings = create_signal(0)
 
     def ping():
         set_pings(lambda n: n + 1)
-        if props.on_ping is not None:
-            props.on_ping(pings.peek() + 1)
+        if on_ping is not None:
+            on_ping(pings.peek() + 1)
 
     return html(t"""
-      <div data-testid={props.test_id}>
-        <span data-testid="{props.test_id}-label">{props.label}</span>
-        <span data-testid="{props.test_id}-count">{props.count}</span>
-        <span data-testid="{props.test_id}-t" class="tone-{props.tone}">
-          {props.label}={props.count} ({props.tone})
+      <div data-testid={test_id}>
+        <span data-testid="{test_id}-label">{label}</span>
+        <span data-testid="{test_id}-count">{count}</span>
+        <span data-testid="{test_id}-t" class="tone-{tone}">
+          {label}={count} ({tone})
         </span>
-        <button data-testid="{props.test_id}-ping" onclick={ping}>ping</button>
+        <button data-testid="{test_id}-ping" onclick={ping}>ping</button>
       </div>
     """)
 

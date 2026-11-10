@@ -112,12 +112,7 @@ def _rerun(module: types.ModuleType) -> list[Component]:
         if old is None or old is value:
             continue
         if type(old) is Component and type(value) is Component:
-            old.fn = value.fn
-            old._props_class = None
-            old._resolved = False
-            for attribute in ("__doc__", "__wrapped__", "__annotations__"):
-                if hasattr(value, attribute):
-                    setattr(old, attribute, getattr(value, attribute))
+            old._hot_replace(value)
             namespace[name] = old
             changed.append(old)
         elif (

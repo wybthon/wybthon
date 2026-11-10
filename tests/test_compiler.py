@@ -61,7 +61,7 @@ def _kind(expr: ast.expr) -> str:
 
 
 HEADER = """
-from wybthon import For, Props, Show, component, create_signal, flush, html
+from wybthon import For, Show, component, create_signal, flush, html
 """
 
 
@@ -344,13 +344,10 @@ def test_component_tags_and_calls_receive_getters_without_rerunning():
 runs = []
 name, set_name = create_signal("ada")
 
-class CardProps(Props):
-    title: str
-
 @component
-def Card(props: CardProps):
+def Card(title: str):
     runs.append(1)
-    return html(t'<h2>{props.title}</h2>')
+    return html(t'<h2>{title}</h2>')
 
 def view():
     return html(t'<div><{Card} title={name().upper()} />{Card(title=name() + "!")}</div>')
@@ -633,6 +630,11 @@ def test_the_pytest_plugin_compiles_test_modules():
     assert getattr(rewrite.rewrite_asserts, "_wybthon", False)
     assert wybthon_pytest.COMPILER_TAG == _hook.COMPILER_TAG
     assert _hook.COMPILER_TAG in rewrite.PYC_TAIL
+    # The plugin keeps its own copy of the hook's candidate rule (so loading
+    # it doesn't import Wybthon); the two must pick the same modules.
+    assert wybthon_pytest._NAMES == _hook._NAMES
+    for source in (b"import wybthon\nx = 1", b"from wybthon import html\nhtml(t'<p/>')", b"from wybthon import Show"):
+        assert wybthon_pytest._is_candidate(source) == _hook.is_candidate(source)
     # This very module's templates were compiled by it.
     found = [value for name, value in globals().items() if name.startswith("__wybthon_t")]
     assert not found  # this module has no html() calls of its own
@@ -672,12 +674,9 @@ class Model:
     def shout(self):
         return self.title().upper()
 
-class CardProps(Props):
-    title: str
-
 @component
-def Card(props: CardProps):
-    return html(t'<h2>{props.title}</h2>')
+def Card(title: str):
+    return html(t'<h2>{title}</h2>')
 
 model = Model()
 
@@ -700,16 +699,12 @@ def test_flow_controls_read_through_getters_that_return_accessors():
         + """
 from wybthon import Accessor
 
-class ListProps(Props):
-    items: Accessor[list[str]]
-    flag: Accessor[bool]
-
 @component
-def Items(props: ListProps):
+def Items(items: Accessor[list[str]], flag: Accessor[bool]):
     def row(item, i):
         return html(t"<li>{item}</li>")
 
-    return html(t'<ul>{Show(props.flag, html(t"<b>on</b>"))}{For(props.items, row)}</ul>')
+    return html(t'<ul>{Show(flag, html(t"<b>on</b>"))}{For(items, row)}</ul>')
 
 items, set_items = create_signal(["a"])
 flag, set_flag = create_signal(False)

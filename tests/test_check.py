@@ -14,26 +14,17 @@ from wybthon.dev import main
 # Their functions leave the return type to the checker, so they don't depend
 # on what `html` is annotated to return.
 COMPONENTS = """
-from wybthon import ParentProps, Props, component, html
-
-
-class CardProps(Props):
-    title: str
-    count: int = 0
-
-
-class BoxProps(ParentProps):
-    label: str
+from wybthon import Children, component, html
 
 
 @component
-def Card(props: CardProps):
-    return html(t"<p>{props.title} {props.count}</p>")
+def Card(title: str, count: int = 0):
+    return html(t"<p>{title} {count}</p>")
 
 
 @component
-def Box(props: BoxProps):
-    return html(t"<div>{props.children}</div>")
+def Box(label: str, children: Children = None):
+    return html(t"<div>{children}</div>")
 """
 
 INVALID = '''
@@ -106,31 +97,31 @@ def invalid_errors(tmp_path_factory: pytest.TempPathFactory) -> dict[int, list[s
 
 def test_unknown_prop_reports_at_the_tag_line(invalid_errors):
     messages = invalid_errors[line_of(INVALID, "bogus=")]
-    assert messages == ['in <{Card}>: Unexpected keyword argument "bogus" for "CardProps"  [call-arg]']
+    assert messages == ['in <{Card}>: Unexpected keyword argument "bogus" for "Card"  [call-arg]']
 
 
 def test_wrong_typed_prop_reports_at_the_tag_line(invalid_errors):
     # The tag spans two lines; the error is reported where `{Card}` is.
     line = line_of(INVALID, 'count={"x"}') - 1
     assert invalid_errors[line] == [
-        'in <{Card}>: Argument "count" to "CardProps" has incompatible type "str"; expected "int"  [arg-type]'
+        'in <{Card}>: Argument "count" to "Card" has incompatible type "str"; expected "int"  [arg-type]'
     ]
 
 
 def test_missing_required_prop(invalid_errors):
     messages = invalid_errors[line_of(INVALID, "<{Card} count={2}/>")]
-    assert messages == ['in <{Card}>: Missing named argument "title" for "CardProps"  [call-arg]']
+    assert messages == ['in <{Card}>: Missing positional argument "title" in call to "Card"  [call-arg]']
 
 
 def test_children_on_a_component_without_children(invalid_errors):
     messages = invalid_errors[line_of(INVALID, "no children field")]
-    assert messages == ['in <{Card}>: Unexpected keyword argument "children" for "CardProps"  [call-arg]']
+    assert messages == ['in <{Card}>: Unexpected keyword argument "children" for "Card"  [call-arg]']
 
 
 def test_nested_template_checks_with_lambda_parameters_in_scope(invalid_errors):
     messages = invalid_errors[line_of(INVALID, "For(names")]
     assert messages == [
-        'in <{Card}>: Argument "count" to "CardProps" has incompatible type "str"; expected "int"  [arg-type]'
+        'in <{Card}>: Argument "count" to "Card" has incompatible type "str"; expected "int"  [arg-type]'
     ]
     assert line_of(INVALID, "For(counts") not in invalid_errors
 
@@ -162,7 +153,7 @@ def test_run_prints_errors_and_fails(tmp_path, monkeypatch, capsys):
     assert main(["check", "view.py"]) == 1
     out = capsys.readouterr().out
     line = line_of(source, "view = ")
-    assert out.startswith(f'view.py:{line}: error: in <{{Card}}>: Argument "title" to "CardProps"')
+    assert out.startswith(f'view.py:{line}: error: in <{{Card}}>: Argument "title" to "Card"')
 
 
 def test_shadow_source_keeps_line_numbers():

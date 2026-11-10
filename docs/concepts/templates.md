@@ -47,7 +47,7 @@ That's the job Solid's compiler does for JSX. A production build never parses a 
 | Spread | `<input {attrs}>` | A mapping of props applied to the element. |
 | Component tag | `<{Card} title="Hi">...</{Card}>` | Calls the component; see [Components in templates](#components-in-templates). |
 
-An expression is **dynamic** when it contains a call, an attribute access, or a subscript: `{count()}`, `{count() * 2}`, `{props.title}`, `{row["label"]}`, `class={"on" if active() else ""}`. The compiler turns it into a getter, so only that text node or attribute updates when what it reads changes. A name or a constant is a value, and an [`Accessor`][wybthon.Accessor] or a lambda is still a reactive expression, so `{count}` and `{count()}` both update. Event handlers, refs, and spreads are never wrapped. The [compiler page](compiler.md#the-rule-dynamic-or-static) has the full rule.
+An expression is **dynamic** when it contains a call, an attribute access, or a subscript: `{count()}`, `{count() * 2}`, `{row["label"]}`, `class={"on" if active() else ""}`. Inside a component, a bare parameter name (`{title}`) is dynamic too, because the compiler reads it from the component's props. The compiler turns a dynamic expression into a getter, so only that text node or attribute updates when what it reads changes. Any other name or a constant is a value, and an [`Accessor`][wybthon.Accessor] or a lambda is still a reactive expression, so `{count}` and `{count()}` both update. Event handlers, refs, and spreads are never wrapped. The [compiler page](compiler.md#the-rule-dynamic-or-static) has the full rule.
 
 ```python
 count, set_count = create_signal(0)
@@ -127,7 +127,9 @@ html(t"""
 """)
 ```
 
-A call in a child position is dispatched when the template is created: a component, or a built-in such as `Show` or `For`, is built with a getter for each dynamic argument, so `Header` reads `props.user` and sees each new value of `user()`. Any other call, such as `{format_date(created())}`, becomes one reactive hole. See [Calls in a child position](compiler.md#calls-in-a-child-position).
+A call in a child position is dispatched when the template is created: a component, or a built-in such as `Show` or `For`, is built with a getter for each dynamic argument, so `Header` reads its `user` parameter and sees each new value of `user()`. Any other call, such as `{format_date(created())}`, becomes one reactive hole. See [Calls in a child position](compiler.md#calls-in-a-child-position).
+
+The content and fallback of `Show`, `Match`, `Switch`, `Loading`, `Errored`, and `client_only` are lazy when they're written as markup or a component call: `{Show(open(), Dialog(title=name()))}` builds `Dialog` only when `open()` is truthy. See [Lazy branches](compiler.md#lazy-branches).
 
 The tag form reads like the rest of the markup and passes nested markup as `children`:
 
@@ -140,7 +142,7 @@ html(t"""
 """)
 ```
 
-Attributes become keyword props (a hyphen becomes an underscore, and `class` and `for` become `class_` and `html_for`), and the content becomes the `children` prop, one child per top-level node. A dynamic attribute value, such as `title={project().name}`, is passed as a getter, the way Solid passes JSX props. Close the tag with `</{Card}>`, or self-close it with `<{Card} />`. The built-ins work the same way, called the way their signatures take children:
+Attributes become keyword props (a hyphen becomes an underscore, `class` and `for` become `class_` and `html_for`, and a handler such as `onclick`, `onClick`, or `on:confirm` becomes `on_click` or `on_confirm`, the spelling of a callback parameter and of a spread; other names starting with "on", such as `online`, are ordinary props), and the content becomes the `children` prop, which the component receives through its `children` parameter, one child per top-level node. A dynamic attribute value, such as `title={project().name}`, is passed as a getter, the way Solid passes JSX props. Close the tag with `</{Card}>`, or self-close it with `<{Card} />`. The built-ins work the same way, called the way their signatures take children:
 
 ```python
 html(t"""
@@ -152,7 +154,7 @@ html(t"""
 """)
 ```
 
-Type checkers can't see inside the template string, so the tag form's props are checked at run time in dev mode, like any component call. Use the call form when you want the checker's help.
+Type checkers can't see inside the template string, so the tag form's props are checked at run time in dev mode, like any component call. Use the call form when you want the checker's help, or run [`wyb check`](../guides/typing.md#checking-tag-props-with-wyb-check), which checks each tag as a call.
 
 ## Templates and reactivity
 

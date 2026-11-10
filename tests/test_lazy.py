@@ -5,25 +5,21 @@ import types
 import pytest
 from conftest import collect_texts
 
-from wybthon import html
+from wybthon import Children, html
 from wybthon.component import component
 from wybthon.error_boundary import Errored
 from wybthon.lazy import LazyComponent, LazyModule, lazy, lazy_module
 from wybthon.loading import Loading
-from wybthon.reactivity import ParentProps, Props, create_signal, flush, prop
+from wybthon.reactivity import create_signal, flush
 
 
 def texts(node):
     return [t for t in collect_texts(node) if t and t.strip()]
 
 
-class PageProps(Props):
-    title: str = prop(default="T")
-
-
 @component
-def Page(props: PageProps):
-    return html(t"<h2>{props.title}</h2>")
+def Page(title: str = "T"):
+    return html(t"<h2>{title}</h2>")
 
 
 @component
@@ -188,13 +184,9 @@ def test_loader_raising_synchronously_routes_to_errored(wyb, root_element):
 
 
 def test_props_and_children_pass_through_to_loaded_component(wyb, root_element):
-    class CardProps(ParentProps):
-        title: str = prop(default="")
-        class_: str | None = prop(default=None)
-
     @component
-    def Card(props: CardProps):
-        return html(t"<section class={props.class_}><h2>{props.title}</h2><div>{props.children}</div></section>")
+    def Card(title: str = "", class_: str | None = None, children: Children = None):
+        return html(t"<section class={class_}><h2>{title}</h2><div>{children}</div></section>")
 
     Lazy = lazy(lambda: Card)
     label, set_label = create_signal("one")

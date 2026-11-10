@@ -373,22 +373,19 @@ def test_template_rows_teardown_releases_handlers_bindings_and_nodes(wyb, root_e
 
 
 def test_component_template_unmount_returns_tables_to_baseline(wyb, root_element):
-    from wybthon import Props, component
+    from wybthon import component
 
     show, set_show = create_signal(False)
     count, set_count = create_signal(0)
 
-    class CardProps(Props):
-        title: str
-
     @component
-    def Card(props: CardProps):
+    def Card(title: str):
         def increment():
             set_count(lambda n: n + 1)
 
         return html(t"""
           <div class="card {count()}">
-            <h2>{props.title}</h2><button onclick={increment}>+</button><span>count {count()}</span>
+            <h2>{title}</h2><button onclick={increment}>+</button><span>count {count()}</span>
           </div>
         """)
 

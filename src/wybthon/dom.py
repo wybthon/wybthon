@@ -326,15 +326,11 @@ class Ref:
     component can forward a parent's ref and keep its own:
 
     ```python
-    class FancyInputProps(Props):
-        ref: Ref | Callable[[Element], Any] | None = None
-
-
     @component
-    def FancyInput(props: FancyInputProps):
+    def FancyInput(ref: Ref | Callable[[Element], Any] | None = None):
         local = Ref()
         on_settled(lambda: local.current.element.focus())
-        return html(t'<input type="text" ref={[local, props.ref]}>')
+        return html(t'<input type="text" ref={[local, ref]}>')
     ```
 
     Refs are assigned during mount, so read them in

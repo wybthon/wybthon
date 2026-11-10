@@ -1,6 +1,6 @@
 # The compiler
 
-Wybthon's compiler is the step that makes `{count() * 2}` reactive without a lambda around it. It rewrites every `html(t"...")` call in a module before the module runs, the way Solid's compiler rewrites JSX. This page explains what it changes, where it runs, how to see what it did, and where its rule stops. You don't need any of it to write components, but it's what to read when a template doesn't behave as you expect.
+Wybthon's compiler is the step that makes `{count() * 2}` reactive without a lambda around it. It rewrites every `html(t"...")` call in a module before the module runs, the way Solid's compiler rewrites JSX, and it turns each component's parameters into its props. This page explains what it changes, where it runs, how to see what it did, and where its rule stops. You don't need any of it to write components, but it's what to read when a template doesn't behave as you expect.
 
 ## What Solid's compiler does, and what Wybthon's does
 
@@ -11,28 +11,34 @@ Solid's compiler does two jobs with JSX:
 
 Wybthon does both for [`html`][wybthon.html] templates. A [PEP 750](https://peps.python.org/pep-0750/) t-string keeps each interpolation as a separate node in the module's syntax tree, so a small transform over Python's `ast` can make the same decisions before the module runs. There's no new syntax and no change to the language: the source you write is ordinary Python 3.14.
 
+Two more jobs fall to Wybthon's compiler because Python has no JSX. It makes a [component's parameters its props](#component-parameters), so reading `step` in a component body reads the parent's current value, the way reading `props.step` does in Solid. And it makes the [branches of flow controls lazy](#lazy-branches), so `Show`'s content is built only when it shows, as JSX children are.
+
 ```python
 @component
-def Counter(props: CounterProps):
+def Counter(step: int = 1):
     count, set_count = create_signal(0)
-    return html(t"<p>{count()} doubled is {count() * 2}, step {props.step}</p>")
+    return html(t"<p>{count()} doubled is {count() * 2}, step {step}</p>")
 ```
 
 compiles to, roughly:
 
 ```python
-@component
-def Counter(props: CounterProps):
+def Counter(__wybthon_props0__, /):
     count, set_count = create_signal(0)
     # The literal's parse tree and mount function were built at compile time.
-    return __wybthon_t0__.render((lambda: count(), lambda: count() * 2, lambda: props.step))
+    return __wybthon_t0__.render((lambda: count(), lambda: count() * 2, lambda: __wybthon_props0__.step))
+
+
+@component
+@__wybthon__.props(Counter)
+def Counter(step: int = 1): ...
 ```
 
 Each deferred expression is a slot's binding: the renderer runs it as its own computation and updates only that text node when what it read changes. The component body still runs once. The compiled call hands the literal's entry a tuple of values, one per interpolation, so no t-string is built when the template is instantiated.
 
 ## The rule: dynamic or static
 
-An interpolation is **dynamic** when its expression contains a call, an attribute access, or a subscript, not counting the bodies of lambdas inside it. Everything else (a name, a constant, a lambda, an f-string of names) is **static**. This is Solid's rule: a name can't change by itself, but a call or a member access can read a signal, a store, or a prop.
+An interpolation is **dynamic** when its expression contains a call, an attribute access, or a subscript, not counting the bodies of lambdas inside it. Everything else (a name, a constant, a lambda, an f-string of names) is **static**. This is Solid's rule: a name can't change by itself, but a call or a member access can read a signal, a store, or a prop. A component's parameter is the exception that proves it: the compiler has already rewritten `{step}` into a read of the props object (`__wybthon_props0__.step`), an attribute access, so a bare parameter name is dynamic.
 
 What a dynamic expression becomes depends on where it sits:
 
@@ -42,10 +48,10 @@ What a dynamic expression becomes depends on where it sits:
 | Call in a child position | `{Show(count() > 5, ...)}` | A component built with getters, or a reactive hole; see [Calls in a child position](#calls-in-a-child-position). |
 | Attribute | `<li class={row_class(id)}>` | A getter: a reactive binding. |
 | Part of an attribute | `<div class="card {kind()}">` | A getter for that part; the parts render as one string. |
-| Component tag attribute | `<{Card} title={user().name}>` | A getter, which the component reads through `props.title`. |
+| Component tag attribute | `<{Card} title={user().name}>` | A getter, which the component reads through its `title` parameter. |
 | Event handler | `onclick={make_handler(id)}` | Nothing: it's evaluated once. Handlers are values. |
 | `ref` | `<input ref={refs[i]}>` | Nothing: it's evaluated once. |
-| Spread | `<input {omit(props, "label")}>` | Nothing: it's evaluated once, when the template is created. |
+| Spread | `<input {attrs}>` | Nothing: it's evaluated once, when the template is created. |
 | The component in a tag | `<{views["card"]}>` | Nothing: it's evaluated once. |
 | Nested template | `{html(t"<b>{name()}</b>")}` | Nothing: it's markup, compiled in place with its own getters. |
 
@@ -68,9 +74,94 @@ __wybthon__.call(Card, lambda: Card(title=user().name), lambda: Card(title=__wyb
 - When the callee is a component, it's called with the prepared arguments: each dynamic argument is a getter, exactly what `<{Card} title={user().name}>` passes. Components are `@component` functions, [`lazy`][wybthon.lazy] and [`dynamic`][wybthon.dynamic] components, contexts, and the built-ins that render markup ([`Show`][wybthon.Show], [`For`][wybthon.For], [`Repeat`][wybthon.Repeat], [`Switch`][wybthon.Switch], [`Loading`][wybthon.Loading], [`Errored`][wybthon.Errored], [`Portal`][wybthon.Portal], and the rest). Arguments are prepared recursively, so `Errored(Loading(...))` builds its inner component the same way, and handler-named keywords (`on_close=...`) and `ref` are passed as they are.
 - Any other callee (`badge`, `str`, `Decimal`) gets the deferred call: the whole call becomes one reactive hole, which is what Solid does with a function call in JSX.
 
-A built-in that takes a callback (`For`'s row function, `Show`'s children, a `keyed` function) unwraps a getter it receives once, untracked, so `{For(rows(), make_row(kind))}` behaves as it reads.
+A built-in that takes a callback (`For`'s row function, `Show`'s keyed children function) unwraps a getter it receives once, untracked, so `{For(rows(), make_row(kind))}` behaves as it reads.
 
 A method call (`{item.upper()}`) isn't a component, and a call with no arguments (`{Header()}`) has no props to prepare, so both are ordinary dynamic expressions: a hole that makes the call.
+
+## Component parameters
+
+Inside a function decorated with [`component`][wybthon.component], every read of a parameter becomes a read of the component's props object, which returns the parent's current value and tracks it:
+
+```python
+@component
+def Card(title: str, on_close: Callable[[], None] | None = None, children: Children = None):
+    def close():
+        if on_close is not None:
+            on_close()
+
+    return html(t"<div><h2>{title}</h2>{children}<button onclick={close}>Close</button></div>")
+```
+
+- `{title}` and `{children}` in the markup are dynamic, so each becomes a binding that updates when the parent passes an expression that changes.
+- `close` reads `on_close` when it runs, so it calls the latest callback. A parameter annotated as callable (`Callable[...]` or [`Accessor`][wybthon.Accessor], alone or in a union with `None`) returns exactly what the parent passed; any other parameter unwraps an accessor or getter the parent passed into its value.
+- A parameter passed on to a child (`<{Badge} label={title}>`) stays reactive: it's a dynamic expression, so the child receives a getter.
+- A read at the top level of the body (`heading = title.upper()`) runs once, at mount, so it freezes the value, as destructuring props does in Solid. Dev mode warns when the parent passed something reactive. Write `untrack(lambda: title)` for a deliberate one-time read, such as a signal's initial value.
+
+The rewrite follows Python's scoping. A nested function, lambda, comprehension, or class sees the parameter and its reads are rewritten too, unless it binds the same name itself (as a parameter, an assignment, or a loop target), in which case its own name shadows the parameter inside it, as in ordinary Python. Defaults and decorators of nested functions run in the component's scope, so a parameter read there is rewritten. Annotations are left alone.
+
+Parameters are read-only, since a component can't change what its parent passed. Assigning one, augmented assignment (`title += "!"`), `del`, rebinding it as a `for` target, an `import`, or an `except ... as` name, and declaring it `nonlocal` in a nested function are all a `SyntaxError` when the module is compiled, with the file and line:
+
+```text
+SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name
+```
+
+A component can't take `*args`; the error asks you to declare a `children` parameter for its content. A `**rest` parameter (with any name, such as `**attrs: Any`) collects the props the component doesn't declare, as a reactive, read-only view, the same kind of view [`omit`][wybthon.omit] returns. It spreads onto an element, binding each key reactively:
+
+```python
+@component
+def Button(label: str, **attrs: Any):
+    return html(t"<button {attrs}>{label}</button>")
+```
+
+[`is_static`][wybthon.is_static] asks whether the parent passed a plain value rather than an expression. Inside a component, pass the parameter itself: the compiler rewrites `is_static(title)` into `is_static(__wybthon_props0__, "title")`, a question about the prop, which reads and tracks nothing. `is_static(view, "key")` still works for a `**rest` parameter or a [`merge`][wybthon.merge] or `omit` view.
+
+What the compiler writes keeps the original `def` with its signature (names, defaults, and annotations) and its body emptied to `...`, so the signature still describes the props to type checkers, to `inspect`, and to the dev-mode checks that reject an unknown or missing prop. The body moves to a function of one positional argument, the props object, named after the component and defined just before it. `@__wybthon__.props(Card)` attaches that function to the signature, where `@component` finds it. A docstring stays on both. A component with no parameters is left as written.
+
+A component's module must be compiled, as a template's must. In dev mode, calling an uncompiled component that has parameters raises `TypeError`, saying its module wasn't compiled; see [Where it runs](#where-it-runs).
+
+## Lazy branches
+
+In JSX, `<Show when={open()}><Dialog /></Show>` doesn't create `Dialog` until the condition is true, because JSX children compile to functions. A Python call evaluates its arguments first, so the compiler makes the same change: when a flow control's content or fallback is written as markup or a component call, it wraps it in a zero-argument function, and the branch's markup and components are built only when the branch shows.
+
+| Flow control | Lazy arguments |
+| --- | --- |
+| [`Show`][wybthon.Show] | Content (second positional argument or `children=`) and `fallback` |
+| [`Match`][wybthon.Match] | Content (second positional argument or `children=`) |
+| [`Switch`][wybthon.Switch] | `fallback` |
+| [`Loading`][wybthon.Loading] | Content (first positional argument or `children=`) and `fallback` |
+| [`Errored`][wybthon.Errored] | Content (first positional argument or `children=`) and `fallback` |
+| [`client_only`][wybthon.client_only] | Content (first positional argument or `children=`) and `fallback` |
+
+An argument counts as content when it's markup (`html(t"...")`) or a component call, meaning a call whose callee's name is capitalized, ignoring leading underscores (`Dialog(...)`, `ui.Dialog(...)`, `_Dialog(...)`):
+
+```python
+Show(open(), Dialog(title=name()), fallback=html(t"<p>Closed</p>"))
+# compiles to, roughly
+Show(
+    open(),
+    lambda *args: __wybthon__.content(Dialog(title=name()), args),
+    fallback=lambda: __wybthon_t0__.render(()),
+)
+```
+
+A capitalized call doesn't always build a component: `ErrorView("Retry")` may make an instance of a class whose `__call__` takes the arguments the flow control passes (`Show`'s accessor, `Errored`'s error and reset), or none. `__wybthon__.content` handles both: when the deferred call returns a node, that's the content, and when it returns a callable, it calls it with the flow control's arguments, as many as it takes, as the flow control would have.
+
+The rule applies anywhere in a function, in a template or in ordinary code. Inside a template, a component call in content is still prepared the way [a call in a child position](#calls-in-a-child-position) is, so the component receives getters for its dynamic props when the branch builds. Anything else (a name such as `rows`, a lambda, or a lowercase call such as `render_rows()`) is passed as written, since it may already be a function or a value built on purpose. The flow controls accept a value or a zero-argument function in these positions, so code that passes its own function keeps working.
+
+Content stays eager where deferring it would change what it means:
+
+- in the tag form (`<{Show} when={...}>content</{Show}>`), which builds its content when the tag is created;
+- at module level, where names are globals that a deferred call would read after they changed (a loop variable, a name assigned again);
+- in a class body, where a deferred function couldn't see the class's names;
+- in a call of a local name that hides the import (a nested `def Show(...)`), which isn't Wybthon's flow control.
+
+A lazy branch runs later, so it captures by value the loop variables and other names whose binding can change, the same way [a getter's names are captured](#captured-names):
+
+```python
+def rows(items):
+    return [Show(item.visible, Row(name=item.name)) for item in items]
+    # each branch is `lambda *args, item=item: __wybthon__.content(Row(name=item.name), args)`
+```
 
 ## Captured names
 
@@ -117,7 +208,7 @@ The generated names (`__wybthon__`, `__wybthon_t0__`, `__wybthon_m0__`) are dund
 You don't call the compiler yourself. It runs in each place Python code enters a Wybthon application:
 
 - **`wyb build` and `wyb dev`** run every application module through the compiler, which also checks every template, and write the compiled bytecode into the archives when the build's Python version matches the runtime's. The import hook uses that bytecode as is, so such a page never compiles anything.
-- **The import hook.** `import wybthon` installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention `wybthon` and `html` and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (`views.cpython-314.opt-wyb3.pyc`), so a plain compile cached earlier is never mistaken for a compiled one. [`wybthon.compiler.install()`][wybthon.compiler.install] and [`uninstall()`][wybthon.compiler.uninstall] add and remove it explicitly.
+- **The import hook.** `import wybthon` installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention `wybthon` and either contain a t-string and mention `html`, or mention `component` or one of `Show`, `Match`, `Switch`, `Loading`, `Errored`, and `client_only`. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (`views.cpython-314.opt-wyb4.pyc`), so a plain compile cached earlier is never mistaken for a compiled one. [`wybthon.compiler.install()`][wybthon.compiler.install] and [`uninstall()`][wybthon.compiler.uninstall] add and remove it explicitly.
 - **The pytest plugin.** Installing Wybthon registers a `pytest11` plugin that compiles test modules and `conftest.py` files alongside pytest's assertion rewriting, so templates in tests behave exactly as they do in the application. Disable it with `-p no:wybthon`.
 - **`wyb run script.py`** runs a script with its own templates compiled and the hook installed, for scripts and quick experiments. Arguments after the script are passed to it.
 - **Prerendering** imports the application after Wybthon, so the hook compiles it.
@@ -198,13 +289,13 @@ The entry's arguments are the literal's static strings, its parse tree, its moun
 
 - **A call's callee is evaluated when the template is created.** `{Card(...)}` looks up `Card` once, and the choice between building a component and making a hole is made then. To choose a component reactively, use [`dynamic`][wybthon.dynamic].
 - **`await`, `yield`, and assignment expressions stay eager.** Moving `{await load()}` or `{(n := count())}` into a lambda would change what it means, so the compiler leaves it alone and it's evaluated once.
-- **Type checkers don't see inside the markup.** The HTML around the interpolations is a string, so a tag's attributes (`<{Card} title={...}>`) aren't checked statically; dev mode checks them at run time. The interpolated expressions are ordinary Python and are checked: `{Card(title=user().name)}` is checked against `Card`'s props, and the checker sees `title` as a `str` even though the compiler passes a getter. Use the call form when you want the checker's help.
+- **Type checkers don't see inside the markup.** The HTML around the interpolations is a string, so a tag's attributes (`<{Card} title={...}>`) aren't checked statically; dev mode checks them at run time. The interpolated expressions are ordinary Python and are checked: `{Card(title=user().name)}` is checked against `Card`'s own signature, and inside `Card` the checker sees `title` as a `str` even though the compiler passes a getter. [`wyb check`](../guides/typing.md#checking-tag-props-with-wyb-check) also checks the tag form by rewriting each `<{Card} title=...>` into a `Card(title=...)` call for the type checker. Use the call form when you want the checker's help.
 - **Tracebacks point into getters you didn't write.** Each getter keeps its interpolation's source position, so the traceback names the right file and line.
 
 ## Next steps
 
 - Read [Templates](templates.md) for the markup syntax.
-- Read [Components](components.md) for how props read the getters the compiler passes.
+- Read [Components](components.md) for how parameters read the getters the compiler passes.
 - Read [Testing](../guides/testing.md) for templates under pytest.
 - Browse the [`wybthon.compiler`](../api/compiler.md) API reference.
 - Read [RFC 0004](../rfcs/0004-engine-v4.md) for the design and the alternatives considered.

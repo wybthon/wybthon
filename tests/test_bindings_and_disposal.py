@@ -12,7 +12,6 @@ from wybthon import (
     For,
     Loading,
     Match,
-    Props,
     Show,
     Switch,
     action,
@@ -587,7 +586,7 @@ def test_compiled_templates_render_a_values_tuple_and_pick_binders_ahead_of_time
 
 
 def test_the_bytecode_cache_tag_changed_with_the_compiled_output():
-    assert compiler.COMPILER_TAG == "wyb3"
+    assert compiler.COMPILER_TAG == "wyb4"
 
 
 # ---------------------------------------------------------------------------
@@ -611,19 +610,14 @@ def test_a_cloned_template_registers_only_the_nodes_python_addresses():
 # ---------------------------------------------------------------------------
 
 
-class _CardProps(Props):
-    title: str
-    count: int = 0
-
-
 @component
-def _Card(props: _CardProps):
+def _Card(title: str, count: int = 0):
     open_, set_open = create_signal(False)
 
     def toggle() -> None:
         set_open(lambda v: not v)
 
-    return html(t"""<div><h2>{props.title}</h2><p>{props.count}</p>
+    return html(t"""<div><h2>{title}</h2><p>{count}</p>
       <button onclick={toggle}>t</button>{Show(open_(), html(t"<p>details</p>"))}</div>""")
 
 

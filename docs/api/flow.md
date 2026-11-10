@@ -12,7 +12,9 @@ the primitive's own scope. All arguments are positional except the
 keyword-only options noted below. In a compiled template, a call such as
 `{Show(count() > 5, ...)}` or `{For(todos(), row)}` receives each
 dynamic argument as a getter, exactly as a component does, so the
-condition or source stays reactive without a lambda.
+condition or source stays reactive without a lambda. Content written as
+markup or a component call is made lazy, so a hidden branch is never
+built.
 
 `Show`, `For`, `Repeat`, and `Switch` mount as native **regions**, not
 wrapper components: each is one computation that selects what to
@@ -118,6 +120,13 @@ view = html(t"""
   changes.
 - `children` and `fallback` may be nodes, such as templates, or
   callables. A node branch is mounted afresh each time it's selected.
+  The compiler makes the content and fallback of `Show`, `Match`,
+  `Switch` (its fallback), and `client_only` lazy when they're written
+  as markup (`html(t"...")`) or a component call (a capitalized
+  callee): each becomes a zero-argument function, so a branch is built
+  only when it shows. Names, lambdas, and lowercase calls, like
+  `greeting` and `loading` above, are passed as written. See
+  [Lazy branches](../concepts/compiler.md#lazy-branches).
 - `Repeat` is driven purely by the count: growing mounts tail slots,
   shrinking disposes them, and nothing else is touched. `count` and
   `start` may be accessors or ints.

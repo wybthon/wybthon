@@ -122,7 +122,7 @@ _hot_track: Any = None
 # returned by a reactive hole (or passed to `render`) is ever patched; a
 # component's own output, list rows, and branch content are not. A
 # component that can't be patched reads constant props without subscribing
-# to anything (see `Props`), and a template instance that can't be patched
+# to anything (see `wybthon.reactivity._props.Props`), and a template instance that can't be patched
 # mounts a child slot's list of one node as that node (see
 # `templates._child_slot`), since no later list is compared with it. Any
 # path that patches a tree must have mounted it with this set.
@@ -1055,7 +1055,7 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     """Mount a component with the run-once model.
 
     The body runs exactly once under a fresh ownership scope, receiving
-    its typed [`Props`][wybthon.Props] instance. Its result
+    its props object (see `wybthon.reactivity._props`). Its result
     is coerced to a VNode and mounted; a reactive expression result
     becomes a single hole.
     """

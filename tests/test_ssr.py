@@ -15,7 +15,6 @@ from wybthon import (
     Match,
     NoHydration,
     Portal,
-    Props,
     Reveal,
     ServerError,
     Show,
@@ -36,7 +35,7 @@ from wybthon import (
     untrack,
 )
 from wybthon.dom import Element
-from wybthon.router import Route, RouteProps, create_router
+from wybthon.router import Route, create_router
 from wybthon.server import RenderStream, render_to_stream, render_to_string
 
 
@@ -147,13 +146,9 @@ async def settle(rounds: int = 5) -> None:
 # ---------------------------------------------------------------------------
 
 
-class CounterProps(Props):
-    start: int = 0
-
-
 @component
-def Counter(props: CounterProps):
-    count, set_count = create_signal(untrack(lambda: props.start))
+def Counter(start: int = 0):
+    count, set_count = create_signal(untrack(lambda: start))
 
     def increment(event: Any) -> None:
         set_count(lambda n: n + 1)
@@ -193,12 +188,9 @@ def test_hydration_splits_merged_text_and_restores_empty_text(wyb):
 
 
 def test_holes_fragments_and_nested_components_round_trip(wyb):
-    class LeafProps(Props):
-        text: str
-
     @component
-    def Leaf(props: LeafProps):
-        return html(t"<span>{props.text}</span>")
+    def Leaf(text: str):
+        return html(t"<span>{text}</span>")
 
     @component
     def View():
@@ -288,14 +280,9 @@ def test_unique_ids_match_between_server_and_client(wyb):
 # ---------------------------------------------------------------------------
 
 
-class BadgeProps(Props):
-    title: str
-    count: int = 0
-
-
 @component
-def Badge(props: BadgeProps):
-    return html(t"<span class={'many' if props.count > 2 else 'few'}>{props.title}: {props.count * 2}</span>")
+def Badge(title: str, count: int = 0):
+    return html(t"<span class={'many' if count > 2 else 'few'}>{title}: {count * 2}</span>")
 
 
 def test_compiled_expressions_render_and_hydrate(wyb):
@@ -432,8 +419,8 @@ def test_router_renders_the_request_url(wyb):
         return html(t"<p>home</p>")
 
     @component
-    def User(props: RouteProps):
-        return html(t"<p>user {props.params['id']}</p>")
+    def User(params: dict[str, str]):
+        return html(t"<p>user {params['id']}</p>")
 
     router = create_router([Route("/", Home), Route("/users/:id", User)])
 
@@ -468,22 +455,19 @@ def make_app(calls: list[str], *, source: Literal["server", "hybrid", "client"] 
         await asyncio.sleep(delay)
         return [f"post {uid}.{i}" for i in range(2)]
 
-    class UserProps(Props):
-        uid: int
-
     @component
-    def Posts(props: UserProps):
-        posts = create_memo(lambda: fetch_posts(props.uid), ssr_source=source)
+    def Posts(uid: int):
+        posts = create_memo(lambda: fetch_posts(uid), ssr_source=source)
         return html(t"<ul>{For(posts, lambda post, i: html(t'<li>{post}</li>'))}</ul>")
 
     @component
-    def Profile(props: UserProps):
-        user = create_memo(lambda: fetch_user(props.uid), ssr_source=source)
+    def Profile(uid: int):
+        user = create_memo(lambda: fetch_user(uid), ssr_source=source)
         return html(t"""
           <div>
             <h1>{user()["name"]}</h1>
             <{Loading} fallback={html(t"<p>Loading posts</p>")}>
-              <{Posts} uid={props.uid} />
+              <{Posts} uid={uid} />
             </{Loading}>
           </div>
         """)
@@ -554,12 +538,9 @@ def test_waterfalls_resolve_across_passes(wyb):
         await asyncio.sleep(0)
         return f"value {n}"
 
-    class InnerProps(Props):
-        n: int
-
     @component
-    def Inner(props: InnerProps):
-        text = create_memo(lambda: second(props.n))
+    def Inner(n: int):
+        text = create_memo(lambda: second(n))
         return html(t"<p>{text}</p>")
 
     @component

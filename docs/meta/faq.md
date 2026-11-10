@@ -26,7 +26,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Do I need to wrap expressions in lambdas to keep them reactive?"
 
-    No. Wybthon's compiler does what Solid's does for JSX: an interpolation that contains a call, an attribute access, or a subscript (`{count() * 2}`, `{props.title}`, `{row["label"]}`, `class={"on" if active() else ""}`) becomes a getter, so it updates when what it reads changes. Names, constants, and lambdas are passed as they are, and event handlers and refs are never wrapped. The compiler runs when a module is imported after `wybthon`, in `wyb build` and `wyb dev`, under pytest, and for scripts run with `wyb run script.py`. See [The compiler](../concepts/compiler.md).
+    No. Wybthon's compiler does what Solid's does for JSX: an interpolation that contains a call, an attribute access, or a subscript (`{count() * 2}`, `{user.name}`, `{row["label"]}`, `class={"on" if active() else ""}`) becomes a getter, so it updates when what it reads changes. A component's parameter is a prop, so `{title}` is a getter too. Other names, constants, and lambdas are passed as they are, and event handlers and refs are never wrapped. The compiler runs when a module is imported after `wybthon`, in `wyb build` and `wyb dev`, under pytest, and for scripts run with `wyb run script.py`. See [The compiler](../concepts/compiler.md).
 
     You still can't write a bare `lambda` in an interpolation: Python's grammar treats its `:` as the start of a format spec. Name an inline event handler, or wrap it in parentheses: `onclick={(lambda: set_open(False))}`.
 
@@ -89,45 +89,61 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "How do I declare a component's props?"
 
-    Subclass [`Props`][wybthon.Props], annotate its fields as you would a dataclass, and take one parameter annotated with it. Reading `props.label` returns the parent's value, tracked, as in Solid:
+    As the component function's parameters, with ordinary annotations and defaults. Reading a parameter returns the parent's current value, tracked, as reading a prop does in Solid:
 
     ```python
     from collections.abc import Callable
 
-    from wybthon import Props, component, html
-
-
-    class SaveButtonProps(Props):
-        label: str = "Save"
-        on_save: Callable[[], None] | None = None
+    from wybthon import component, html
 
 
     @component
-    def SaveButton(props: SaveButtonProps):
-        return html(t"<button onclick={props.on_save}>{props.label}</button>")
+    def SaveButton(label: str = "Save", on_save: Callable[[], None] | None = None):
+        return html(t"<button onclick={on_save}>{label}</button>")
     ```
 
-    In the template, the compiler turns `{props.label}` into a getter, so the text updates when the parent passes an expression that changes. A component with no inputs takes no parameters. See [Authoring patterns](../guides/authoring-patterns.md).
+    Wybthon's compiler rewrites every read of a parameter inside an `@component` body, so `{label}` in the template is a getter, and the text updates when the parent passes an expression that changes. A handler, memo, or effect that reads a parameter gets the latest value too. Only a read at the top level of the body, such as `text = label.upper()`, reads once. Parameters are read-only, so assigning to one is a compile-time `SyntaxError`. A component with no inputs takes no parameters. See [Authoring patterns](../guides/authoring-patterns.md).
 
 ??? question "How do I pass a callback to a component?"
 
-    Annotate the field as a callable, such as `on_save: Callable[[], None] | None = None`. Reading `props.on_save` returns the function exactly as the parent passed it. Fields with other annotations unwrap accessors and zero-argument functions on read, so a callback annotated `Any` would be called by the read itself.
+    Annotate the parameter as a callable, such as `on_save: Callable[[], None] | None = None`. Reading `on_save` returns the function exactly as the parent passed it. Parameters with other annotations (or none) unwrap accessors and zero-argument functions on read, so a callback annotated `Any` would be called by the read itself.
 
-??? question "Why does my type checker reject `prop(0)`?"
+??? question "How do I accept extra attributes and forward them?"
 
-    Most fields don't need `prop()`: write an ordinary default (`count: int = 0`). For a mutable value, use `prop(default_factory=list)`, passed by keyword; type checkers only recognize a field specifier's default when it's given by keyword.
+    Add a `**rest` parameter (any name). It collects the props the component doesn't declare as a reactive, read-only view that you can spread onto an element:
+
+    ```python
+    from typing import Any
+
+    from wybthon import component, html
+
+
+    @component
+    def Button(label: str, **attrs: Any):
+        return html(t"<button {attrs}>{label}</button>")
+    ```
+
+    [`omit`][wybthon.omit] and [`merge`][wybthon.merge] work on these views, too: `omit(attrs, "title")`, `merge({"type": "button"}, attrs)`.
+
+??? question "Why does my type checker reject `prop(0)` or `prop(default=0)`?"
+
+    [`prop`][wybthon.prop] takes one keyword argument, `default_factory=`. Most parameters don't need it: write an ordinary default (`count: int = 0`). For a mutable value, use `prop(default_factory=list)`, which runs once per component instance: `def TagList(tags: list[str] = prop(default_factory=list))`.
 
 ??? question "How do I pass children?"
 
-    Subclass [`ParentProps`][wybthon.ParentProps] and place `props.children` in the template. Callers nest markup inside a component tag, `<{Card} title="Hi"><p>Body</p></{Card}>`, or pass it with item syntax, `Card(title="Hi")[html(t"<p>Body</p>")]`, or the `children=` keyword.
+    Declare a `children` parameter, annotated with [`Children`][wybthon.Children] (`children: Children = None`), and place `{children}` in the template. Callers nest markup inside a component tag, `<{Card} title="Hi"><p>Body</p></{Card}>`, or pass it with item syntax, `Card(title="Hi")[html(t"<p>Body</p>")]`, or the `children=` keyword. Positional arguments aren't children: they bind to parameters as in any Python call, so `Card("Hi")` is `Card(title="Hi")`.
+
+??? question "How do I give a component a `key`?"
+
+    Components don't take `key=`, as in Solid. To remount a component when a value changes, show it with a keyed [`Show`][wybthon.Show]: `{Show(doc_id(), lambda id: DocumentView(doc_id=id), keyed=True)}`. For lists, use [`For`][wybthon.For], which keys rows for you.
 
 ??? question "Is the `<{Card}>` tag form type-checked?"
 
-    Not statically. Type checkers can't see inside a template string, so dev mode checks a tag's props when it runs, like any component call. When you want the checker's help, call the component inside an interpolation instead: `{Card(title=user().name)}` is checked against `CardProps` like any other call, and the compiler still passes `title` as a getter, so it stays reactive.
+    Not by a type checker on its own, which can't see inside a template string. `wyb check` type-checks tag props by checking each `<{Card} title=...>` as a `Card(title=...)` call, and dev mode checks a tag's props when it runs, like any component call. You can also call the component inside an interpolation: `{Card(title=user().name)}` is checked against `Card`'s signature like any other call, and the compiler still passes `title` as a getter, so it stays reactive.
 
 ??? question "Do I need a mypy plugin?"
 
-    No. `Props` uses PEP 681 `dataclass_transform`, so pyright, Pylance, and mypy check component calls out of the box. See the [typing guide](../guides/typing.md).
+    No. Pyright, Pylance, and mypy see an `@component` as the function itself, returning a `Node`, so a call is checked against the function's own signature, and errors name the component. Under `mypy --strict`, annotate component functions `-> Node`. See the [typing guide](../guides/typing.md).
 
 ??? question "Where are the router and forms?"
 
@@ -142,7 +158,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Why didn't my component re-run after a signal changed?"
 
-    Because components run **once** by design. A read in the component body captures the value at setup time. To stay reactive, read it in the template, where the compiler turns the expression into a getter (`<span>{count()} items</span>`, `<h2>{props.title}</h2>`), or derive it with [`create_memo`][wybthon.create_memo]. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use [`untrack`][wybthon.untrack] (`untrack(lambda: props.initial)`) when a one-time read is what you want.
+    Because components run **once** by design. A read in the component body captures the value at setup time. To stay reactive, read it in the template, where the compiler turns the expression into a getter (`<span>{count()} items</span>`, `<h2>{title.upper()}</h2>`), or derive it with [`create_memo`][wybthon.create_memo]. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use [`untrack`][wybthon.untrack] (`create_signal(untrack(lambda: initial))`) when a one-time read is what you want.
 
 ??? question "Why does my signal still show the old value right after I set it?"
 

@@ -5,18 +5,7 @@ from typing import Any
 import pytest
 from test_ssr import hydrate_from, nodes, visible
 
-from wybthon import (
-    For,
-    NoHydration,
-    ParentProps,
-    Props,
-    Show,
-    component,
-    create_signal,
-    create_store,
-    flush,
-    html,
-)
+from wybthon import Children, For, NoHydration, Show, component, create_signal, create_store, flush, html
 from wybthon.diagnostics import profile
 from wybthon.kernel import (
     OP_CLAIM_ELEMENT,
@@ -30,27 +19,23 @@ from wybthon.kernel import (
 )
 from wybthon.reactivity import _core
 from wybthon.server import render_to_string
-
-
-class CardProps(ParentProps):
-    title: str
-    count: int = 0
+from wybthon.vnode import h
 
 
 @component
-def Card(props: CardProps):
-    return html(t'<div class="card"><h3>{props.title}</h3><span>{props.count}</span>{props.children}</div>')
+def Card(title: str, count: int = 0, children: Children = None):
+    return html(t'<div class="card"><h3>{title}</h3><span>{count}</span>{children}</div>')
 
 
 @component
-def Toggle(props: CardProps):
+def Toggle(title: str, count: int = 0, children: Children = None):
     open_, set_open = create_signal(False)
 
     def flip() -> None:
         set_open(lambda v: not v)
 
     return html(t"""<div class="toggle">
-      <button onclick={flip}>{props.title}</button>{Show(open_(), html(t"<p>open</p>"))}
+      <button onclick={flip}>{title}</button>{Show(open_(), html(t"<p>open</p>"))}
     </div>""")
 
 
@@ -271,8 +256,8 @@ def test_a_show_over_children_reopens(wyb, root_element):
     open_, set_open = create_signal(True)
 
     @component
-    def Collapsible(props: ParentProps):
-        return html(t"<div>{Show(open_, lambda: props.children)}</div>")
+    def Collapsible(children: Children = None):
+        return html(t"<div>{Show(open_, lambda: children)}</div>")
 
     wyb["reconciler"].render(html(t"<main><{Collapsible}><b>hi {1}</b></{Collapsible}></main>"), root_element)
     flush()
@@ -286,15 +271,13 @@ def test_a_keyed_list_keeps_its_items_through_one_item(wyb, root_element):
     ids, set_ids = create_signal([1])
     setups: list[int] = []
 
-    class ItemProps(Props):
-        n: int
-
     @component
-    def Item(props: ItemProps):
-        setups.append(props.n)
-        return html(t"<i>{props.n}</i>")
+    def Item(n: int):
+        setups.append(n)
+        return html(t"<i>{n}</i>")
 
-    wyb["reconciler"].render(html(t"<p>{[Item(n=i, key=i) for i in ids()]}</p>"), root_element)
+    # Components take no `key`; `h()` keys any node.
+    wyb["reconciler"].render(html(t"<p>{[h(Item, {'n': i, 'key': i}) for i in ids()]}</p>"), root_element)
     flush()
     for value, expected in (([1, 2], "12"), ([1], "1"), ([2, 1], "21")):
         set_ids(value)
@@ -310,17 +293,14 @@ def test_a_re_rendered_template_keeps_its_slot_list_through_one_item(wyb, root_e
     ids, set_ids = create_signal([1])
     setups: list[int] = []
 
-    class ItemProps(Props):
-        n: int
-
     @component
-    def Item(props: ItemProps):
-        setups.append(props.n)
-        return html(t"<i>{props.n}</i>")
+    def Item(n: int):
+        setups.append(n)
+        return html(t"<i>{n}</i>")
 
     def view() -> Any:
         # A plain list in the slot (not an expression the compiler wraps).
-        items = [Item(n=i, key=i) for i in ids()]
+        items = [h(Item, {"n": i, "key": i}) for i in ids()]
         return html(t"<div>{items}</div>")
 
     wyb["reconciler"].render(html(t"<p>{view()}</p>"), root_element)
@@ -445,12 +425,9 @@ def test_an_expression_that_was_reactive_is_probed_again_once_static(wyb, root_e
 
 
 def test_component_props_are_still_checked_in_dev_mode(wyb, root_element):
-    class NameProps(Props):
-        name: str
-
     @component
-    def Named(props: NameProps):
-        return html(t"<b>{props.name}</b>")
+    def Named(name: str):
+        return html(t"<b>{name}</b>")
 
     with pytest.raises(TypeError):
         wyb["reconciler"].render(html(t"<p><{Named} nme='x' /></p>"), root_element)

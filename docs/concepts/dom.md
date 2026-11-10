@@ -62,26 +62,22 @@ The `ref` prop accepts three shapes:
 ```python
 from collections.abc import Callable
 
-from wybthon import Element, Props, Ref, component, html, on_settled
-
-
-class FancyInputProps(Props):
-    ref: Ref | Callable[[Element], None] | None = None
+from wybthon import Element, Ref, component, html, on_settled
 
 
 @component
-def FancyInput(props: FancyInputProps):
+def FancyInput(ref: Ref | Callable[[Element], None] | None = None):
     local = Ref()
     on_settled(lambda: local.current.element.focus())
-    return html(t'<input type="text" ref={[local, props.ref]}>')
+    return html(t'<input type="text" ref={[local, ref]}>')
 ```
 
 Refs pass through components like any other prop; there's no special
-forwarding API. Because the field's annotation includes a `Callable`,
-`props.ref` returns the `Ref` or callback the parent passed, untouched,
-instead of calling it. The compiler never wraps a `ref` attribute, so
-`ref={[local, props.ref]}` is evaluated once, when the element is
-created. A `None` entry in the list is ignored.
+forwarding API. Because the parameter's annotation includes a
+`Callable`, reading `ref` returns the `Ref` or callback the parent
+passed, untouched, instead of calling it. The compiler never wraps a
+`ref` attribute, so `ref={[local, ref]}` is evaluated once, when the
+element is created. A `None` entry in the list is ignored.
 
 ## Ownership and disposal order
 

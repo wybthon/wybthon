@@ -16,16 +16,12 @@ STATE = """from wybthon import create_signal
 clicks, set_clicks = create_signal(0)
 """
 
-CARD = """from wybthon import Props, component, html
-
-
-class CardProps(Props):
-    title: str
+CARD = """from wybthon import component, html
 
 
 @component
-def Card(props: CardProps):
-    return html(t"<h2>{props.title}</h2>")
+def Card(title: str):
+    return html(t"<h2>{title}</h2>")
 """
 
 APP = """from wybthon import component, create_signal, html
@@ -102,7 +98,7 @@ def test_a_component_keeps_its_identity_for_modules_that_imported_it(wyb, hotapp
     card = importlib.import_module("hotapp.card")
     original = card.Card
     with render(app.App()) as screen:
-        _edit(hotapp / "card.py", "<h2>{props.title}</h2>", "<h3>{props.title}!</h3>")
+        _edit(hotapp / "card.py", "<h2>{title}</h2>", "<h3>{title}!</h3>")
         assert _hmr.apply(["hotapp.card"]) is True
         flush()
         assert card.Card is original and app.Card is original

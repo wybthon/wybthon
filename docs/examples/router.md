@@ -3,8 +3,8 @@
 Routing with [`create_router`][wybthon.router.create_router] and [`Route`][wybthon.router.Route] from `wybthon.router`, including path parameters, search params, a nested layout, a root layout, link styling, and a lazily loaded page.
 
 ```python
-from wybthon import Errored, Loading, ParentProps, component, html, lazy
-from wybthon.router import Route, RouteProps, create_router, use_link_state, use_location
+from wybthon import Children, Errored, Loading, component, html, lazy
+from wybthon.router import Route, SearchParams, create_router, use_link_state, use_location
 
 
 @component
@@ -13,19 +13,19 @@ def Home():
 
 
 @component
-def About(props: RouteProps):
+def About(children: Children):
     # Child routes (here, /about/team) render as the layout's children.
-    return html(t"<div><h1>About</h1><p>A small routed app.</p>{props.children}</div>")
+    return html(t"<div><h1>About</h1><p>A small routed app.</p>{children}</div>")
 
 
 @component
-def User(props: RouteProps):
+def User(params: dict[str, str], search: SearchParams):
     # Navigating from /users/1 to /users/2 updates `params` in place;
     # the component isn't remounted, and only these two text nodes change.
     return html(t"""
       <div>
-        <h1>User {props.params["user_id"]}</h1>
-        <p>Tab: {props.search.get("tab", "info")}</p>
+        <h1>User {params["user_id"]}</h1>
+        <p>Tab: {search.get("tab", "info")}</p>
       </div>
     """)
 
@@ -40,15 +40,10 @@ def NotFound():
 Team = lazy(lambda: ("app.about.team", "Page"))
 
 
-class NavLinkProps(ParentProps):
-    href: str
-    end: bool = False
-
-
 @component
-def NavLink(props: NavLinkProps):
-    state = use_link_state(lambda: props.href, end=props.end)
-    return html(t"<a href={props.href} class={'active' if state.active() else ''}>{props.children}</a>")
+def NavLink(href: str, end: bool = False, children: Children = None):
+    state = use_link_state(lambda: href, end=end)
+    return html(t"<a href={href} class={'active' if state.active() else ''}>{children}</a>")
 
 
 def page_failed(err, reset):
@@ -56,7 +51,7 @@ def page_failed(err, reset):
 
 
 @component
-def Shell(props: ParentProps):
+def Shell(children: Children = None):
     return html(t"""
       <div>
         <nav>
@@ -65,7 +60,7 @@ def Shell(props: ParentProps):
           <{NavLink} href="/about/team">Team</{NavLink}>
           <{NavLink} href="/users/1?tab=posts">Ada</{NavLink}>
         </nav>
-        {Errored(Loading(props.children, fallback=html(t"<p>Loading...</p>")), fallback=page_failed)}
+        {Errored(Loading(children, fallback=html(t"<p>Loading...</p>")), fallback=page_failed)}
       </div>
     """)
 
@@ -84,6 +79,7 @@ def app():
     return router(root=Shell)
 ```
 
+- Each route's component declares the route props it uses as parameters: `User` takes `params` and `search`, the `About` layout takes `children`, and `Home` takes none. The router passes only what a component declares.
 - The links are plain anchors: the router navigates without reloading the page, and leaves modifier-key clicks and links with a `target` to the browser.
 - `Route("/about", About, children=[...])` is a layout: `/about` matches through the empty `Route("/")` child, and `/about/team` through the `Team` child. Child paths continue the parent's.
 - `router(root=Shell)` keeps `Shell` mounted on every page. The `Loading` boundary covers the lazy page's first load; later navigations are transitions that keep the old page on screen until the new one is ready.

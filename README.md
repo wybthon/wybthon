@@ -26,13 +26,13 @@
 
 ## Overview
 
-Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser through [Pyodide](https://pyodide.org/). You write run-once function components with typed props and return HTML written as Python 3.14 template strings: `html(t"<p>Count: {count()}</p>")`. Like Solid's, Wybthon's compiler turns every dynamic expression in that markup into a getter, so each one updates only the text node or attribute that reads it; components never re-render. Async data, loading and error boundaries, actions with optimistic state, draft-first stores, server rendering, a router, forms, and context are all built in, and so is the full stack: server functions, queries, and form actions, with one Python codebase for the browser and the server.
+Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser through [Pyodide](https://pyodide.org/). You write run-once function components whose parameters are their props, and return HTML written as Python 3.14 template strings: `html(t"<p>Count: {count()}</p>")`. Like Solid's, Wybthon's compiler turns every dynamic expression in that markup into a getter, so each one updates only the text node or attribute that reads it; components never re-render. Async data, loading and error boundaries, actions with optimistic state, draft-first stores, server rendering, a router, forms, and context are all built in, and so is the full stack: server functions, queries, and form actions, with one Python codebase for the browser and the server.
 
 ## Features
 
-- **A compiler, as in Solid.** Wybthon's compiler rewrites `html(t"...")` calls on Python's syntax tree before a module runs. An expression that calls something, reads an attribute, or indexes (`{count() * 2}`, `{props.title}`, `{row["label"]}`) becomes a getter, and a component call in the markup receives getters for its props, so you never wrap markup in lambdas. It runs in `wyb build` and `wyb dev`, in an import hook that `import wybthon` installs, under pytest, and for scripts with `wyb run`.
+- **A compiler, as in Solid.** Wybthon's compiler rewrites `html(t"...")` calls on Python's syntax tree before a module runs. An expression that calls something, reads an attribute, or indexes (`{count() * 2}`, `{row["label"]}`), or reads a component's parameter (`{title}`), becomes a getter, and a component call in the markup receives getters for its props, so you never wrap markup in lambdas. The content of `Show`, `Loading`, and the other flow controls is built only when it shows, as JSX children are. It runs in `wyb build` and `wyb dev`, in an import hook that `import wybthon` installs, under pytest, and for scripts with `wyb run`.
 - **HTML templates compiled ahead of time.** `html(t"...")` takes a [PEP 750](https://peps.python.org/pep-0750/) template string. The compiler parses and validates each literal and writes its mount code into the module, so a production build never parses a template or generates code at run time; every instance clones a native `<template>` with one command and fills its slots.
-- **Run-once components with typed props.** Components declare their inputs on a `Props` class with plain annotations, and `props.title` is a tracked read of the parent's value, as in Solid. Callbacks are fields annotated as callable. Pyright, Pylance, and mypy check every component call with no plugin.
+- **Run-once components whose parameters are their props.** A component is a plain function, `def Card(title: str, body: str = "", children: Children = None)`. The compiler makes every read of a parameter a tracked read of the parent's value, as reading Solid's props is, so `{title}` updates when the parent's expression changes and passing a parameter on keeps it reactive: destructuring is safe. Callbacks are parameters annotated as callable, and `**rest` collects the props a component doesn't declare. Pyright, Pylance, and mypy check every call against the function's signature with no plugin.
 - **Components and control flow cost little more than their markup.** A component tag mounts the template its body returns straight into its slot, a `Show` or `For` that fills a slot creates no DOM nodes of its own, a constant prop subscribes to nothing, and a binding that reads nothing reactive allocates no computation. `Show`, `For`, `Repeat`, and `Switch` are native regions rather than wrapper components.
 - **Signals with automatic batching.** `create_signal`, `create_memo`, and `create_effect`. Writes are staged and applied once per microtask (and at the end of every event handler), so there's no `batch()` to remember.
 - **Async-first data.** An `async def` passed to `create_memo` is the data-fetching primitive. `Loading` shows a fallback until it resolves; later refetches run as **transitions** that hold the dependent UI on the old state until the new value lands, so the screen never tears. `create_deferred` is the async memo that never holds the rest of the UI, and `is_pending`, `latest`, `resolve`, and `refresh` observe or drive async state.
@@ -70,11 +70,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from wybthon import (
+    Children,
     Errored,
     For,
     Loading,
-    ParentProps,
-    Props,
     Show,
     action,
     component,
@@ -85,20 +84,15 @@ from wybthon import (
 )
 
 
-class CounterProps(Props):
-    step: int = 1
-    on_change: Callable[[int], None] | None = None
-
-
 @component
-def Counter(props: CounterProps):
+def Counter(step: int = 1, on_change: Callable[[int], None] | None = None):
     count, set_count = create_signal(0)
 
     def increment():
-        new_count = count() + props.step
+        new_count = count() + step
         set_count(new_count)
-        if props.on_change is not None:
-            props.on_change(new_count)
+        if on_change is not None:
+            on_change(new_count)
 
     return html(t"""
       <div>
@@ -109,13 +103,9 @@ def Counter(props: CounterProps):
     """)
 
 
-class PanelProps(ParentProps):
-    title: str
-
-
 @component
-def Panel(props: PanelProps):
-    return html(t'<section class="panel"><h2>{props.title}</h2>{props.children}</section>')
+def Panel(title: str, children: Children = None):
+    return html(t'<section class="panel"><h2>{title}</h2>{children}</section>')
 
 
 @dataclass
@@ -180,7 +170,7 @@ def App():
 render(App(), "#app")
 ```
 
-Each expression that calls something or reads an attribute, such as `{count() * 2}`, `{props.title}`, or `disabled={add.pending()}`, is compiled into a getter, so it updates on its own when what it reads changes. A call in the markup such as `{Show(count() > 5, ...)}` builds the component with a getter for each dynamic argument, the way Solid passes JSX props. Event handlers are never wrapped, and named handlers read better than inline lambdas; Python needs parentheses around an inline one (`onclick={(lambda: set_open(False))}`). Use `h(tag, props, *children)` from `wybthon.vnode` when markup is built by code; see [Templates](https://wybthon.com/concepts/templates/) and [The compiler](https://wybthon.com/concepts/compiler/).
+Each expression that calls something or reads an attribute, such as `{count() * 2}` or `disabled={add.pending()}`, and each read of a component's parameter, such as `{step}`, is compiled into a getter, so it updates on its own when what it reads changes. A call in the markup such as `{Show(count() > 5, ...)}` builds the component with a getter for each dynamic argument, the way Solid passes JSX props. Event handlers are never wrapped, and named handlers read better than inline lambdas; Python needs parentheses around an inline one (`onclick={(lambda: set_open(False))}`). Use `h(tag, props, *children)` from `wybthon.vnode` when markup is built by code; see [Templates](https://wybthon.com/concepts/templates/) and [The compiler](https://wybthon.com/concepts/compiler/).
 
 In a project created with `wyb init`, return the root view from the entry function in `app/main.py` instead of calling `render`; the generated bootstrap renders it, or hydrates it when the page was prerendered. List routes under `prerender` in `wybthon.toml` to render them to HTML at build time. See [Server rendering](https://wybthon.com/concepts/server-rendering/).
 

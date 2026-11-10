@@ -48,12 +48,15 @@ class Node:
     """Anything that renders: what `html()`, `h()`, and a component call give you.
 
     Annotate component functions and node-holding variables with `Node`.
-    A component call is typed as its props class (so a type checker checks
-    its keywords), and every `Props` class is a `Node` to type checkers,
-    so `-> Node`, `list[Node]`, and `children: Node` accept it.
+    Item syntax sets a component call's children:
+    `Card(title="Hi")[html(t"<p>Body</p>")]`.
     """
 
     __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __getitem__(self, children: Any) -> Node: ...
 
 
 class VNode(Node):
@@ -154,6 +157,9 @@ class VNode(Node):
         """
         kids = flatten_children(children if isinstance(children, tuple) else (children,))
         if callable(self.tag):
+            check = getattr(self.tag, "_wyb_check_children", None)
+            if check is not None:
+                check()
             self.props["children"] = kids
         else:
             self.children = kids

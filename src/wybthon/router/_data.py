@@ -193,8 +193,8 @@ def query(fn: Any, key: str | None = None, /) -> Any:
 
 
     @component
-    def Profile(props: RouteProps):
-        user = create_memo(lambda: get_user(int(props.params["id"])))
+    def Profile(params: dict[str, str]):
+        user = create_memo(lambda: get_user(int(params["id"])))
         return html(t"<h1>{user().name}</h1>")
     ```
 

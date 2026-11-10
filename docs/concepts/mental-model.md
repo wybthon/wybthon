@@ -6,8 +6,8 @@ Wybthon is SolidJS for Python: the same fine-grained reactive model, a Pythonic 
 
 1. **Signals are the source of truth.** A signal is a `(getter, setter)` pair. Reading it inside a tracking scope subscribes that scope; writing it stages a change that becomes visible at the next flush. Every write batches; there's no `batch()`.
 2. **Derivations are lazy and glitch-free.** A memo recomputes only when it's read after a source changed, and it notifies its observers only when its value actually changed. An `async def` memo is the data-fetching primitive.
-3. **Components run once.** The body executes a single time when the component mounts and returns its markup. Inputs are declared on a typed `Props` class, and reading `props.title` returns the parent's value, tracked, as in Solid. Anything reactive lives in the markup, a memo, or an effect, never in the body itself.
-4. **The compiler makes markup reactive; holes update.** Wybthon's [compiler](compiler.md) rewrites each `html(t"...")` call before its module runs, as Solid's compiler rewrites JSX. Every dynamic expression (`{count() * 2}`, `{props.title}`) becomes a getter, and each literal becomes a native `<template>` plus a list of slots, so every instance is a clone with its slots filled. Each getter becomes a *hole* or a binding that updates only its text, attribute, or subtree. A signal change re-runs the holes that read it, never whole components.
+3. **Components run once.** The body executes a single time when the component mounts and returns its markup. Its parameters are its props: the compiler turns every read of `title` in the body into a tracked read of the parent's current value, as reading Solid's props object does. Anything reactive lives in the markup, a memo, or an effect, never in the body itself.
+4. **The compiler makes markup reactive; holes update.** Wybthon's [compiler](compiler.md) rewrites each `html(t"...")` call before its module runs, as Solid's compiler rewrites JSX. Every dynamic expression (`{count() * 2}`, or a parameter such as `{title}`) becomes a getter, and each literal becomes a native `<template>` plus a list of slots, so every instance is a clone with its slots filled. Each getter becomes a *hole* or a binding that updates only its text, attribute, or subtree. A signal change re-runs the holes that read it, never whole components.
 5. **Ownership, not lifecycle methods.** Effects, memos, cleanups, and context attach to the *owner* that was active when they were created. Disposing the owner tears everything down depth-first.
 
 ## The data flow
@@ -28,19 +28,15 @@ flowchart LR
 ## What this looks like in practice
 
 ```python
-from wybthon import Props, Show, component, create_signal, html
-
-
-class CounterProps(Props):
-    step: int = 1
+from wybthon import Show, component, create_signal, html
 
 
 @component
-def Counter(props: CounterProps):
+def Counter(step: int = 1):
     count, set_count = create_signal(0)
 
     def increment():
-        set_count(lambda n: n + props.step)
+        set_count(lambda n: n + step)
 
     return html(t"""
       <div>
@@ -57,32 +53,29 @@ What happens here:
 
 - `Counter` runs **once**. The compiler prepared the template when the module was compiled; every mount clones the compiled `<template>` with one kernel command.
 - `{count()}` and `{count() * 2}` are dynamic expressions, so each slot becomes its own reactive binding. Only those two text nodes patch when the count changes.
-- `{Show(...)}` is a call in a child position. `Show` is a built-in, so it's built once with a getter for its condition, `count() > 5`, and it swaps its branch only when the condition's truthiness flips.
-- `step` is a plain field. The parent may pass `step=5`, or an expression such as `<{Counter} step={size()} />`, which arrives as a getter; the child reads `props.step` either way.
+- `{Show(...)}` is a call in a child position. `Show` is a built-in, so it's built once with a getter for its condition, `count() > 5`, and it swaps its branch only when the condition's truthiness flips. Its content is markup, so the compiler makes it lazy: the `<p>` is built only when the count passes 5.
+- `step` is a parameter with a default. The parent may pass `step=5`, or an expression such as `<{Counter} step={size()} />`, which arrives as a getter; `step` in the handler reads the current value either way.
 - `onclick={increment}` binds a delegated handler. It takes no arguments because it doesn't need the event. It stages a functional update, the handler returns, the graph flushes, and the DOM op commits before the browser paints.
 
 ## How props become reactive
 
 ```python
-from wybthon import Props, component, html
-
-
-class GreetingProps(Props):
-    name: str
+from wybthon import component, html
 
 
 @component
-def Greeting(props: GreetingProps):
-    return html(t"<p>Hello, {props.name}!</p>")
+def Greeting(name: str):
+    return html(t"<p>Hello, {name}!</p>")
 
 
 html(t"<{Greeting} name={user().name} />")
 ```
 
 - The parent's `name={user().name}` is dynamic, so the compiler passes it as a getter, the way Solid passes a JSX prop.
-- Reading `props.name` returns the value, tracked. In the template it's dynamic too, so it becomes a binding, and when `user` changes only that text node updates.
-- Reading `props.name` at the top level of the body would freeze the value at mount, and dev mode warns about it when the parent passed something reactive. Read props in the markup, memos, and effects, or use `untrack(lambda: props.name)` when a one-time read is what you want.
-- A field annotated as callable (`on_close: Callable[[], None] | None`) returns exactly what the parent passed, so callbacks are never called by the read.
+- `name` is a parameter, so the compiler rewrites each read of it into a read of the props object, which returns the value, tracked. A bare parameter name in the template is dynamic (unlike other bare names), so `{name}` becomes a binding, and when `user` changes only that text node updates.
+- Reading `name` at the top level of the body (`greeting = f"Hello, {name}"`) would freeze the value at mount, as destructuring props does in Solid, and dev mode warns about it when the parent passed something reactive. Read parameters in the markup, handlers, memos, and effects, or use `untrack(lambda: name)` when a one-time read is what you want.
+- Parameters are read-only: assigning to one is a `SyntaxError` when the module is compiled, so a value you want to change belongs in a new name or a signal.
+- A parameter annotated as callable (`on_close: Callable[[], None] | None`) returns exactly what the parent passed, so callbacks are never called by the read.
 - A prop costs only what it needs. When the parent passes a constant (`Greeting(name="Ada")`) to a component that can never receive new props, the read subscribes to nothing.
 
 See [Components](components.md) for the full prop story.
@@ -104,7 +97,7 @@ If you're coming from React, read [Migrating from React](../guides/migrating-fro
 
 ## Where it matches Solid
 
-Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no `batch()`; async as part of the graph; `Loading`, `Reveal`, and `Errored` boundaries; draft-first stores; actions and optimistic state. Wybthon tracks Solid 2.0 RC.21, which isn't a stable release yet. The differences are the language, the markup (t-string templates in place of JSX, compiled on Python's syntax tree), typed `Props` classes in place of TypeScript prop interfaces, and a handful of names. See [Migrating from Solid](../guides/migrating-from-solid.md).
+Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no `batch()`; async as part of the graph; `Loading`, `Reveal`, and `Errored` boundaries; draft-first stores; actions and optimistic state. Wybthon tracks Solid 2.0 RC.21, which isn't a stable release yet. The differences are the language, the markup (t-string templates in place of JSX, compiled on Python's syntax tree), typed function parameters in place of TypeScript prop interfaces, and a handful of names. See [Migrating from Solid](../guides/migrating-from-solid.md).
 
 ## Next steps
 

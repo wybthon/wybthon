@@ -3,21 +3,45 @@
 Solid's compiler does two things with JSX. It turns static markup into
 templates, and it turns every dynamic expression in the markup into a
 getter, so `{count() * 2}` stays reactive without being wrapped. This
-module does both for `html(t"...")`:
+module does both for `html(t"...")`, and two more things Solid can't do
+for JavaScript: it makes a component's parameters its props, and it
+makes the branches of flow controls lazy.
 
 ```python
 @component
-def Counter(props: CounterProps):
+def Counter(label: str = "Count"):
     count, set_count = create_signal(0)
-    return html(t"<p>{count()} doubled is {count() * 2}, step {props.step}</p>")
+    return html(t"<p>{label}: {count()} doubled is {count() * 2}</p>")
 ```
 
 compiles to (roughly):
 
 ```python
-# `__wybthon_t0__` holds the literal's parse tree and mount function, built at compile time.
-return __wybthon_t0__.render((lambda: count(), lambda: count() * 2, lambda: props.step))
+def Counter(__wybthon_props0__, /):
+    count, set_count = create_signal(0)
+    # `__wybthon_t0__` holds the literal's parse tree and mount function, built at compile time.
+    return __wybthon_t0__.render(
+        (lambda: __wybthon_props0__.label, lambda: count(), lambda: count() * 2)
+    )
+
+
+@component
+@__wybthon__.props(Counter)
+def Counter(label: str = "Count"): ...
 ```
+
+**Component parameters are props.** Inside an `@component` function,
+every read of a parameter becomes a read of the component's props
+object, which returns the parent's current value and tracks it. So
+`{label}` in markup is dynamic and updates when the parent passes an
+expression that changes, a handler reads the latest value when it runs,
+and a parameter passed on to a child (`<{Child} title={label}>`) stays
+reactive. A `**rest` parameter is a reactive view of the props the
+component doesn't declare, which spreads onto an element
+(`<div {rest}>`). Parameters are read-only: assigning, deleting, or
+declaring one `nonlocal` is a `SyntaxError`. The original function is
+kept, with its body removed, so its signature (names, defaults, and
+annotations) describes the props, to type checkers and at run time.
 
 **The rule.** An interpolation is *dynamic* when its expression contains
 a call, an attribute access, or a subscript (not counting the bodies of
@@ -32,6 +56,11 @@ dynamic (a name, a constant, a lambda) is passed as is.
 `Show(...)`, `For(...)`) is built with each dynamic argument as a getter,
 the way a JSX component receives its props; any other callable
 (`badge(user())`, `str(n())`) becomes one reactive expression.
+
+**Lazy branches.** The content and fallback of `Show`, `Match`,
+`Switch`, `Loading`, `Errored`, and `client_only`, when written as markup
+or a component call, become zero-argument functions, so a branch's
+markup is built only when the branch shows, as JSX children are.
 
 **Captured names.** A getter runs later, so the names its expression reads
 from enclosing function scopes are captured by value when the template is
@@ -53,6 +82,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from collections.abc import Callable
 from functools import lru_cache
 from types import CodeType
 from typing import Any
@@ -73,6 +103,8 @@ __all__ = [
 ]
 
 _RUNTIME = "__wybthon__"
+# The arguments a flow control passes lazy content (see `_compiled.content`).
+_CONTENT_ARGS = "__wybthon_args__"
 
 # Positions whose interpolations are always passed as they are.
 _VERBATIM = frozenset({"event", "ref", "spread", "tag", "prop_event"})
@@ -87,10 +119,10 @@ def is_dynamic(node: ast.AST) -> bool:
     stack = [node]
     while stack:
         current = stack.pop()
-        if isinstance(current, (ast.Call, ast.Attribute, ast.Subscript)):
-            return True
         if isinstance(current, ast.Lambda):
             continue
+        if isinstance(current, (ast.Call, ast.Attribute, ast.Subscript)):
+            return True
         stack.extend(ast.iter_child_nodes(current))
     return False
 
@@ -100,10 +132,10 @@ def _calls(node: ast.AST) -> bool:
     stack = [node]
     while stack:
         current = stack.pop()
-        if isinstance(current, ast.Call):
-            return True
         if isinstance(current, ast.Lambda):
             continue
+        if isinstance(current, ast.Call):
+            return True
         stack.extend(ast.iter_child_nodes(current))
     return False
 
@@ -310,23 +342,399 @@ def _free_names(node: ast.AST) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def _html_names(tree: ast.Module) -> tuple[set[str], set[str]]:
-    """The names that refer to Wybthon's `html`, and the names bound to the `wybthon` package."""
-    functions: set[str] = set()
+# The public Wybthon names the compiler recognizes, by what it does with them.
+_RECOGNIZED = frozenset(
+    {"html", "component", "is_static", "Show", "Match", "Switch", "Loading", "Errored", "client_only"}
+)
+
+# The arguments of each flow control that hold content (positions, keywords):
+# markup and component calls passed there become zero-argument functions.
+_LAZY_ARGS: dict[str, tuple[tuple[int, ...], frozenset[str]]] = {
+    "Show": ((1, 2), frozenset({"children", "fallback"})),
+    "Match": ((1,), frozenset({"children"})),
+    "Switch": ((), frozenset({"fallback"})),
+    "Loading": ((0,), frozenset({"children", "fallback"})),
+    "Errored": ((0,), frozenset({"children", "fallback"})),
+    "client_only": ((0,), frozenset({"children", "fallback"})),
+}
+
+
+def _is_wybthon(module: str | None) -> bool:
+    return module is not None and (module == "wybthon" or module.startswith("wybthon."))
+
+
+def _wybthon_imports(tree: ast.Module) -> tuple[dict[str, str], set[str]]:
+    """The local names bound to the Wybthon names the compiler recognizes, and the names bound to the package.
+
+    Returns `({local name: Wybthon name}, {package names})`, so
+    `from wybthon import Show as S` maps `S` to `Show`, and `import
+    wybthon as w` makes `w.Show` recognized.
+    """
+    names: dict[str, str] = {}
     packages: set[str] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module in ("wybthon", "wybthon.templates"):
+        if isinstance(node, ast.ImportFrom) and node.level == 0 and _is_wybthon(node.module):
             for alias in node.names:
-                if alias.name == "html":
-                    functions.add(alias.asname or "html")
+                if alias.name in _RECOGNIZED:
+                    names[alias.asname or alias.name] = alias.name
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "wybthon" or alias.name.startswith("wybthon."):
+                if _is_wybthon(alias.name):
                     if alias.asname is None:
                         packages.add("wybthon")
                     elif alias.name == "wybthon":
                         packages.add(alias.asname)
-    return functions, packages
+    return names, packages
+
+
+def _html_names(tree: ast.Module) -> tuple[set[str], set[str]]:
+    """The names that refer to Wybthon's `html`, and the names bound to the `wybthon` package."""
+    names, packages = _wybthon_imports(tree)
+    return {local for local, name in names.items() if name == "html"}, packages
+
+
+def _recognized(node: ast.expr, names: dict[str, str], packages: set[str]) -> str | None:
+    """The Wybthon name an expression refers to (`Show`, `w.Show`), or `None`."""
+    if isinstance(node, ast.Name):
+        return names.get(node.id)
+    if isinstance(node, ast.Attribute) and node.attr in _RECOGNIZED:
+        root = node.value
+        while isinstance(root, ast.Attribute):
+            root = root.value
+        if isinstance(root, ast.Name) and root.id in packages:
+            return node.attr
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Component parameters
+# ---------------------------------------------------------------------------
+
+
+def _declarations(body: list[ast.stmt]) -> tuple[set[str], set[str]]:
+    """The names a function body declares `global` and `nonlocal` (not in nested scopes)."""
+    globals_: set[str] = set()
+    nonlocals: set[str] = set()
+    stack: list[ast.AST] = list(body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, ast.Global):
+            globals_.update(node.names)
+        elif isinstance(node, ast.Nonlocal):
+            nonlocals.update(node.names)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            continue
+        else:
+            stack.extend(ast.iter_child_nodes(node))
+    return globals_, nonlocals
+
+
+def _wybthon_imported(body: list[ast.stmt]) -> set[str]:
+    """The local names a scope's body binds by importing them from Wybthon (not in nested scopes)."""
+    out: set[str] = set()
+    stack: list[ast.AST] = list(body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, ast.ImportFrom) and node.level == 0 and _is_wybthon(node.module):
+            out.update(alias.asname or alias.name for alias in node.names)
+        elif not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            stack.extend(ast.iter_child_nodes(node))
+    return out
+
+
+def _declaration(body: list[ast.stmt], name: str) -> ast.AST | None:
+    """The `global` or `nonlocal` statement in a function body (not in nested scopes) naming `name`."""
+    stack: list[ast.AST] = list(reversed(body))
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.Global, ast.Nonlocal)) and name in node.names:
+            return node
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            stack.extend(reversed(list(ast.iter_child_nodes(node))))
+    return None
+
+
+def _binding(body: list[ast.stmt], name: str) -> ast.AST | None:
+    """The first node in a function body (not in nested scopes) that binds `name`, for error locations."""
+    stack: list[ast.AST] = list(reversed(body))
+    while stack:
+        node = stack.pop()
+        if isinstance(node, ast.Name) and node.id == name and not isinstance(node.ctx, ast.Load):
+            return node
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.name == name:
+                return node
+            continue
+        if isinstance(node, ast.Lambda):
+            continue
+        if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
+            (alias.asname or alias.name).split(".")[0] == name for alias in node.names
+        ):
+            return node
+        if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name == name:
+            return node
+        stack.extend(reversed(list(ast.iter_child_nodes(node))))
+    return None
+
+
+class _PropsRewriter(ast.NodeTransformer):
+    """Rewrites a component body's reads of its parameters into reads of its props object.
+
+    `active` is the set of parameter names a scope still sees: a nested
+    function, lambda, comprehension, or class that binds a name of its
+    own shadows the parameter inside it.
+    """
+
+    def __init__(self, hidden: str, params: frozenset[str], is_static: Callable[[ast.expr], bool], fail: Any) -> None:
+        self.hidden = hidden
+        self.is_static = is_static
+        self.fail = fail
+        self.stack: list[tuple[str, frozenset[str]]] = [("function", params)]
+
+    @property
+    def active(self) -> frozenset[str]:
+        return self.stack[-1][1]
+
+    def _function_active(self) -> frozenset[str]:
+        # Class bodies aren't visible to the functions defined in them.
+        for kind, active in reversed(self.stack):
+            if kind != "class":
+                return active
+        return frozenset()  # pragma: no cover - the component's own scope is a function
+
+    def _read(self, name: str, origin: ast.AST) -> ast.expr:
+        node = ast.Attribute(value=ast.Name(id=self.hidden, ctx=ast.Load()), attr=name, ctx=ast.Load())
+        return ast.copy_location(node, origin)
+
+    def _visit_list(self, nodes: list[Any]) -> list[Any]:
+        out: list[Any] = []
+        for node in nodes:
+            result = self.visit(node)
+            if result is None:
+                continue
+            if isinstance(result, list):
+                out.extend(result)
+            else:
+                out.append(result)
+        return out
+
+    def _scoped(self, kind: str, active: frozenset[str], visit: Any) -> None:
+        self.stack.append((kind, active))
+        try:
+            visit()
+        finally:
+            self.stack.pop()
+
+    def visit_Name(self, node: ast.Name) -> ast.AST:
+        if node.id not in self.active:
+            return node
+        if isinstance(node.ctx, ast.Load):
+            return self._read(node.id, node)
+        raise self.fail(node, f"{node.id!r} is a component parameter, which is a read-only prop; assign to a new name")
+
+    def visit_Call(self, node: ast.Call) -> ast.AST:
+        # `is_static(title)` (or `wybthon.is_static(title)`) asks about the parameter, not its value.
+        if (
+            self.is_static(node.func)
+            and len(node.args) == 1
+            and not node.keywords
+            and isinstance(node.args[0], ast.Name)
+            and node.args[0].id in self.active
+        ):
+            name = node.args[0].id
+            node.args = [
+                ast.copy_location(ast.Name(id=self.hidden, ctx=ast.Load()), node.args[0]),
+                ast.copy_location(ast.Constant(value=name), node.args[0]),
+            ]
+            return node
+        return self.generic_visit(node)
+
+    def _function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> ast.AST:
+        # Decorators and defaults run in the enclosing scope; annotations are left alone.
+        node.decorator_list = self._visit_list(node.decorator_list)
+        node.args.defaults = self._visit_list(node.args.defaults)
+        node.args.kw_defaults = [None if d is None else self.visit(d) for d in node.args.kw_defaults]
+        enclosing = self._function_active()
+        globals_, nonlocals = _declarations(node.body)
+        for name in sorted(nonlocals & enclosing):
+            raise self.fail(node, f"{name!r} is a component parameter, which is a read-only prop; it can't be nonlocal")
+        scope = _Scope("function")
+        _arguments(node.args, scope.names)
+        _collect(scope, node.body, False)
+        local = (scope.names - nonlocals) | globals_
+
+        def body() -> None:
+            node.body = self._visit_list(node.body)
+
+        self._scoped("function", enclosing - local, body)
+        return node
+
+    visit_FunctionDef = _function
+    visit_AsyncFunctionDef = _function
+
+    def visit_Lambda(self, node: ast.Lambda) -> ast.AST:
+        node.args.defaults = self._visit_list(node.args.defaults)
+        node.args.kw_defaults = [None if d is None else self.visit(d) for d in node.args.kw_defaults]
+        params: set[str] = set()
+        _arguments(node.args, params)
+
+        def body() -> None:
+            node.body = self.visit(node.body)
+
+        self._scoped("function", self._function_active() - params, body)
+        return node
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
+        node.decorator_list = self._visit_list(node.decorator_list)
+        node.bases = self._visit_list(node.bases)
+        node.keywords = self._visit_list(node.keywords)
+        scope = _Scope("class")
+        _collect(scope, node.body, False)
+
+        def body() -> None:
+            node.body = self._visit_list(node.body)
+
+        self._scoped("class", self.active - scope.names, body)
+        return node
+
+    def _comprehension(self, node: Any) -> ast.AST:
+        targets: set[str] = set()
+        for generator in node.generators:
+            _target_names(generator.target, targets)
+        generators = node.generators
+        generators[0].iter = self.visit(generators[0].iter)
+
+        def inner() -> None:
+            for index, generator in enumerate(generators):
+                if index:
+                    generator.iter = self.visit(generator.iter)
+                generator.ifs = self._visit_list(generator.ifs)
+            if isinstance(node, ast.DictComp):
+                node.key = self.visit(node.key)
+                node.value = self.visit(node.value)
+            else:
+                node.elt = self.visit(node.elt)
+
+        # A comprehension's body is a function scope: it doesn't see the names
+        # of a class body it's written in, only the enclosing functions'.
+        self._scoped("comprehension", self._function_active() - targets, inner)
+        return node
+
+    visit_ListComp = _comprehension
+    visit_SetComp = _comprehension
+    visit_DictComp = _comprehension
+    visit_GeneratorExp = _comprehension
+
+
+class _Components(ast.NodeTransformer):
+    """Turns each `@component` function's parameters into props (see the module docstring)."""
+
+    def __init__(self, filename: str, lines: list[str], names: dict[str, str], packages: set[str]) -> None:
+        self.filename = filename
+        self.lines = lines
+        self.names = names
+        self.packages = packages
+        self.count = 0
+
+    def fail(self, node: ast.AST, message: str) -> SyntaxError:
+        line = getattr(node, "lineno", 1)
+        text = self.lines[line - 1] if 0 < line <= len(self.lines) else ""
+        return SyntaxError(message, (self.filename, line, getattr(node, "col_offset", 0) + 1, text))
+
+    def _is_static(self, func: ast.expr) -> bool:
+        return _recognized(func, self.names, self.packages) == "is_static"
+
+    def _is_component(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        return any(_recognized(d, self.names, self.packages) == "component" for d in node.decorator_list)
+
+    def _function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> Any:
+        if not self._is_component(node):
+            return self.generic_visit(node)
+        args = node.args
+        if args.vararg is not None:
+            raise self.fail(
+                args.vararg,
+                f"Component {node.name} can't take *{args.vararg.arg}; declare a `children` parameter for its content",
+            )
+        if args.posonlyargs:
+            raise self.fail(
+                args.posonlyargs[0],
+                f"Component {node.name} can't take positional-only parameters; props are passed by name, "
+                "as a tag's attributes are, so remove the `/`",
+            )
+        params = [arg.arg for arg in (*args.args, *args.kwonlyargs)]
+        if not params and args.kwarg is None:
+            return self.generic_visit(node)
+        names = frozenset(params)
+        # Python rejects `global title` for a parameter; the split function
+        # has no parameter of that name, so reject it here.
+        globals_, nonlocals = _declarations(node.body)
+        for name in sorted((globals_ | nonlocals) & names):
+            where = _declaration(node.body, name) or node
+            statement = "nonlocal" if isinstance(where, ast.Nonlocal) else "global"
+            raise self.fail(
+                where, f"{name!r} is a component parameter, which is a read-only prop; it can't be {statement}"
+            )
+        scope = _Scope("function")
+        _collect(scope, node.body, False)
+        for name in params:
+            if name in scope.names:
+                where = _binding(node.body, name) or node
+                raise self.fail(
+                    where, f"{name!r} is a component parameter, which is a read-only prop; assign to a new name"
+                )
+        hidden = f"__wybthon_props{self.count}__"
+        self.count += 1
+        first = node.body[0]
+        docstring = (
+            isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str)
+        )
+        # The body moves to the implementation (rewritten in place); the
+        # signature keeps only a copy of the docstring.
+        signature_body: list[ast.stmt] = [copy.deepcopy(first)] if docstring else []
+        rewriter = _PropsRewriter(hidden, names, self._is_static, self.fail)
+        body = rewriter._visit_list(node.body)
+        prologue: list[ast.stmt] = []
+        if docstring:
+            prologue.append(body.pop(0))
+        if args.kwarg is not None:
+            rest = ast.Assign(
+                targets=[ast.Name(id=args.kwarg.arg, ctx=ast.Store())],
+                value=ast.Call(
+                    func=ast.Attribute(value=ast.Name(id=hidden, ctx=ast.Load()), attr="_wyb_rest", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
+                ),
+            )
+            prologue.append(ast.copy_location(rest, node))
+        implementation = ast.FunctionDef(
+            name=node.name,
+            args=ast.arguments(
+                posonlyargs=[ast.arg(arg=hidden)],
+                args=[],
+                vararg=None,
+                kwonlyargs=[],
+                kw_defaults=[],
+                kwarg=None,
+                defaults=[],
+            ),
+            body=prologue + body or [ast.Pass()],
+            decorator_list=[],
+            returns=None,
+            type_params=copy.deepcopy(node.type_params),
+        )
+        if isinstance(node, ast.AsyncFunctionDef):
+            implementation = ast.AsyncFunctionDef(**{f: getattr(implementation, f) for f in implementation._fields})  # type: ignore[assignment]
+        ast.copy_location(implementation, node)
+        signature_body.append(ast.copy_location(ast.Expr(value=ast.Constant(value=...)), node))
+        node.body = signature_body
+        marker = ast.Call(func=_runtime("props"), args=[ast.Name(id=node.name, ctx=ast.Load())], keywords=[])
+        node.decorator_list.append(ast.copy_location(marker, node))
+        # Components defined inside this one are rewritten next, with their own props name.
+        return [self.visit(implementation), node]
+
+    visit_FunctionDef = _function
+    visit_AsyncFunctionDef = _function
 
 
 def _strings(node: ast.TemplateStr) -> tuple[str, ...]:
@@ -381,9 +789,16 @@ class _Compiler(ast.NodeTransformer):
         self.lines = source_lines
         self.functions: set[str] = set()
         self.packages: set[str] = set()
+        self.names: dict[str, str] = {}
+        # Positive while visiting a template interpolation's expression (and
+        # not a function or lambda inside it): calls there are dispatched.
+        self.template_depth = 0
         # The enclosing function, class, and comprehension scopes, innermost
         # last; the module scope isn't tracked (its names are globals).
         self.scopes: list[_Scope] = []
+        # For each scope, its body (a function's or class's statements), for
+        # telling a local name from a local import of a Wybthon name.
+        self.bodies: list[list[ast.stmt]] = []
         self.header: list[ast.stmt] = []
         self.count = 0
         self.mounts = 0
@@ -392,10 +807,31 @@ class _Compiler(ast.NodeTransformer):
 
     def _visit_scope(self, node: ast.AST, scope: _Scope) -> ast.AST:
         self.scopes.append(scope)
+        body = getattr(node, "body", None)
+        self.bodies.append(body if isinstance(body, list) else [])
+        depth = self.template_depth
+        if scope.kind != "comprehension":
+            self.template_depth = 0
         try:
             return self.generic_visit(node)
         finally:
             self.scopes.pop()
+            self.bodies.pop()
+            self.template_depth = depth
+
+    def _shadowed(self, func: ast.expr) -> bool:
+        """Whether a call's callee is a local name that hides the Wybthon import of the same name."""
+        if not isinstance(func, ast.Name):
+            return False
+        innermost = True
+        for scope, body in zip(reversed(self.scopes), reversed(self.bodies), strict=True):
+            if scope.kind == "class" and not innermost:
+                continue
+            innermost = False
+            if func.id in scope.names:
+                # Rare, so the scope's imports are only looked at here.
+                return func.id not in _wybthon_imported(body)
+        return False
 
     def _function_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> _Scope:
         scope = _Scope("function")
@@ -476,7 +912,13 @@ class _Compiler(ast.NodeTransformer):
 
     def visit_Call(self, node: ast.Call) -> ast.AST:
         if not self._is_html(node, compiled=False):
-            return self.generic_visit(node)
+            lazy = _LAZY_ARGS.get(_recognized(node.func, self.names, self.packages) or "")
+            if lazy is not None and self._shadowed(node.func):
+                lazy = None
+            self.generic_visit(node)
+            if lazy is not None:
+                self._lazy(node, *lazy)
+            return node
         literal = node.args[0]
         assert isinstance(literal, ast.TemplateStr)
         strings = _strings(literal)
@@ -495,7 +937,11 @@ class _Compiler(ast.NodeTransformer):
         index = 0
         for value in literal.values:
             if isinstance(value, ast.Interpolation):
-                value.value = self.visit(value.value)
+                self.template_depth += 1
+                try:
+                    value.value = self.visit(value.value)
+                finally:
+                    self.template_depth -= 1
                 made = self._interpolation(value, positions.get(index, "child"))
                 if made:
                     deferred.append(index)
@@ -507,6 +953,49 @@ class _Compiler(ast.NodeTransformer):
         render = ast.Attribute(value=ast.Name(id=entry, ctx=ast.Load()), attr="render", ctx=ast.Load())
         call = ast.Call(func=render, args=[ast.Tuple(elts=values, ctx=ast.Load())], keywords=[])
         return ast.copy_location(call, node)
+
+    def _lazy(self, call: ast.Call, positions: tuple[int, ...], keywords: frozenset[str]) -> None:
+        """Make a flow control's content arguments zero-argument functions, so a branch is built when it shows.
+
+        The arguments have been compiled already. In a template, a
+        component call in content is prepared as one in a child position
+        is, so it still receives getters for its dynamic props. Content is
+        only deferred inside a function: names at module level are globals,
+        which a deferred call would read after they changed (a loop
+        variable, a name assigned again), and a function in a class body
+        can't see the class's names.
+        """
+        if not any(scope.kind == "function" for scope in self.scopes) or self.scopes[-1].kind == "class":
+            return
+        for index in positions:
+            if index < len(call.args) and self._content(call.args[index]):
+                call.args[index] = self._thunk(call.args[index])
+        for kw in call.keywords:
+            if kw.arg in keywords and self._content(kw.value):
+                kw.value = self._thunk(kw.value)
+
+    def _thunk(self, expr: ast.expr) -> ast.Lambda:
+        """Markup becomes `lambda: ...`; a call becomes `lambda *args: __wybthon__.content(..., args)`."""
+        if self._is_html(expr):
+            return self._lambda(expr, capture=True)
+        if self.template_depth and isinstance(expr, ast.Call) and _dispatchable(expr):
+            expr = self._dispatch(expr)
+        args = ast.Name(id=_CONTENT_ARGS, ctx=ast.Load())
+        body = ast.copy_location(ast.Call(func=_runtime("content"), args=[expr, args], keywords=[]), expr)
+        thunk = self._lambda(body, capture=True)
+        thunk.args.vararg = ast.arg(arg=_CONTENT_ARGS)
+        return thunk
+
+    def _content(self, expr: ast.expr) -> bool:
+        """Whether an argument builds content: markup, or a call of a component-like (capitalized) callee."""
+        if not isinstance(expr, ast.Call) or _unmovable(expr):
+            return False
+        if self._is_html(expr):
+            return True
+        func = expr.func
+        name = func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else ""
+        # A private component (`_Card`) counts as capitalized.
+        return name.lstrip("_")[:1].isupper()
 
     def _interpolation(self, item: ast.Interpolation, position: str) -> int:
         """Compile one interpolation; returns whether it made the slot's value a getter, and of which kind.
@@ -638,17 +1127,25 @@ class _Compiler(ast.NodeTransformer):
 
 
 def transform(tree: ast.Module, filename: str = "<unknown>", source: str = "") -> ast.Module:
-    """Compile the `html(t"...")` calls in a module's syntax tree, in place.
+    """Compile a module's components, flow controls, and `html(t"...")` calls, in place.
 
-    Returns the tree. A module that doesn't import Wybthon's `html` is
-    returned unchanged. Raises `SyntaxError` for a malformed template.
+    Returns the tree. A module that imports nothing the compiler
+    recognizes from Wybthon is returned unchanged. Raises `SyntaxError`
+    for a malformed template or a component that assigns a parameter.
     """
-    compiler = _Compiler(filename, source.splitlines())
-    compiler.functions, compiler.packages = _html_names(tree)
-    if not compiler.functions and not compiler.packages:
+    names, packages = _wybthon_imports(tree)
+    if not names and not packages:
         return tree
+    lines = source.splitlines()
+    components = _Components(filename, lines, names, packages)
+    components.visit(tree)
+    compiler = _Compiler(filename, lines)
+    compiler.functions = {local for local, name in names.items() if name == "html"}
+    compiler.packages = packages
+    compiler.names = names
     compiler.visit(tree)
-    if not compiler.header:
+    if not compiler.header and not components.count:
+        ast.fix_missing_locations(tree)
         return tree
     body = tree.body
     position = 0

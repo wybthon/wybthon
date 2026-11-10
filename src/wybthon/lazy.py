@@ -44,14 +44,14 @@ from __future__ import annotations
 import importlib
 from collections.abc import Awaitable as AbcAwaitable
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
-from .component import Component
+from .component import Component, declared_props
 from .reactivity import _core
 from .reactivity._core import Memo, run_with_owner
 from .reactivity._primitives import latest
 from .reactivity._props import Props
-from .vnode import VNode, flatten_children, h
+from .vnode import Node, VNode, h
 
 __all__ = ["lazy", "lazy_module", "LazyModule"]
 
@@ -97,6 +97,13 @@ def _coerce_component(result: Any) -> Any:
     raise TypeError(f"lazy loader returned {result!r}, which is not a component, module, or module path")
 
 
+# The key under which a lazy component's call keeps its positional arguments.
+_ARGS = "__wybthon_args__"
+# The key naming props the loaded component receives only if it declares them
+# (the route props the router passes).
+OPTIONAL = "__wybthon_optional__"
+
+
 class _LazyProps(Props):
     """Whatever the loaded component is called with, forwarded unchecked."""
 
@@ -104,7 +111,7 @@ class _LazyProps(Props):
     _wyb_internal = True
 
 
-class LazyComponent(Component):
+class LazyComponent(Component[...]):
     """A component returned by [`lazy`][wybthon.lazy]; call `.preload()` to load early."""
 
     def __init__(self, loader: Callable[[], Any]) -> None:
@@ -114,14 +121,14 @@ class LazyComponent(Component):
         self.__name__ = "lazy"
         self.__qualname__ = "lazy"
 
-    def __call__(self, *children: Any, **props: Any) -> VNode:
-        """Return a node; props are forwarded to the loaded component unchecked."""
-        if children:
-            props["children"] = flatten_children(children)
-        return VNode(self, props, [], props.get("key"))
+    def __call__(self, *args: Any, **props: Any) -> VNode:
+        """Return a node; arguments are forwarded to the loaded component, which checks them."""
+        if args:
+            props[_ARGS] = args
+        return VNode(self, props, [])
 
     def _render(self, props: dict[str, Any], patchable: bool) -> tuple[Any, Any]:
-        instance = _LazyProps._wyb_bind(props, patchable)
+        instance = cast(_LazyProps, _LazyProps._wyb_bind(props, patchable))
         return self._render_lazy(instance), instance
 
     def _load(self) -> Any:
@@ -167,12 +174,25 @@ class LazyComponent(Component):
     def _render_lazy(self, props: _LazyProps) -> Any:
         memo = self._ensure_memo()
 
-        def render() -> VNode | None:
+        def render() -> Node | None:
             comp = memo()  # raises NotReadyError while loading
             if comp is None:
                 return None
             forwarded = dict(props._raw)
+            args = forwarded.pop(_ARGS, ())
+            optional = forwarded.pop(OPTIONAL, ())
+            if optional:
+                declared = declared_props(comp)
+                if declared is not None:
+                    forwarded = {k: v for k, v in forwarded.items() if k not in optional or k in declared}
+            if isinstance(comp, Component):
+                # `h(lazy_comp, {"key": ...})` keys this node; the loaded component takes no key.
+                forwarded.pop("key", None)
+                return comp(*args, **forwarded)
             children = forwarded.pop("children", None)
+            if args:
+                given = [] if children is None else children if isinstance(children, list) else [children]
+                children = [*args, *given]
             if children is None:
                 return h(comp, forwarded)
             if not isinstance(children, list):

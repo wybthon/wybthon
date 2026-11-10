@@ -1844,8 +1844,8 @@ def _unwrap(value: Any) -> Any:
 def _read(value: Any) -> Any:
     """Read a reactive input through every accessor layer (tracked).
 
-    A compiled expression can evaluate to an accessor (`props.items` when
-    the prop is a signal): a flow control's condition or source reads
+    A compiled expression can evaluate to an accessor (a prop `items`
+    annotated `Accessor[...]`): a flow control's condition or source reads
     through it, as a binding of the same expression does.
     """
     for _ in range(8):
@@ -1883,7 +1883,7 @@ class _Getter[T](Accessor[T]):
     def __init__(self, fn: Callable[[], T], probe: bool = False) -> None:
         self.fn = fn
         # Set by the compiler when the expression makes no calls (an
-        # attribute or item read: `props.title`, `row["label"]`): such an
+        # attribute or item read: a prop, `row["label"]`): such an
         # expression often reads nothing reactive, so the renderer runs it
         # once to find out before allocating a computation (see `_probe`).
         self.probe = probe
@@ -1902,9 +1902,11 @@ class _Getter[T](Accessor[T]):
 
 
 class _PropField:
-    """Descriptor for one declared field of a [`Props`][wybthon.Props] class.
+    """Descriptor for one prop of a component's props object (see `wybthon.reactivity._props`).
 
-    Reading `props.title` returns the parent's current value, tracked:
+    The compiler turns a component's read of its parameter `title` into a
+    read of this descriptor, which returns the parent's current value,
+    tracked:
 
     - a compiler getter is always called, so `<{Card} title={user().name}>`
       reads `user().name` in whatever scope reads the prop;
@@ -3772,10 +3774,10 @@ def untrack(fn: Callable[[], Any] | None = None) -> Any:
     form for a single read).
 
     ```python
-    count, set_count = create_signal(untrack(lambda: props.initial))
+    count, set_count = create_signal(untrack(lambda: initial))
 
     with untrack():
-        start, step = props.start, props.step
+        first, increment = start, step
     ```
 
     Args:

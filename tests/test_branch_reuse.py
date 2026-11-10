@@ -5,19 +5,7 @@ from typing import Any, NamedTuple
 
 import pytest
 
-from wybthon import (
-    For,
-    Match,
-    ParentProps,
-    Show,
-    Switch,
-    component,
-    create_effect,
-    create_signal,
-    flush,
-    html,
-    on_cleanup,
-)
+from wybthon import Children, For, Match, Show, Switch, component, create_effect, create_signal, flush, html, on_cleanup
 from wybthon.testing import cleanup, fire, render
 from wybthon.vnode import h, hole
 
@@ -39,8 +27,8 @@ def test_show_reuses_compiled_node_slots(kind, fallback):
         return html(t"<strong>{value()}</strong>")
 
     @component
-    def Wrapper(props: ParentProps):
-        return html(t"<article>{props.children}</article>")
+    def Wrapper(children: Children = None):
+        return html(t"<article>{children}</article>")
 
     @component
     def App():
@@ -180,12 +168,9 @@ def test_show_reuses_a_component_that_selects_its_child(kind, container, field):
         "nested_tuple": ((child,),),
     }
 
-    class FirstProps(ParentProps):
-        body: Any = None
-
     @component
-    def First(props: FirstProps):
-        selected = props.children if field == "children" else props.body
+    def First(body: Any = None, children: Children = None):
+        selected = children if field == "children" else body
         while isinstance(selected, (list, tuple)):
             selected = selected[0]
         assert selected.key == "child"
@@ -219,18 +204,14 @@ def test_copying_node_slots_preserves_model_and_callback_identity(kind):
             model = [model, model]
     value = "hello"
 
-    class ChildProps(ParentProps):
-        data: object
-        callback: Callable[[], None]
-
     def callback():
         raise AssertionError("Copying a callback must not evaluate it")
 
     @component
-    def Child(props: ChildProps):
-        assert props.data is model
-        assert props.callback is callback
-        return props.children
+    def Child(data: object, callback: Callable[[], None], children: Children = None):
+        assert data is model
+        assert callback is callback
+        return children
 
     child = html(t"<b>{value}</b>")
     node = html(t"<div><{Child} data={model} callback={callback} children={child} /></div>")

@@ -68,31 +68,26 @@ An optimistic edit made outside an action remains until the next transition adop
 
 ## Python authoring
 
-A component declares its inputs on a [`Props`][wybthon.Props] subclass and takes one parameter annotated with that class, or no parameters when it has no inputs. Fields are plain annotations. Reading `props.label` returns the parent's current value and tracks it, whether the parent passed a value, a compiler getter, or an accessor (a signal, a memo, or a zero-argument function). A field annotated as callable (`Callable[...]` or `Accessor[...]`, alone or in a union) returns exactly what the parent passed instead, so callbacks are never called by the read. Ordinary defaults work as in a dataclass; use `prop(default_factory=...)` for mutable ones, and `untrack(lambda: props.label)` for an intentional one-time read. In dev mode (the default outside production builds), an unknown prop or a missing required one raises `TypeError` at the call site, including a template's `<{Component}>` tag. A component that can't receive new props (anything not mounted directly in a re-rendering hole's result or a render root) reads constant props without subscribing to anything; one that can is patched in place and its reads track one version signal per props instance. Both behave the same.
+A component declares its props as ordinary parameters, or no parameters when it has no inputs. The compiler rewrites every read of a parameter in the body into a read of the component's props object, which returns the parent's current value and tracks it, whether the parent passed a value, a compiler getter, or an accessor (a signal, a memo, or a zero-argument function). A parameter annotated as callable (`Callable[...]` or `Accessor[...]`, alone or in a union with `None`) returns exactly what the parent passed instead, so callbacks are never called by the read. Parameters are read-only: assigning, deleting, or rebinding one is a `SyntaxError` at compile time. Ordinary parameter defaults work; use `prop(default_factory=...)` for mutable ones, and `untrack(lambda: label)` for an intentional one-time read. A `**rest` parameter collects the props the component doesn't declare as a reactive view; `*args` isn't allowed, and content arrives through a `children` parameter. Positional arguments bind to parameters as in any Python call. In dev mode (the default outside production builds), an unknown prop or a missing required one raises `TypeError` at the call site, including a template's `<{Component}>` tag, and so does calling a component whose module wasn't compiled. A component that can't receive new props (anything not mounted directly in a re-rendering hole's result or a render root) reads constant props without subscribing to anything; one that can is patched in place and its reads track one version signal per props object. Both behave the same.
 
 ```python
 from collections.abc import Callable
 
-from wybthon import Props, component, html
-
-
-class SaveProps(Props):
-    label: str = "Save"
-    on_save: Callable[[], None] | None = None
+from wybthon import component, html
 
 
 @component
-def SaveButton(props: SaveProps):
+def SaveButton(label: str = "Save", on_save: Callable[[], None] | None = None):
     def save():
-        if props.on_save is not None:
-            props.on_save()  # the parent's callback, called only here
+        if on_save is not None:
+            on_save()  # the parent's callback, called only here
 
-    return html(t"<button onclick={save}>{props.label}</button>")
+    return html(t"<button onclick={save}>{label}</button>")
 ```
 
-Templates are compiled before they run. In a template, an interpolation whose expression contains a call, an attribute access, or a subscript is dynamic, and the compiler defers it as a getter; names, constants, and lambdas are values. Event handlers, refs, spreads, and nested `html()` templates are never deferred. A call in a child position is dispatched when the template is created: a component or built-in receives getters for its dynamic arguments, and any other call becomes one reactive hole. In dev mode, a template that reaches `html()` uncompiled raises [`TemplateError`][wybthon.TemplateError] when a dynamic expression arrived as a plain value. See [The compiler](compiler.md).
+Templates are compiled before they run. In a template, an interpolation whose expression contains a call, an attribute access, or a subscript is dynamic, and the compiler defers it as a getter; names, constants, and lambdas are values, except that a component's parameter is a props read and so is dynamic. Event handlers, refs, spreads, and nested `html()` templates are never deferred. A call in a child position is dispatched when the template is created: a component or built-in receives getters for its dynamic arguments, and any other call becomes one reactive hole. The content and fallback of `Show`, `Match`, `Switch`, `Loading`, `Errored`, and `client_only`, written as markup or a capitalized call, become zero-argument functions, so a branch is built only when it shows. In dev mode, a template that reaches `html()` uncompiled raises [`TemplateError`][wybthon.TemplateError] when a dynamic expression arrived as a plain value. See [The compiler](compiler.md).
 
-At run time, DOM positions keep one rule, in templates and `h()` trees alike: in children, attribute values, and bindings, a getter, an accessor, or a function or bound method callable without required arguments is a reactive expression, and anything else is applied once. Each reactive interpolation is its own binding, and an attribute built from several parts (`class="btn btn-{kind()}"`) is one binding. A binding whose expression makes no calls is first run under a probe and allocates no computation when it reads nothing reactive; any other binding whose first run reads nothing reactive is dropped, keeping the DOM it produced. Event handlers and refs are never reactive, and a handler may take the event or no arguments. Python forbids a bare `lambda` inside a template interpolation, so wrap an inline handler in parentheses or give it a name. Component props don't use the arity rule; the declared field type decides. [`merge`][wybthon.merge] and [`omit`][wybthon.omit] return views whose attributes read like props (`view.label` is the tracked value) and whose items are accessors, so spreading a view onto an element binds each key; a key they don't supply reads as `None`. [`is_static`][wybthon.is_static] reports whether the parent passed a key as a plain value.
+At run time, DOM positions keep one rule, in templates and `h()` trees alike: in children, attribute values, and bindings, a getter, an accessor, or a function or bound method callable without required arguments is a reactive expression, and anything else is applied once. Each reactive interpolation is its own binding, and an attribute built from several parts (`class="btn btn-{kind()}"`) is one binding. A binding whose expression makes no calls is first run under a probe and allocates no computation when it reads nothing reactive; any other binding whose first run reads nothing reactive is dropped, keeping the DOM it produced. Event handlers and refs are never reactive, and a handler may take the event or no arguments. Python forbids a bare `lambda` inside a template interpolation, so wrap an inline handler in parentheses or give it a name. Component props don't use the arity rule; the parameter's annotation decides. A `**rest` parameter, [`merge`][wybthon.merge], and [`omit`][wybthon.omit] return views whose attributes read like props (`view.label` is the tracked value) and whose items are accessors, so spreading a view onto an element binds each key; a key they don't supply reads as `None`. [`is_static`][wybthon.is_static] reports whether the parent passed a key as a plain value.
 
 ## Diagnostics and limits
 

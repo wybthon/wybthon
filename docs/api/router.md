@@ -4,13 +4,12 @@
 
 #### What's in this module
 
-Routing and the data layer, as in Solid Router 2.0. Import it from `wybthon.router`; these names aren't re-exported from `wybthon`. Only a change in *which* route matches remounts a route; param and search changes flow into the mounted component as prop updates.
+Routing and the data layer, as in Solid Router 2.0. Import it from `wybthon.router`; these names aren't re-exported from `wybthon`. A route's component declares the route props it needs (`params`, `search`, `data`, and `children`) as parameters, and the router passes only those. Only a change in *which* route matches remounts a route; param and search changes flow into the mounted component as prop updates.
 
 | Name | Description |
 | --- | --- |
 | [`create_router`][wybthon.router.create_router] | `create_router(routes, *, base="", preload_links=True)`: the app's [`Router`][wybthon.router.Router]. Call it to render: `router()`, or `router(root=Shell)` with a root layout. |
 | [`Route`][wybthon.router.Route] | `Route(path, component=None, children=[], preload=None)`. Patterns: `:id`, `:id?`, and a final `*name` catch-all. |
-| [`RouteProps`][wybthon.router.RouteProps] | Props for a route's component: `params`, `search`, `data`, and `children`. |
 | [`PreloadArgs`][wybthon.router.PreloadArgs] | What a route's `preload` receives: `params`, `location`, and `intent`. |
 | [`Outlet`][wybthon.router.Outlet] | The matched child route, inside a layout. |
 | [`file_routes`][wybthon.router.file_routes] | `file_routes("app.routes")`: a route tree from a package of route modules. |
@@ -28,8 +27,8 @@ Routing and the data layer, as in Solid Router 2.0. Import it from `wybthon.rout
 Links are plain `<a href>` elements: the router follows same-origin clicks under its base path and leaves modifier-key clicks, `target`, `download`, `rel="external"`, and other origins to the browser.
 
 ```python
-from wybthon import ParentProps, component, html
-from wybthon.router import Route, RouteProps, create_router, use_link_state
+from wybthon import Children, component, html
+from wybthon.router import Route, SearchParams, create_router, use_link_state
 
 
 @component
@@ -38,8 +37,8 @@ def Home():
 
 
 @component
-def User(props: RouteProps):
-    return html(t"<h1>User {props.params['id']} (tab={props.search.get('tab', 'info')})</h1>")
+def User(params: dict[str, str], search: SearchParams):
+    return html(t"<h1>User {params['id']} (tab={search.get('tab', 'info')})</h1>")
 
 
 @component
@@ -48,11 +47,11 @@ def NotFound():
 
 
 @component
-def Shell(props: ParentProps):
+def Shell(children: Children = None):
     users = use_link_state("/users")
     return html(t"""
       <nav><a href="/">Home</a> <a href="/users/1?tab=posts" class={"active" if users.active() else ""}>Ada</a></nav>
-      {props.children}
+      {children}
     """)
 
 

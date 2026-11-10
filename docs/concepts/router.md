@@ -3,8 +3,8 @@
 Routing with path params, search params, nested layouts, plain-anchor navigation, and preloading, as in Solid Router 2.0. Import it from `wybthon.router`; its names aren't exported from the top-level `wybthon` package.
 
 ```python
-from wybthon import ParentProps, component, html
-from wybthon.router import Route, RouteProps, create_router
+from wybthon import Children, component, html
+from wybthon.router import Route, create_router
 
 
 @component
@@ -13,8 +13,8 @@ def Home():
 
 
 @component
-def User(props: RouteProps):
-    return html(t"<h1>User {props.params['id']}</h1>")
+def User(params: dict[str, str]):
+    return html(t"<h1>User {params['id']}</h1>")
 
 
 @component
@@ -23,10 +23,10 @@ def NotFound():
 
 
 @component
-def Shell(props: ParentProps):
+def Shell(children: Children = None):
     return html(t"""
       <nav><a href="/">Home</a> <a href="/users/1">Ada</a></nav>
-      <main>{props.children}</main>
+      <main>{children}</main>
     """)
 
 
@@ -44,7 +44,7 @@ def app():
 ```
 
 - [`create_router(routes, *, base="", preload_links=True)`][wybthon.router.create_router] makes the router from its route tree. Call it once, at module level, and call the result to render it.
-- `router(root=Shell)` renders the matched route inside `Shell`, a root layout that stays mounted on every page and receives the route as `props.children`. `router()` renders the route alone.
+- `router(root=Shell)` renders the matched route inside `Shell`, a root layout that stays mounted on every page and receives the route as its `children` parameter. `router()` renders the route alone.
 - [`Route(path, component, children=[], preload=None)`][wybthon.router.Route] maps a pattern to a component.
 - Links are plain `<a href>` elements (see [Links](#links)).
 - [`navigate(path, *, replace=False, scroll=True)`][wybthon.router.navigate] changes the URL from code.
@@ -65,29 +65,32 @@ When no route matches, the router renders nothing, and a server render answers w
 
 ## Params and search params
 
-A routed component declares its inputs with [`RouteProps`][wybthon.router.RouteProps], which has four fields:
+A route's component declares the route props it needs as parameters. There are four:
 
-| Field | Value |
+| Parameter | Value |
 | --- | --- |
-| `params` | The matched path parameters, a `dict[str, str]`. |
-| `search` | The parsed query string, a [`SearchParams`][wybthon.router.SearchParams]. |
-| `data` | What the route's `preload` returned, once it resolved. |
-| `children` | The matched child route, for a layout. |
+| `params: dict[str, str]` | The matched path parameters. |
+| `search: SearchParams` | The parsed query string, a [`SearchParams`][wybthon.router.SearchParams] (import it from `wybthon.router`). |
+| `data: Any` | What the route's `preload` returned, once it resolved. |
+| `children: Children` | The matched child route, for a layout. |
 
-They're plain props: `props.params["id"]` is a tracked read of the current value. `params` and `search` update in place: navigating from `/users/1` to `/users/2` pushes a new `params` value into the mounted component instead of remounting it, so its local state survives. A route component that doesn't need them can take no parameters, like `Home` above.
+The router passes only the ones the component declares, so `User` above takes `params` alone, and a route component that needs none of them, like `Home`, takes no parameters. A [`lazy`][wybthon.lazy] component gets the same filtering once its code has loaded.
+
+They're ordinary props: `params["id"]` is a tracked read of the current value. `params` and `search` update in place: navigating from `/users/1` to `/users/2` pushes a new `params` value into the mounted component instead of remounting it, so its local state survives.
 
 ```python
 Route("/users/:id", User)
-# /users/42?tab=activity -> props.params["id"] == "42", props.search["tab"] == "activity"
+# /users/42?tab=activity -> params["id"] == "42", search["tab"] == "activity"
 ```
 
-Read them where they can update: in the template (`{props.params['id']}` is dynamic, so the compiler makes it a getter), or in a memo, an effect, or an async memo's body. Reading one at the top level of the component body reads it once, and dev mode warns.
+Read them where they can update: in the template (`{params['id']}` is dynamic, so the compiler makes it a getter), or in a memo, an effect, or an async memo's body. Reading one at the top level of the component body reads it once, and dev mode warns.
 
-Subclass `RouteProps` to add fields of your own, with defaults:
+A route component can declare parameters of its own too, as long as they have defaults, since the router never passes them:
 
 ```python
-class UserProps(RouteProps):
-    show_avatar: bool = True
+@component
+def User(params: dict[str, str], show_avatar: bool = True):
+    return html(t"<h1>User {params['id']}</h1>")
 ```
 
 `SearchParams` is a `dict` of each name's last value; `search.get_all("tag")` keeps repeated parameters in URL order.
@@ -120,12 +123,12 @@ A route with `children` is a layout. Child paths continue the parent's path, eve
 
 ```python
 @component
-def UserLayout(props: RouteProps):
+def UserLayout(params: dict[str, str], children: Children):
     return html(t"""
       <section>
-        <h1>User {props.params["id"]}</h1>
-        <nav><a href="/users/{props.params["id"]}">Overview</a> <a href="/users/{props.params["id"]}/settings">Settings</a></nav>
-        {props.children}
+        <h1>User {params["id"]}</h1>
+        <nav><a href="/users/{params["id"]}">Overview</a> <a href="/users/{params["id"]}/settings">Settings</a></nav>
+        {children}
       </section>
     """)
 
@@ -160,16 +163,12 @@ Hrefs are ordinary URLs: a path starting with `/` is a full path, and the router
 [`use_link_state(href, *, end=False)`][wybthon.router.use_link_state] says whether a link is active, for styling navigation. `active()` is true on the link's path and below it (only on the path itself with `end=True`); the base path only matches exactly. `current()` is true when the path and the query both match, which is what `aria-current="page"` means:
 
 ```python
-class NavLinkProps(ParentProps):
-    href: str
-
-
 @component
-def NavLink(props: NavLinkProps):
-    state = use_link_state(lambda: props.href)
+def NavLink(href: str, children: Children = None):
+    state = use_link_state(lambda: href)
     return html(t"""
-      <a href={props.href} class={"active" if state.active() else ""} aria-current={"page" if state.current() else None}>
-        {props.children}
+      <a href={href} class={"active" if state.active() else ""} aria-current={"page" if state.current() else None}>
+        {children}
       </a>
     """)
 ```

@@ -11,10 +11,12 @@ from collections.abc import Callable
 from typing import Any
 
 from .reactivity._core import _Getter as getter
+from .reactivity._core import _positional_count
 from .templates import Precompiled as template
 from .templates import formatted
+from .vnode import Node
 
-__all__ = ["getter", "template", "call", "fmt", "formatted", "is_component"]
+__all__ = ["getter", "template", "call", "content", "fmt", "formatted", "is_component", "props"]
 
 
 def is_component(fn: Any) -> bool:
@@ -39,6 +41,44 @@ def call(fn: Any, deferred: Callable[[], Any], prepared: Callable[[], Any]) -> A
     if getattr(fn, "__wybthon_component__", False) is True:
         return prepared()
     return getter(deferred)
+
+
+def content(value: Any, args: tuple[Any, ...]) -> Any:
+    """The content a deferred capitalized call built, once its branch shows.
+
+    The compiler turns `Show(x, Panel())` into
+    `Show(x, lambda *args: content(Panel(), args))`. The call usually
+    builds a component, whose node is the content. It may instead build a
+    callable, such as an instance of a class with `__call__`, that the
+    flow control would have called itself, as it calls any function it's
+    given: that callable is called with the flow control's arguments
+    (`Show`'s accessor, `Errored`'s error and reset), as many as it takes.
+    """
+    if type(value) is getter:
+        # In a template the call was dispatched, and a call that doesn't
+        # build a component came back as an expression: its value is the
+        # content, as a branch's slot is (see `_regions`).
+        value = value.fn()
+    if not callable(value) or isinstance(value, Node):
+        return value
+    count = _positional_count(value)
+    return value(*args) if count < 0 else value(*args[:count])
+
+
+def props[F: Callable[..., Any]](body: Callable[..., Any]) -> Callable[[F], F]:
+    """Attach a component's compiled body to the function whose signature declares its props.
+
+    The compiler keeps an `@component` function's signature on the
+    original `def` (emptied) and moves its body, with every parameter
+    read rewritten into a props read, to a function of one argument, the
+    props object. `@component` finds the body here.
+    """
+
+    def mark(signature: F) -> F:
+        signature.__wybthon_body__ = body  # type: ignore[attr-defined]
+        return signature
+
+    return mark
 
 
 def fmt(value: Any, conversion: str | None, spec: str) -> str:

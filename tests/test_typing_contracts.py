@@ -1,4 +1,4 @@
-"""Typed props and public signatures, checked by mypy and pyright with no plugin.
+"""Component signatures and public types, checked by mypy and pyright with no plugin.
 
 `tests/typing/valid.py` must type-check cleanly. Every line of
 `tests/typing/invalid.py` marked `# error: <kind>` must be reported, and no
@@ -22,19 +22,20 @@ INVALID = FIXTURES / "invalid.py"
 
 # What each checker says for each kind of mistake (a substring of its message).
 EXPECTED = {
-    "assign-prop": {"mypy": 'Property "name" defined in "StrictProps" is read-only', "pyright": "read-only"},
-    "missing-prop": {"mypy": 'Missing named argument "name"', "pyright": 'Argument missing for parameter "name"'},
-    "wrong-type": {"mypy": 'Argument "name" to "StrictProps" has incompatible type "int"', "pyright": "Literal[42]"},
+    "missing-prop": {"mypy": 'Missing positional argument "name"', "pyright": 'Argument missing for parameter "name"'},
+    "wrong-type": {"mypy": 'Argument "name" to "Greeting" has incompatible type "int"', "pyright": "Literal[42]"},
     "unknown-prop": {"mypy": 'Unexpected keyword argument "typo"', "pyright": 'No parameter named "typo"'},
     "no-props": {"mypy": 'Unexpected keyword argument "title"', "pyright": 'No parameter named "title"'},
-    # Fields are plain annotations: passing an accessor to a `str` field is a
-    # type error outside templates, and reading a field returns the value.
+    # Components take no `key`.
+    "no-key": {"mypy": 'Unexpected keyword argument "key"', "pyright": 'No parameter named "key"'},
+    # Props are plain parameters: passing an accessor to a `str` parameter is
+    # a type error outside templates, and reading one returns the value.
     "accessor-is-not-value": {
         "mypy": 'incompatible type "Accessor[str]"; expected "str"',
         "pyright": '"Accessor[str]" is not assignable to "str"',
     },
     "template-call": {
-        "mypy": 'Argument "name" to "StrictProps" has incompatible type "int"',
+        "mypy": 'Argument "name" to "Greeting" has incompatible type "int"',
         "pyright": '"int" is not assignable to "str"',
     },
     "value-is-not-accessor": {

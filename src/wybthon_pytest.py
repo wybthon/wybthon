@@ -3,8 +3,8 @@
 pytest imports test modules and `conftest.py` files through its own
 loader, which rewrites `assert` statements, so Wybthon's import hook
 never sees them. This plugin adds Wybthon's compiler to pytest's
-rewriting step: a test module's `html(t"...")` calls are compiled
-exactly as an application module's are. Its cached bytecode gets a tag
+rewriting step: a test module's components and `html(t"...")` calls
+are compiled exactly as an application module's are. Its cached bytecode gets a tag
 of its own, so a test module cached without the compiler is never reused.
 
 The plugin is a top-level module, not part of the `wybthon` package, so
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 # Matches `wybthon._hook.COMPILER_TAG` (a test checks they agree).
-COMPILER_TAG = "wyb3"
+COMPILER_TAG = "wyb4"
 
 # Installed from a wheel, pytest marks every package in the plugin's
 # distribution for assertion rewriting, Wybthon's own included. Its modules
@@ -31,8 +31,17 @@ def _is_wybthon_module(module_path: Any) -> bool:
     return module_path is not None and Path(str(module_path)).resolve().is_relative_to(_PACKAGE)
 
 
+# Matches `wybthon._hook.is_candidate` (a test checks they agree); copied so
+# loading the plugin doesn't import Wybthon.
+_NAMES = (b"component", b"Show", b"Match", b"Switch", b"Loading", b"Errored", b"client_only")
+
+
 def _is_candidate(source: bytes) -> bool:
-    return b"wybthon" in source and b"html" in source and (b't"' in source or b"t'" in source)
+    if b"wybthon" not in source:
+        return False
+    if b"html" in source and (b't"' in source or b"t'" in source):
+        return True
+    return any(name in source for name in _NAMES)
 
 
 def _install() -> None:

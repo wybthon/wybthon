@@ -153,7 +153,7 @@ def _write_app(project, body: str) -> None:
 
 ROUTED_APP = """
 from wybthon import component, html
-from wybthon.router import Route, RouteProps, create_router
+from wybthon.router import Route, create_router
 
 
 @component
@@ -167,8 +167,8 @@ def About():
 
 
 @component
-def Docs(props: RouteProps):
-    return html(t"<p>docs {props.params['page']}</p>")
+def Docs(params: dict[str, str]):
+    return html(t"<p>docs {params['page']}</p>")
 
 
 router = create_router([Route("/", Home), Route("/about", About), Route("/docs/:page", Docs)])
