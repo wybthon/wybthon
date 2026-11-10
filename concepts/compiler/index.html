@@ -769,6 +769,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#component-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lazy-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lazy branches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#captured-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2864,6 +2886,8 @@
       
         
       
+        
+      
     
     
     
@@ -3228,6 +3252,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3508,6 +3560,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#component-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lazy-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lazy branches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#captured-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3629,7 +3703,7 @@
 
 
 <h1 id="the-compiler">The compiler<a class="headerlink" href="#the-compiler" title="Permanent link">&para;</a></h1>
-<p>Wybthon's compiler is the step that makes <code>{count() * 2}</code> reactive without a lambda around it. It rewrites every <code>html(t"...")</code> call in a module before the module runs, the way Solid's compiler rewrites JSX. This page explains what it changes, where it runs, how to see what it did, and where its rule stops. You don't need any of it to write components, but it's what to read when a template doesn't behave as you expect.</p>
+<p>Wybthon's compiler is the step that makes <code>{count() * 2}</code> reactive without a lambda around it. It rewrites every <code>html(t"...")</code> call in a module before the module runs, the way Solid's compiler rewrites JSX, and it turns each component's parameters into its props. This page explains what it changes, where it runs, how to see what it did, and where its rule stops. You don't need any of it to write components, but it's what to read when a template doesn't behave as you expect.</p>
 <h2 id="what-solids-compiler-does-and-what-wybthons-does">What Solid's compiler does, and what Wybthon's does<a class="headerlink" href="#what-solids-compiler-does-and-what-wybthons-does" title="Permanent link">&para;</a></h2>
 <p>Solid's compiler does two jobs with JSX:</p>
 <ol>
@@ -3637,21 +3711,26 @@
 <li>It turns every dynamic expression in the markup into a getter, so <code>{count() * 2}</code> re-runs when <code>count</code> changes, and a component receives its props as getters it reads later.</li>
 </ol>
 <p>Wybthon does both for <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates. A <a href="https://peps.python.org/pep-0750/">PEP 750</a> t-string keeps each interpolation as a separate node in the module's syntax tree, so a small transform over Python's <code>ast</code> can make the same decisions before the module runs. There's no new syntax and no change to the language: the source you write is ordinary Python 3.14.</p>
+<p>Two more jobs fall to Wybthon's compiler because Python has no JSX. It makes a <a href="#component-parameters">component's parameters its props</a>, so reading <code>step</code> in a component body reads the parent's current value, the way reading <code>props.step</code> does in Solid. And it makes the <a href="#lazy-branches">branches of flow controls lazy</a>, so <code>Show</code>'s content is built only when it shows, as JSX children are.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@component</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> doubled is </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">, step </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> doubled is </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">, step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>compiles to, roughly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@component</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="c1"># The literal's parse tree and mount function were built at compile time.</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">return</span> <span class="n">__wybthon_t0__</span><span class="o">.</span><span class="n">render</span><span class="p">((</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">(),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">step</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">__wybthon_props0__</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="c1"># The literal's parse tree and mount function were built at compile time.</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">return</span> <span class="n">__wybthon_t0__</span><span class="o">.</span><span class="n">render</span><span class="p">((</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">(),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">__wybthon_props0__</span><span class="o">.</span><span class="n">step</span><span class="p">))</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nd">@component</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nd">@__wybthon__</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span> <span class="o">...</span>
 </span></code></pre></div>
 <p>Each deferred expression is a slot's binding: the renderer runs it as its own computation and updates only that text node when what it read changes. The component body still runs once. The compiled call hands the literal's entry a tuple of values, one per interpolation, so no t-string is built when the template is instantiated.</p>
 <h2 id="the-rule-dynamic-or-static">The rule: dynamic or static<a class="headerlink" href="#the-rule-dynamic-or-static" title="Permanent link">&para;</a></h2>
-<p>An interpolation is <strong>dynamic</strong> when its expression contains a call, an attribute access, or a subscript, not counting the bodies of lambdas inside it. Everything else (a name, a constant, a lambda, an f-string of names) is <strong>static</strong>. This is Solid's rule: a name can't change by itself, but a call or a member access can read a signal, a store, or a prop.</p>
+<p>An interpolation is <strong>dynamic</strong> when its expression contains a call, an attribute access, or a subscript, not counting the bodies of lambdas inside it. Everything else (a name, a constant, a lambda, an f-string of names) is <strong>static</strong>. This is Solid's rule: a name can't change by itself, but a call or a member access can read a signal, a store, or a prop. A component's parameter is the exception that proves it: the compiler has already rewritten <code>{step}</code> into a read of the props object (<code>__wybthon_props0__.step</code>), an attribute access, so a bare parameter name is dynamic.</p>
 <p>What a dynamic expression becomes depends on where it sits:</p>
 <table>
 <thead>
@@ -3685,7 +3764,7 @@
 <tr>
 <td>Component tag attribute</td>
 <td><code>&lt;{Card} title={user().name}&gt;</code></td>
-<td>A getter, which the component reads through <code>props.title</code>.</td>
+<td>A getter, which the component reads through its <code>title</code> parameter.</td>
 </tr>
 <tr>
 <td>Event handler</td>
@@ -3699,7 +3778,7 @@
 </tr>
 <tr>
 <td>Spread</td>
-<td><code>&lt;input {omit(props, "label")}&gt;</code></td>
+<td><code>&lt;input {attrs}&gt;</code></td>
 <td>Nothing: it's evaluated once, when the template is created.</td>
 </tr>
 <tr>
@@ -3727,26 +3806,113 @@
 <li>When the callee is a component, it's called with the prepared arguments: each dynamic argument is a getter, exactly what <code>&lt;{Card} title={user().name}&gt;</code> passes. Components are <code>@component</code> functions, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic</code></a> components, contexts, and the built-ins that render markup (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Repeat&lt;/span&gt;" href="../../api/wybthon/#wybthon.Repeat"><code>Repeat</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../../api/wybthon/#wybthon.Switch"><code>Switch</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a>, and the rest). Arguments are prepared recursively, so <code>Errored(Loading(...))</code> builds its inner component the same way, and handler-named keywords (<code>on_close=...</code>) and <code>ref</code> are passed as they are.</li>
 <li>Any other callee (<code>badge</code>, <code>str</code>, <code>Decimal</code>) gets the deferred call: the whole call becomes one reactive hole, which is what Solid does with a function call in JSX.</li>
 </ul>
-<p>A built-in that takes a callback (<code>For</code>'s row function, <code>Show</code>'s children, a <code>keyed</code> function) unwraps a getter it receives once, untracked, so <code>{For(rows(), make_row(kind))}</code> behaves as it reads.</p>
+<p>A built-in that takes a callback (<code>For</code>'s row function, <code>Show</code>'s keyed children function) unwraps a getter it receives once, untracked, so <code>{For(rows(), make_row(kind))}</code> behaves as it reads.</p>
 <p>A method call (<code>{item.upper()}</code>) isn't a component, and a call with no arguments (<code>{Header()}</code>) has no props to prepare, so both are ordinary dynamic expressions: a hole that makes the call.</p>
+<h2 id="component-parameters">Component parameters<a class="headerlink" href="#component-parameters" title="Permanent link">&para;</a></h2>
+<p>Inside a function decorated with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>component</code></a>, every read of a parameter becomes a read of the component's props object, which returns the parent's current value and tracks it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@component</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">on_close</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">():</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="k">if</span> <span class="n">on_close</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>            <span class="n">on_close</span><span class="p">()</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h2&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h2&gt;</span><span class="si">{</span><span class="n">children</span><span class="si">}</span><span class="s2">&lt;button onclick=</span><span class="si">{</span><span class="n">close</span><span class="si">}</span><span class="s2">&gt;Close&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><code>{title}</code> and <code>{children}</code> in the markup are dynamic, so each becomes a binding that updates when the parent passes an expression that changes.</li>
+<li><code>close</code> reads <code>on_close</code> when it runs, so it calls the latest callback. A parameter annotated as callable (<code>Callable[...]</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor</code></a>, alone or in a union with <code>None</code>) returns exactly what the parent passed; any other parameter unwraps an accessor or getter the parent passed into its value.</li>
+<li>A parameter passed on to a child (<code>&lt;{Badge} label={title}&gt;</code>) stays reactive: it's a dynamic expression, so the child receives a getter.</li>
+<li>A read at the top level of the body (<code>heading = title.upper()</code>) runs once, at mount, so it freezes the value, as destructuring props does in Solid. Dev mode warns when the parent passed something reactive. Write <code>untrack(lambda: title)</code> for a deliberate one-time read, such as a signal's initial value.</li>
+</ul>
+<p>The rewrite follows Python's scoping. A nested function, lambda, comprehension, or class sees the parameter and its reads are rewritten too, unless it binds the same name itself (as a parameter, an assignment, or a loop target), in which case its own name shadows the parameter inside it, as in ordinary Python. Defaults and decorators of nested functions run in the component's scope, so a parameter read there is rewritten. Annotations are left alone.</p>
+<p>Parameters are read-only, since a component can't change what its parent passed. Assigning one, augmented assignment (<code>title += "!"</code>), <code>del</code>, rebinding it as a <code>for</code> target, an <code>import</code>, or an <code>except ... as</code> name, and declaring it <code>nonlocal</code> in a nested function are all a <code>SyntaxError</code> when the module is compiled, with the file and line:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name
+</span></code></pre></div>
+<p>A component can't take <code>*args</code>; the error asks you to declare a <code>children</code> parameter for its content. A <code>**rest</code> parameter (with any name, such as <code>**attrs: Any</code>) collects the props the component doesn't declare, as a reactive, read-only view, the same kind of view <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> returns. It spreads onto an element, binding each key reactively:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@component</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button </span><span class="si">{</span><span class="n">attrs</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static</code></a> asks whether the parent passed a plain value rather than an expression. Inside a component, pass the parameter itself: the compiler rewrites <code>is_static(title)</code> into <code>is_static(__wybthon_props0__, "title")</code>, a question about the prop, which reads and tracks nothing. <code>is_static(view, "key")</code> still works for a <code>**rest</code> parameter or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> or <code>omit</code> view.</p>
+<p>What the compiler writes keeps the original <code>def</code> with its signature (names, defaults, and annotations) and its body emptied to <code>...</code>, so the signature still describes the props to type checkers, to <code>inspect</code>, and to the dev-mode checks that reject an unknown or missing prop. The body moves to a function of one positional argument, the props object, named after the component and defined just before it. <code>@__wybthon__.props(Card)</code> attaches that function to the signature, where <code>@component</code> finds it. A docstring stays on both. A component with no parameters is left as written.</p>
+<p>A component's module must be compiled, as a template's must. In dev mode, calling an uncompiled component that has parameters raises <code>TypeError</code>, saying its module wasn't compiled; see <a href="#where-it-runs">Where it runs</a>.</p>
+<h2 id="lazy-branches">Lazy branches<a class="headerlink" href="#lazy-branches" title="Permanent link">&para;</a></h2>
+<p>In JSX, <code>&lt;Show when={open()}&gt;&lt;Dialog /&gt;&lt;/Show&gt;</code> doesn't create <code>Dialog</code> until the condition is true, because JSX children compile to functions. A Python call evaluates its arguments first, so the compiler makes the same change: when a flow control's content or fallback is written as markup or a component call, it wraps it in a zero-argument function, and the branch's markup and components are built only when the branch shows.</p>
+<table>
+<thead>
+<tr>
+<th>Flow control</th>
+<th>Lazy arguments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a></td>
+<td>Content (second positional argument or <code>children=</code>) and <code>fallback</code></td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Match&lt;/span&gt;" href="../../api/wybthon/#wybthon.Match"><code>Match</code></a></td>
+<td>Content (second positional argument or <code>children=</code>)</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../../api/wybthon/#wybthon.Switch"><code>Switch</code></a></td>
+<td><code>fallback</code></td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a></td>
+<td>Content (first positional argument or <code>children=</code>) and <code>fallback</code></td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a></td>
+<td>Content (first positional argument or <code>children=</code>) and <code>fallback</code></td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;client_only&lt;/span&gt;" href="../../api/wybthon/#wybthon.client_only"><code>client_only</code></a></td>
+<td>Content (first positional argument or <code>children=</code>) and <code>fallback</code></td>
+</tr>
+</tbody>
+</table>
+<p>An argument counts as content when it's markup (<code>html(t"...")</code>) or a component call, meaning a call whose callee's name is capitalized, ignoring leading underscores (<code>Dialog(...)</code>, <code>ui.Dialog(...)</code>, <code>_Dialog(...)</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Show</span><span class="p">(</span><span class="nb">open</span><span class="p">(),</span> <span class="n">Dialog</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">name</span><span class="p">()),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Closed&lt;/p&gt;"</span><span class="p">))</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># compiles to, roughly</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">Show</span><span class="p">(</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="nb">open</span><span class="p">(),</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">__wybthon__</span><span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="n">Dialog</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">name</span><span class="p">()),</span> <span class="n">args</span><span class="p">),</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">__wybthon_t0__</span><span class="o">.</span><span class="n">render</span><span class="p">(()),</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>A capitalized call doesn't always build a component: <code>ErrorView("Retry")</code> may make an instance of a class whose <code>__call__</code> takes the arguments the flow control passes (<code>Show</code>'s accessor, <code>Errored</code>'s error and reset), or none. <code>__wybthon__.content</code> handles both: when the deferred call returns a node, that's the content, and when it returns a callable, it calls it with the flow control's arguments, as many as it takes, as the flow control would have.</p>
+<p>The rule applies anywhere in a function, in a template or in ordinary code. Inside a template, a component call in content is still prepared the way <a href="#calls-in-a-child-position">a call in a child position</a> is, so the component receives getters for its dynamic props when the branch builds. Anything else (a name such as <code>rows</code>, a lambda, or a lowercase call such as <code>render_rows()</code>) is passed as written, since it may already be a function or a value built on purpose. The flow controls accept a value or a zero-argument function in these positions, so code that passes its own function keeps working.</p>
+<p>Content stays eager where deferring it would change what it means:</p>
+<ul>
+<li>in the tag form (<code>&lt;{Show} when={...}&gt;content&lt;/{Show}&gt;</code>), which builds its content when the tag is created;</li>
+<li>at module level, where names are globals that a deferred call would read after they changed (a loop variable, a name assigned again);</li>
+<li>in a class body, where a deferred function couldn't see the class's names;</li>
+<li>in a call of a local name that hides the import (a nested <code>def Show(...)</code>), which isn't Wybthon's flow control.</li>
+</ul>
+<p>A lazy branch runs later, so it captures by value the loop variables and other names whose binding can change, the same way <a href="#captured-names">a getter's names are captured</a>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">rows</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">Show</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">visible</span><span class="p">,</span> <span class="n">Row</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">]</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="c1"># each branch is `lambda *args, item=item: __wybthon__.content(Row(name=item.name), args)`</span>
+</span></code></pre></div>
 <h2 id="captured-names">Captured names<a class="headerlink" href="#captured-names" title="Permanent link">&para;</a></h2>
 <p>A getter runs later, possibly after a loop variable has moved on. So the compiler captures, by value, every name the expression reads from an enclosing function scope whose binding can change: loop and comprehension variables, names assigned more than once or with <code>+=</code> or <code>:=</code>, and <code>nonlocal</code> names. They become keyword-only defaults of the getter's lambda:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">rows</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">))</span>  <span class="c1"># the getter is `lambda *, item=item: item.name`</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="n">out</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">rows</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">))</span>  <span class="c1"># the getter is `lambda *, item=item: item.name`</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">return</span> <span class="n">out</span>
 </span></code></pre></div>
 <p>Each row reads its own <code>item</code>, so Python's late binding never shows through a template. A name bound once is read through its closure as usual, and templates in class bodies can read class-level names.</p>
 <h2 id="conversions-and-format-specs">Conversions and format specs<a class="headerlink" href="#conversions-and-format-specs" title="Permanent link">&para;</a></h2>
 <p><code>{price():.2f}</code> and <code>{name()!r}</code> fold into the getter, so the hole renders the formatted text and re-formats it when the value changes. A static value with a format spec is formatted once.</p>
 <h2 id="precompiled-templates">Precompiled templates<a class="headerlink" href="#precompiled-templates" title="Permanent link">&para;</a></h2>
 <p>The compiler parses and validates each literal with the same code <code>html()</code> uses at run time, so a malformed template is an error when the module is compiled, with the file and line:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>  File "app/views.py", line 5
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    return html(t"&lt;i&gt;{count()} &lt;input {attrs}&gt;")
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>SyntaxError: Unclosed tag &lt;i&gt;
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  in template: t'&lt;i&gt;{...} &lt;input {...}&gt;'
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  File "app/views.py", line 5
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    return html(t"&lt;i&gt;{count()} &lt;input {attrs}&gt;")
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>SyntaxError: Unclosed tag &lt;i&gt;
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  in template: t'&lt;i&gt;{...} &lt;input {...}&gt;'
 </span></code></pre></div>
 <p>It then writes three things at the top of the module:</p>
 <ul>
@@ -3760,7 +3926,7 @@
 <p>You don't call the compiler yourself. It runs in each place Python code enters a Wybthon application:</p>
 <ul>
 <li><strong><code>wyb build</code> and <code>wyb dev</code></strong> run every application module through the compiler, which also checks every template, and write the compiled bytecode into the archives when the build's Python version matches the runtime's. The import hook uses that bytecode as is, so such a page never compiles anything.</li>
-<li><strong>The import hook.</strong> <code>import wybthon</code> installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention <code>wybthon</code> and <code>html</code> and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (<code>views.cpython-314.opt-wyb3.pyc</code>), so a plain compile cached earlier is never mistaken for a compiled one. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;install&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.install"><code>wybthon.compiler.install()</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;uninstall&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.uninstall"><code>uninstall()</code></a> add and remove it explicitly.</li>
+<li><strong>The import hook.</strong> <code>import wybthon</code> installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention <code>wybthon</code> and either contain a t-string and mention <code>html</code>, or mention <code>component</code> or one of <code>Show</code>, <code>Match</code>, <code>Switch</code>, <code>Loading</code>, <code>Errored</code>, and <code>client_only</code>. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (<code>views.cpython-314.opt-wyb4.pyc</code>), so a plain compile cached earlier is never mistaken for a compiled one. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;install&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.install"><code>wybthon.compiler.install()</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;uninstall&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.uninstall"><code>uninstall()</code></a> add and remove it explicitly.</li>
 <li><strong>The pytest plugin.</strong> Installing Wybthon registers a <code>pytest11</code> plugin that compiles test modules and <code>conftest.py</code> files alongside pytest's assertion rewriting, so templates in tests behave exactly as they do in the application. Disable it with <code>-p no:wybthon</code>.</li>
 <li><strong><code>wyb run script.py</code></strong> runs a script with its own templates compiled and the hook installed, for scripts and quick experiments. Arguments after the script are passed to it.</li>
 <li><strong>Prerendering</strong> imports the application after Wybthon, so the hook compiles it.</li>
@@ -3768,11 +3934,11 @@
 <p>For code you build at run time, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;compile_source&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.compile_source"><code>wybthon.compiler.compile_source(source, filename)</code></a> returns a code object with the templates compiled, ready for <code>exec</code>.</p>
 <h2 id="templates-that-werent-compiled">Templates that weren't compiled<a class="headerlink" href="#templates-that-werent-compiled" title="Permanent link">&para;</a></h2>
 <p><code>html()</code> still works on a template that reaches it uncompiled: it compiles the literal itself on its first call. But by then Python has already evaluated each interpolation once, so <code>{count() * 2}</code> arrived as a number and would never update. In dev mode, <code>html()</code> checks each interpolation's source text and raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> when an expression the compiler would have deferred arrived as a plain value:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>wybthon.templates.TemplateError: {count() * 2} was evaluated once instead of becoming
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>reactive, because this template wasn't compiled. Templates compile automatically in
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>modules imported after wybthon, in wyb build and wyb dev, and under pytest; run a
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>script with `wyb run script.py`, or wrap the expression in a lambda.
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  in template: t'&lt;p&gt;{...}&lt;/p&gt;'
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>wybthon.templates.TemplateError: {count() * 2} was evaluated once instead of becoming
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>reactive, because this template wasn't compiled. Templates compile automatically in
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>modules imported after wybthon, in wyb build and wyb dev, and under pytest; run a
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>script with `wyb run script.py`, or wrap the expression in a lambda.
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  in template: t'&lt;p&gt;{...}&lt;/p&gt;'
 </span></code></pre></div>
 <p>The usual causes, and their fixes:</p>
 <ul>
@@ -3784,53 +3950,53 @@
 <p>Production builds turn dev mode off, but they compile every module, so the check has nothing to catch there.</p>
 <h2 id="inspecting-what-it-did">Inspecting what it did<a class="headerlink" href="#inspecting-what-it-did" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;transform&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.transform"><code>wybthon.compiler.transform</code></a> is the compiler's entry point: it takes a module's syntax tree and rewrites it in place. Print the result to see the generated header and the rewritten calls. Each <code>html(t"...")</code> call becomes a <code>render</code> call at the same position, whose tuple holds one value per interpolation, so pairing them with the source shows what each interpolation became:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.compiler</span><span class="w"> </span><span class="kn">import</span> <span class="n">transform</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">source</span> <span class="o">=</span> <span class="s2">"""</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s2">from wybthon import Show, html</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s2">def view(count, kind, price, items):</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s2">    rows = [html(t"&lt;li&gt;</span><span class="si">{item.name}</span><span class="s2">&lt;/li&gt;") for item in items]</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s2">    return html(t"&lt;p class={kind()}&gt;{count()} </span><span class="si">{count}</span><span class="s2"> {price():.2f} {Show(count() &gt; 5, rows)}&lt;/p&gt;")</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="s2">"""</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">written</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">col_offset</span><span class="p">):</span> <span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">str</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Interpolation</span><span class="p">)]</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ast</span><span class="o">.</span><span class="n">TemplateStr</span><span class="p">)</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="p">}</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">unparse</span><span class="p">(</span><span class="n">tree</span><span class="p">))</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Attribute</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">attr</span> <span class="o">==</span> <span class="s2">"render"</span><span class="p">:</span>
-</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>        <span class="k">for</span> <span class="n">text</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">written</span><span class="p">[(</span><span class="n">node</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">col_offset</span><span class="p">)],</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">elts</span><span class="p">):</span>
-</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">}}</span><span class="s2">  -&gt;  </span><span class="si">{</span><span class="n">ast</span><span class="o">.</span><span class="n">unparse</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.compiler</span><span class="w"> </span><span class="kn">import</span> <span class="n">transform</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">source</span> <span class="o">=</span> <span class="s2">"""</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s2">from wybthon import Show, html</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="s2">def view(count, kind, price, items):</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="s2">    rows = [html(t"&lt;li&gt;</span><span class="si">{item.name}</span><span class="s2">&lt;/li&gt;") for item in items]</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="s2">    return html(t"&lt;p class={kind()}&gt;{count()} </span><span class="si">{count}</span><span class="s2"> {price():.2f} {Show(count() &gt; 5, rows)}&lt;/p&gt;")</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="s2">"""</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="n">written</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">col_offset</span><span class="p">):</span> <span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">str</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Interpolation</span><span class="p">)]</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ast</span><span class="o">.</span><span class="n">TemplateStr</span><span class="p">)</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="p">}</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">unparse</span><span class="p">(</span><span class="n">tree</span><span class="p">))</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Attribute</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">attr</span> <span class="o">==</span> <span class="s2">"render"</span><span class="p">:</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>        <span class="k">for</span> <span class="n">text</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">written</span><span class="p">[(</span><span class="n">node</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">col_offset</span><span class="p">)],</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">elts</span><span class="p">):</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">}}</span><span class="s2">  -&gt;  </span><span class="si">{</span><span class="n">ast</span><span class="o">.</span><span class="n">unparse</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The module now starts with <code>import wybthon._compiled as __wybthon__</code>, followed by each template's mount functions and its entry:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">__wybthon_t0__</span> <span class="o">=</span> <span class="n">__wybthon__</span><span class="o">.</span><span class="n">template</span><span class="p">((</span><span class="s2">"&lt;li&gt;"</span><span class="p">,</span> <span class="s2">"&lt;/li&gt;"</span><span class="p">),</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"li"</span><span class="p">,</span> <span class="p">(),</span> <span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),)),),</span> <span class="p">(</span><span class="n">__wybthon_m0__</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">__wybthon_t0__</span> <span class="o">=</span> <span class="n">__wybthon__</span><span class="o">.</span><span class="n">template</span><span class="p">((</span><span class="s2">"&lt;li&gt;"</span><span class="p">,</span> <span class="s2">"&lt;/li&gt;"</span><span class="p">),</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"li"</span><span class="p">,</span> <span class="p">(),</span> <span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),)),),</span> <span class="p">(</span><span class="n">__wybthon_m0__</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
 </span></code></pre></div>
 <p>The entry's arguments are the literal's static strings, its parse tree, its mount functions, the slots whose expressions make no calls (the ones the renderer probes before allocating a computation), and the slots that always hold a getter the compiler made. The interpolations print as:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>{kind()}  -&gt;  lambda: kind()
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>{count()}  -&gt;  lambda: count()
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>{count}  -&gt;  count
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>{price()}  -&gt;  lambda: __wybthon__.fmt(price(), None, f'.2f')
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>{Show(count() &gt; 5, rows)}  -&gt;  __wybthon__.call(Show, lambda: Show(count() &gt; 5, rows), lambda: Show(__wybthon__.getter(lambda: count() &gt; 5), rows))
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>{item.name}  -&gt;  lambda *, item=item: item.name
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>{kind()}  -&gt;  lambda: kind()
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>{count()}  -&gt;  lambda: count()
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>{count}  -&gt;  count
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>{price()}  -&gt;  lambda: __wybthon__.fmt(price(), None, f'.2f')
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>{Show(count() &gt; 5, rows)}  -&gt;  __wybthon__.call(Show, lambda: Show(count() &gt; 5, rows), lambda: Show(__wybthon__.getter(lambda: count() &gt; 5), rows))
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>{item.name}  -&gt;  lambda *, item=item: item.name
 </span></code></pre></div>
 <p><code>{price():.2f}</code> prints as <code>{price()}</code> because the format spec is part of the getter now.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>A call's callee is evaluated when the template is created.</strong> <code>{Card(...)}</code> looks up <code>Card</code> once, and the choice between building a component and making a hole is made then. To choose a component reactively, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic</code></a>.</li>
 <li><strong><code>await</code>, <code>yield</code>, and assignment expressions stay eager.</strong> Moving <code>{await load()}</code> or <code>{(n := count())}</code> into a lambda would change what it means, so the compiler leaves it alone and it's evaluated once.</li>
-<li><strong>Type checkers don't see inside the markup.</strong> The HTML around the interpolations is a string, so a tag's attributes (<code>&lt;{Card} title={...}&gt;</code>) aren't checked statically; dev mode checks them at run time. The interpolated expressions are ordinary Python and are checked: <code>{Card(title=user().name)}</code> is checked against <code>Card</code>'s props, and the checker sees <code>title</code> as a <code>str</code> even though the compiler passes a getter. Use the call form when you want the checker's help.</li>
+<li><strong>Type checkers don't see inside the markup.</strong> The HTML around the interpolations is a string, so a tag's attributes (<code>&lt;{Card} title={...}&gt;</code>) aren't checked statically; dev mode checks them at run time. The interpolated expressions are ordinary Python and are checked: <code>{Card(title=user().name)}</code> is checked against <code>Card</code>'s own signature, and inside <code>Card</code> the checker sees <code>title</code> as a <code>str</code> even though the compiler passes a getter. <a href="../../guides/typing/#checking-tag-props-with-wyb-check"><code>wyb check</code></a> also checks the tag form by rewriting each <code>&lt;{Card} title=...&gt;</code> into a <code>Card(title=...)</code> call for the type checker. Use the call form when you want the checker's help.</li>
 <li><strong>Tracebacks point into getters you didn't write.</strong> Each getter keeps its interpolation's source position, so the traceback names the right file and line.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../templates/">Templates</a> for the markup syntax.</li>
-<li>Read <a href="../components/">Components</a> for how props read the getters the compiler passes.</li>
+<li>Read <a href="../components/">Components</a> for how parameters read the getters the compiler passes.</li>
 <li>Read <a href="../../guides/testing/">Testing</a> for templates under pytest.</li>
 <li>Browse the <a href="../../api/compiler/"><code>wybthon.compiler</code></a> API reference.</li>
 <li>Read <a href="../../rfcs/0004-engine-v4/">RFC 0004</a> for the design and the alternatives considered.</li>

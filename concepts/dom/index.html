@@ -2837,6 +2837,8 @@
       
         
       
+        
+      
     
     
     
@@ -3188,6 +3190,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3626,25 +3656,21 @@ at the top of the component body during initial render.</p>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">FancyInputProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Element</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nd">@component</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">FancyInputProps</span><span class="p">):</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nd">@component</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Element</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Refs pass through components like any other prop; there's no special
-forwarding API. Because the field's annotation includes a <code>Callable</code>,
-<code>props.ref</code> returns the <code>Ref</code> or callback the parent passed, untouched,
-instead of calling it. The compiler never wraps a <code>ref</code> attribute, so
-<code>ref={[local, props.ref]}</code> is evaluated once, when the element is
-created. A <code>None</code> entry in the list is ignored.</p>
+forwarding API. Because the parameter's annotation includes a
+<code>Callable</code>, reading <code>ref</code> returns the <code>Ref</code> or callback the parent
+passed, untouched, instead of calling it. The compiler never wraps a
+<code>ref</code> attribute, so <code>ref={[local, ref]}</code> is evaluated once, when the
+element is created. A <code>None</code> entry in the list is ignored.</p>
 <h2 id="ownership-and-disposal-order">Ownership and disposal order<a class="headerlink" href="#ownership-and-disposal-order" title="Permanent link">&para;</a></h2>
 <p>Refs follow the ownership tree. A component's <code>ref.current</code> is set from
 the first commit until the component unmounts. Unmounting queues one

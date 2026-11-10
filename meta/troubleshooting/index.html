@@ -2693,6 +2693,8 @@
       
         
       
+        
+      
     
     
     
@@ -3044,6 +3046,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3587,7 +3617,7 @@
 <summary><code>ImportError: cannot import name 'div' from 'wybthon'</code></summary>
 <p><strong>Symptoms:</strong> importing <code>div</code>, <code>p</code>, <code>button</code>, <code>input_</code>, <code>element</code>, or another element helper fails, or <code>import wybthon.elements</code> (or <code>wybthon.svg</code>, or the older <code>from wybthon.html import div</code>) raises <code>ModuleNotFoundError</code>.</p>
 <p><strong>Likely cause:</strong> <a href="../../rfcs/0004-engine-v4/">RFC 0004</a> removed the element helpers. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. <code>wybthon.html</code> is the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template function, not a module.</p>
-<p><strong>Fix:</strong> write markup as templates, <code>html(t'&lt;div class="card"&gt;{props.title}&lt;/div&gt;')</code>; <code>&lt;svg&gt;</code> works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a>. See <a href="../../concepts/templates/">Templates</a>.</p>
+<p><strong>Fix:</strong> write markup as templates, <code>html(t'&lt;div class="card"&gt;{title}&lt;/div&gt;')</code>; <code>&lt;svg&gt;</code> works in a template too. Where code builds the markup (a generated form, a recursive tree, a computed tag), use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, props, *children)</code></a>. See <a href="../../concepts/templates/">Templates</a>.</p>
 </details>
 <details class="bug">
 <summary>Pyodide fails to load</summary>
@@ -3665,44 +3695,60 @@
 <details class="bug">
 <summary>A component tag receives a dict, or its props aren't checked by my type checker</summary>
 <p><strong>Symptoms:</strong> a plain function used as <code>&lt;{fn} ...&gt;</code> gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in <code>&lt;{Card} titel="Hi" /&gt;</code>.</p>
-<p><strong>Likely cause:</strong> the tag form calls a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>@component</code></a> with keyword props. Any other callable is called the way its signature takes children: with a <code>children</code> keyword (<code>Show</code>, <code>Loading</code>), with positional children (<code>Errored</code>, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.</p>
-<p><strong>Fix:</strong> decorate the function with <code>@component</code> and give it a <code>Props</code> class, or call it inside an interpolation (<code>{Errored(Feed(), fallback=oops)}</code>), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so <code>{Card(title=user().name)}</code> stays reactive.</p>
+<p><strong>Likely cause:</strong> the tag form calls a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>@component</code></a> with keyword props. Any other callable is called the way its signature takes children: with a <code>children</code> keyword (<code>Show</code>, <code>Loading</code>), with positional children (<code>Errored</code>, context providers), or, for a function whose only parameter is the props, with the props dictionary. A type checker run on its own can't see inside the template string, so it doesn't check tag props; <code>wyb check</code> does, by checking each <code>&lt;{Card} title=...&gt;</code> as a <code>Card(title=...)</code> call, and dev mode checks them at run time.</p>
+<p><strong>Fix:</strong> decorate the function with <code>@component</code> and declare its props as parameters, run <code>wyb check</code> to type-check tags, or call the component inside an interpolation (<code>{Errored(Feed(), fallback=oops)}</code>), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so <code>{Card(title=user().name)}</code> stays reactive.</p>
 </details>
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
 <details class="bug">
 <summary><code>TypeError: Card() got unexpected prop(s): ...</code> or <code>is missing required prop(s): ...</code></summary>
 <p><strong>Symptoms:</strong> calling a component raises <code>TypeError</code> at the call site in dev mode.</p>
-<p><strong>Likely cause:</strong> the call passes a keyword its props class doesn't declare (often a typo), or leaves out a field with no default. There's no <code>**rest</code>: a component accepts only what it declares, plus <code>key</code> and <code>children</code>.</p>
-<p><strong>Fix:</strong> fix the name, add the field to the props class, or give it a default (<code>body: str = ""</code>). Pyright and mypy report the same mistakes before you run the code; see the <a href="../../guides/typing/">typing guide</a>.</p>
+<p><strong>Likely cause:</strong> the call passes a keyword the component has no parameter for (often a typo), or leaves out a parameter with no default. A component accepts only the parameters it declares, so it takes <code>children</code> only when it has a <code>children</code> parameter, and <code>key</code> is rejected like any other unknown name (components don't take <code>key=</code>). A <code>**rest</code> parameter collects every keyword the component doesn't declare.</p>
+<p><strong>Fix:</strong> fix the name, add the parameter, or give it a default (<code>body: str = ""</code>). To pass content, declare <code>children: Children = None</code>. To remount a component when a value changes, replace <code>key=</code> with a keyed <code>Show</code>: <code>{Show(doc_id(), lambda id: DocumentView(doc_id=id), keyed=True)}</code>. Pyright and mypy report unexpected and missing props before you run the code; see the <a href="../../guides/typing/">typing guide</a>.</p>
 </details>
 <details class="bug">
-<summary><code>TypeError: Component X must take no parameters or one parameter annotated with a Props subclass</code></summary>
-<p><strong>Symptoms:</strong> a component raises when it's first called.</p>
-<p><strong>Likely cause:</strong> the function uses parameter-style props (<code>def Card(title: str)</code>), several parameters, <code>**rest</code>, or an annotation that isn't a <code>Props</code> subclass.</p>
-<p><strong>Fix:</strong> move the inputs onto a props class and take it as the only parameter:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<summary><code>SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name</code></summary>
+<p><strong>Symptoms:</strong> importing a module fails with a <code>SyntaxError</code> at a line inside an <code>@component</code> function, such as <code>title = title.strip()</code> or <code>count += 1</code>.</p>
+<p><strong>Likely cause:</strong> a component's parameters are its props, and props are read-only. The compiler rewrites every read of a parameter into a tracked read of the parent's current value, so it rejects anything that rebinds one: assignment, augmented assignment, <code>del</code>, a <code>for</code> target, an <code>import</code>, an <code>except ... as</code>, or a <code>nonlocal</code> declaration in a nested function (which gets the message <code>it can't be nonlocal</code>).</p>
+<p><strong>Fix:</strong> put the derived value in a new name, and compute it where it stays reactive:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nd">@component</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">):</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h2&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h2&gt;"</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nd">@component</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">clean</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>  <span class="c1"># derived, stays reactive</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">initial</span><span class="p">))</span>  <span class="c1"># local state seeded once</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">clean</span><span class="p">()</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">)&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.</p>
+<p>A nested function, lambda, comprehension, or class that binds the same name has its own variable, which shadows the parameter as normal Python scoping does.</p>
 </details>
 <details class="bug">
-<summary><code>TypeError: prop() takes 0 positional arguments</code>, or <code>prop() takes exactly one of default= or default_factory=</code></summary>
-<p><strong>Likely cause:</strong> <code>prop(0)</code> passes the default positionally, or <code>prop()</code> is called with neither (or both) of its keywords.</p>
-<p><strong>Fix:</strong> most fields don't need <code>prop()</code>: write an ordinary default (<code>step: int = 1</code>). Use <code>prop(default_factory=list)</code> for a mutable default, which runs once per component instance, and pass <code>default=</code> or <code>default_factory=</code> by keyword.</p>
+<summary><code>SyntaxError: Component Card can't take *args</code></summary>
+<p><strong>Symptoms:</strong> importing a module fails with a <code>SyntaxError</code> that ends <code>declare a `children` parameter for its content</code>.</p>
+<p><strong>Likely cause:</strong> the component declares a <code>*args</code> parameter. Positional arguments bind to parameters as in an ordinary call (<code>Greeting("Ada")</code> is <code>Greeting(name="Ada")</code>), so they can't collect children.</p>
+<p><strong>Fix:</strong> declare <code>children: Children = None</code> (from <code>wybthon</code>) and place <code>{children}</code> in the markup. Callers pass children as nested markup in the tag form, with the <code>children=</code> keyword, or with item syntax: <code>Card(title="Hi")[html(t"&lt;p&gt;a&lt;/p&gt;"), html(t"&lt;p&gt;b&lt;/p&gt;")]</code>. To accept arbitrary keyword props, use <code>**rest</code> instead.</p>
+</details>
+<details class="bug">
+<summary><code>SyntaxError: Component Badge can't take positional-only parameters</code></summary>
+<p><strong>Symptoms:</strong> importing a module fails with a <code>SyntaxError</code> that ends <code>so remove the `/`</code>.</p>
+<p><strong>Likely cause:</strong> the component's signature has a <code>/</code>. A component tag passes every prop by name (<code>&lt;{Badge} text="New" /&gt;</code>), so a prop can't be positional-only.</p>
+<p><strong>Fix:</strong> remove the <code>/</code>. Callers can still pass the parameter positionally (<code>Badge("New")</code>).</p>
+</details>
+<details class="bug">
+<summary><code>TypeError: Component X takes props as parameters, which only Wybthon's compiler makes reactive, and its module wasn't compiled</code></summary>
+<p><strong>Symptoms:</strong> in dev mode, calling a component that has parameters raises this <code>TypeError</code>.</p>
+<p><strong>Likely cause:</strong> Wybthon's compiler turns a component's parameters into tracked reads of its props, and this component's module wasn't compiled. The causes are the same as for an uncompiled template: a script run directly with <code>python script.py</code>, code typed at a REPL or built with <code>exec</code>, or a module that was already loading when <code>wybthon</code> was first imported. Outside dev mode, an uncompiled component runs with its props' current values, which never update.</p>
+<p><strong>Fix:</strong> run scripts with <code>wyb run script.py</code>, or import <code>wybthon</code> before the modules that define components. <code>wyb build</code>, <code>wyb dev</code>, and the pytest plugin compile everything. Code that builds a module's source at run time can compile it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;compile_source&lt;/span&gt;" href="../../api/compiler/#wybthon.compiler.compile_source"><code>compile_source</code></a> before <code>exec</code>. See <a href="../../concepts/compiler/">The compiler</a>.</p>
+</details>
+<details class="bug">
+<summary><code>TypeError: prop() takes 0 positional arguments</code> or <code>prop() got an unexpected keyword argument 'default'</code></summary>
+<p><strong>Likely cause:</strong> <code>prop(0)</code> passes a default positionally, or <code>prop(default=0)</code> uses a keyword that no longer exists. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop</code></a> takes only <code>default_factory=</code>.</p>
+<p><strong>Fix:</strong> most parameters don't need <code>prop()</code>: write an ordinary default (<code>step: int = 1</code>). Use <code>prop(default_factory=list)</code> for a mutable default, which runs once per component instance: <code>def TagList(tags: list[str] = prop(default_factory=list))</code>.</p>
 </details>
 <details class="bug">
 <summary>A callback prop runs when it's read, or returns <code>None</code></summary>
-<p><strong>Symptoms:</strong> reading <code>props.on_save</code> calls the function (and returns its result), or <code>props.render_row</code> returns a value instead of the function the parent passed.</p>
-<p><strong>Likely cause:</strong> reading a field unwraps an accessor or zero-argument function, so a prop the parent passes as <code>{user().name}</code> or as a signal reads as the value. A field whose annotation is callable (<code>Callable[...]</code> or <code>Accessor[...]</code>, alone or in a union with <code>None</code>) is exempt, and returns what the parent passed. A callback field annotated <code>Any</code> or <code>object</code> isn't.</p>
-<p><strong>Fix:</strong> annotate callbacks as callables: <code>on_save: Callable[[], None] | None = None</code>. See the <a href="../../guides/typing/">typing guide</a>.</p>
+<p><strong>Symptoms:</strong> reading the <code>on_save</code> parameter calls the function (and returns its result), or <code>render_row</code> returns a value instead of the function the parent passed.</p>
+<p><strong>Likely cause:</strong> reading a parameter unwraps an accessor or zero-argument function, so a prop the parent passes as <code>{user().name}</code> or as a signal reads as the value. A parameter whose annotation is callable (<code>Callable[...]</code> or <code>Accessor[...]</code>, alone or in a union with <code>None</code>) is exempt, and returns what the parent passed. A callback parameter annotated <code>Any</code> or <code>object</code>, or not annotated at all, isn't.</p>
+<p><strong>Fix:</strong> annotate callback parameters as callables: <code>on_save: Callable[[], None] | None = None</code>. See the <a href="../../guides/typing/">typing guide</a>.</p>
 </details>
 <details class="bug">
 <summary>The error fallback shows an accessor instead of the message</summary>
@@ -3720,8 +3766,8 @@
 <details class="bug">
 <summary>A component reads a prop or signal but doesn't update</summary>
 <p><strong>Symptoms:</strong> the console shows <code>[wybthon] Warning: Component &lt;X&gt; read reactive value prop '&lt;name&gt;' at the top level of its body.</code> during the first render, and the value never changes afterwards.</p>
-<p><strong>Likely cause:</strong> you read <code>props.title</code> or <code>count()</code> in the component body before returning the tree, for example <code>label = props.title.upper()</code>. Components run once, so that read isn't tracked and its value is frozen.</p>
-<p><strong>Fix:</strong> move the read into the template, where the compiler keeps it reactive (<code>&lt;span&gt;{props.title.upper()}&lt;/span&gt;</code>), or derive it with <code>create_memo</code>. If a one-time read is what you want (seeding local state, for example), make it explicit with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a>, <code>untrack(lambda: props.initial)</code>, or <code>count.peek()</code> for a signal; both silence the warning. Reading a prop the parent passed as a constant doesn't warn.</p>
+<p><strong>Likely cause:</strong> you read a parameter or a signal in the component body before returning the tree, for example <code>label = title.upper()</code> or <code>total = count() * 2</code>. Components run once, so that read isn't tracked and its value is frozen. A parameter is reactive everywhere else (in the markup, a handler, a memo, an effect, or a nested function); only a read at the top level of the body is a one-time read.</p>
+<p><strong>Fix:</strong> move the read into the template, where the compiler keeps it reactive (<code>&lt;span&gt;{title.upper()}&lt;/span&gt;</code>), or derive it with <code>create_memo(lambda: title.upper())</code>. If a one-time read is what you want (seeding local state, for example), make it explicit with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a>, <code>create_signal(untrack(lambda: initial))</code>, or <code>count.peek()</code> for a signal; both silence the warning. Reading a prop the parent passed as a constant doesn't warn.</p>
 </details>
 <details class="bug">
 <summary>My signal read shows the old value right after I set it</summary>

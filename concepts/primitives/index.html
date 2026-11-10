@@ -2941,6 +2941,8 @@
       
         
       
+        
+      
     
     
     
@@ -3292,6 +3294,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3841,7 +3871,7 @@ template or other <code>VNode</code>, a list of either (mounted as a fragment),
 <code>None</code> (nothing), or another accessor (nested hole). When it returns a
 template from the same literal as last time, the mounted instance is
 patched slot by slot instead of replaced. A binding whose expression
-makes no calls (<code>{props.title}</code>, <code>{row["label"]}</code>) first runs under a
+makes no calls (a parameter such as <code>{title}</code>, or <code>{row["label"]}</code>) first runs under a
 lightweight probe, and when it reads nothing reactive, its value is
 applied and no computation is allocated. Any other hole that reads
 nothing reactive on its first run is dropped after that run, keeping
@@ -3987,30 +4017,27 @@ Every accessor also has <code>.peek()</code> for a single untracked read.</p>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">a</span><span class="p">(),</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">pair</span><span class="p">))</span>  <span class="c1"># depends on a only</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">count</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>  <span class="c1"># the same idea for one read</span>
 </span></code></pre></div>
-<p>Both silence the dev-mode top-level-read warning. A prop read returns
-the value, not an accessor, so <code>untrack(lambda: props.initial)</code> is the
-explicit way to seed local state from a prop.</p>
+<p>Both silence the dev-mode top-level-read warning. Reading a component
+parameter returns the value, not an accessor, so
+<code>untrack(lambda: initial)</code> is the explicit way to seed local state from
+a prop.</p>
 <h2 id="on_settled"><code>on_settled</code><a class="headerlink" href="#on_settled" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a> runs a callback once the flush that
 mounted the current component has committed, so refs are assigned and
 the DOM is live. It may return a cleanup that runs on unmount.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">ChartProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nd">@component</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Chart</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
 </span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nd">@component</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Chart</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ChartProps</span><span class="p">):</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">():</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="n">handle</span> <span class="o">=</span> <span class="n">draw</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">handle</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
 </span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">():</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="n">handle</span> <span class="o">=</span> <span class="n">draw</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">handle</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
-</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
-</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;canvas ref=</span><span class="si">{</span><span class="n">ref</span><span class="si">}</span><span class="s2">&gt;&lt;/canvas&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;canvas ref=</span><span class="si">{</span><span class="n">ref</span><span class="si">}</span><span class="s2">&gt;&lt;/canvas&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="on_cleanup"><code>on_cleanup</code><a class="headerlink" href="#on_cleanup" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> registers teardown on the active
@@ -4053,23 +4080,29 @@ afterwards:</p>
 <p>Every reactive read goes through <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor[T]</code></a>:
 signal getters are <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Signal"><code>Signal[T]</code></a>, memos are <code>Memo[T]</code>,
 and setters are <code>Setter[T]</code>. Annotate function parameters as
-<code>Accessor[T]</code> when they accept any of these. A props field is a plain
-annotation, so <code>props.title</code> is typed as the field's type (<code>str</code>), and
-a type checker checks a component call's arguments against it. See the
-<a href="../../guides/typing/">Typing guide</a>.</p>
+<code>Accessor[T]</code> when they accept any of these. A component's props are
+its parameters, so inside the body <code>title</code> has its annotated type
+(<code>str</code>), and a type checker checks a component call's arguments against
+the function's own signature. See the <a href="../../guides/typing/">Typing guide</a>.</p>
 <h2 id="props-helpers">Props helpers<a class="headerlink" href="#props-helpers" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=...)</code></a> declares a mutable default on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class (the factory runs once per instance); <code>prop(default=...)</code> works too, though an ordinary default (<code>step: int = 1</code>) needs no <code>prop()</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge(*sources)</code></a> merges props instances, dicts, and zero-arg functions returning dicts into one reactive view; later sources win, and <code>None</code> is a real value.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=...)</code></a> declares a mutable parameter default (<code>tags: list[str] = prop(default_factory=list)</code>); the factory runs once per component instance. An ordinary default (<code>step: int = 1</code>) needs no <code>prop()</code>.</li>
+<li>A <code>**rest</code> parameter (<code>**attrs: Any</code>) collects the props a component doesn't declare as a reactive, read-only view. It covers most of what <code>omit</code> was used for.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge(*sources)</code></a> merges dicts, views (including a <code>**rest</code> parameter), and zero-arg functions returning dicts into one reactive view; later sources win, and <code>None</code> is a real value.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit(source, *keys)</code></a> returns a reactive view without the given keys, or without every key a predicate accepts (the replacement for <code>split_props</code>).</li>
 <li>A view reads like props: <code>view.title</code> is the tracked value, and item access (<code>view["title"]</code>) returns an accessor. Spreading a view onto an element (<code>&lt;button {attrs}&gt;</code>) binds each key reactively.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(props, key)</code></a> reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's <code>isStatic</code> does.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>children(fn)</code></a> resolves a getter for a children prop (<code>lambda: props.children</code>) into a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.ChildrenAccessor"><code>ChildrenAccessor</code></a>: nested accessors are resolved, lists are flattened, and <code>None</code> and booleans are dropped. Calling it returns the single child or a list; <code>.to_array()</code> always returns a list. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flatten&lt;/span&gt;" href="../../api/wybthon/#wybthon.flatten"><code>flatten(children)</code></a> is the unmemoized form, matching Solid 2.0's <code>flatten</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(param)</code></a> reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's <code>isStatic</code> does. Inside a component, pass the parameter itself (<code>is_static(title)</code>); the compiler turns it into a question about the prop. For a view, pass the view and a key: <code>is_static(attrs, "title")</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>resolve_children(fn)</code></a> resolves a getter for a children prop (<code>lambda: children</code>) into a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ChildrenAccessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.ChildrenAccessor"><code>ChildrenAccessor</code></a>: nested accessors are resolved, lists are flattened, and <code>None</code> and booleans are dropped. Calling it returns the single child or a list; <code>.to_array()</code> always returns a list. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flatten&lt;/span&gt;" href="../../api/wybthon/#wybthon.flatten"><code>flatten(children)</code></a> is the unmemoized form, matching Solid 2.0's <code>flatten</code>.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge</span><span class="p">,</span> <span class="n">omit</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">attrs</span> <span class="o">=</span> <span class="n">merge</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"button"</span><span class="p">},</span> <span class="n">omit</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">,</span> <span class="s2">"children"</span><span class="p">))</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">handlers</span> <span class="o">=</span> <span class="n">omit</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">key</span><span class="p">:</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"on_"</span><span class="p">))</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">merge</span><span class="p">,</span> <span class="n">omit</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nd">@component</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">rest</span> <span class="o">=</span> <span class="n">merge</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"button"</span><span class="p">},</span> <span class="n">omit</span><span class="p">(</span><span class="n">attrs</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">))</span>  <span class="c1"># drop one key, add a default</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button </span><span class="si">{</span><span class="n">rest</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="map_array"><code>map_array</code><a class="headerlink" href="#map_array" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity.map_array"><code>map_array</code></a> maps a reactive list to values with a stable

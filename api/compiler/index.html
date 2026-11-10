@@ -2872,6 +2872,8 @@
       
         
       
+        
+      
     
     
     
@@ -3223,6 +3225,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3667,16 +3697,39 @@
 <p>Solid's compiler does two things with JSX. It turns static markup into
 templates, and it turns every dynamic expression in the markup into a
 getter, so <code>{count() * 2}</code> stays reactive without being wrapped. This
-module does both for <code>html(t"...")</code>:</p>
+module does both for <code>html(t"...")</code>, and two more things Solid can't do
+for JavaScript: it makes a component's parameters its props, and it
+makes the branches of flow controls lazy.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@component</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Count"</span><span class="p">):</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> doubled is </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">, step </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> doubled is </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>compiles to (roughly):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># `__wybthon_t0__` holds the literal's parse tree and mount function, built at compile time.</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">return</span> <span class="n">__wybthon_t0__</span><span class="o">.</span><span class="n">render</span><span class="p">((</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">(),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">step</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">__wybthon_props0__</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="c1"># `__wybthon_t0__` holds the literal's parse tree and mount function, built at compile time.</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">return</span> <span class="n">__wybthon_t0__</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">__wybthon_props0__</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">(),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nd">@component</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nd">@__wybthon__</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Count"</span><span class="p">):</span> <span class="o">...</span>
 </span></code></pre></div>
+<p><strong>Component parameters are props.</strong> Inside an <code>@component</code> function,
+every read of a parameter becomes a read of the component's props
+object, which returns the parent's current value and tracks it. So
+<code>{label}</code> in markup is dynamic and updates when the parent passes an
+expression that changes, a handler reads the latest value when it runs,
+and a parameter passed on to a child (<code>&lt;{Child} title={label}&gt;</code>) stays
+reactive. A <code>**rest</code> parameter is a reactive view of the props the
+component doesn't declare, which spreads onto an element
+(<code>&lt;div {rest}&gt;</code>). Parameters are read-only: assigning, deleting, or
+declaring one <code>nonlocal</code> is a <code>SyntaxError</code>. The original function is
+kept, with its body removed, so its signature (names, defaults, and
+annotations) describes the props, to type checkers and at run time.</p>
 <p><strong>The rule.</strong> An interpolation is <em>dynamic</em> when its expression contains
 a call, an attribute access, or a subscript (not counting the bodies of
 lambdas inside it). A dynamic interpolation becomes a getter: a hole in a
@@ -3689,6 +3742,10 @@ dynamic (a name, a constant, a lambda) is passed as is.</p>
 <code>Show(...)</code>, <code>For(...)</code>) is built with each dynamic argument as a getter,
 the way a JSX component receives its props; any other callable
 (<code>badge(user())</code>, <code>str(n())</code>) becomes one reactive expression.</p>
+<p><strong>Lazy branches.</strong> The content and fallback of <code>Show</code>, <code>Match</code>,
+<code>Switch</code>, <code>Loading</code>, <code>Errored</code>, and <code>client_only</code>, when written as markup
+or a component call, become zero-argument functions, so a branch's
+markup is built only when the branch shows, as JSX children are.</p>
 <p><strong>Captured names.</strong> A getter runs later, so the names its expression reads
 from enclosing function scopes are captured by value when the template is
 created (as keyword-only defaults of the getter's lambda). A template made
@@ -3734,7 +3791,7 @@ from <code>wyb build</code> and <code>wyb dev</code>, from the pytest plugin, an
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_candidate&lt;/span&gt; (&lt;code&gt;wybthon.compiler.is_candidate&lt;/code&gt;)" href="#wybthon.compiler.is_candidate">is_candidate</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Whether a module's source may contain <code>html(t"...")</code> calls for the compiler.</p>
+                  <p>Whether a module's source may contain components, flow controls, or <code>html(t"...")</code> calls for the compiler.</p>
                 </div>
               </td>
             </tr>
@@ -3758,7 +3815,7 @@ from <code>wyb build</code> and <code>wyb dev</code>, from the pytest plugin, an
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;transform&lt;/span&gt; (&lt;code&gt;wybthon.compiler.transform&lt;/code&gt;)" href="#wybthon.compiler.transform">transform</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Compile the <code>html(t"...")</code> calls in a module's syntax tree, in place.</p>
+                  <p>Compile a module's components, flow controls, and <code>html(t"...")</code> calls, in place.</p>
                 </div>
               </td>
             </tr>
@@ -3837,7 +3894,7 @@ rewriting, for one) keep handling the modules they claim.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Whether a module's source may contain <code>html(t"...")</code> calls for the compiler.</p>
+        <p>Whether a module's source may contain components, flow controls, or <code>html(t"...")</code> calls for the compiler.</p>
 
 
     </div>
@@ -3899,9 +3956,10 @@ whenever their caller decides.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Compile the <code>html(t"...")</code> calls in a module's syntax tree, in place.</p>
-<p>Returns the tree. A module that doesn't import Wybthon's <code>html</code> is
-returned unchanged. Raises <code>SyntaxError</code> for a malformed template.</p>
+        <p>Compile a module's components, flow controls, and <code>html(t"...")</code> calls, in place.</p>
+<p>Returns the tree. A module that imports nothing the compiler
+recognizes from Wybthon is returned unchanged. Raises <code>SyntaxError</code>
+for a malformed template or a component that assigns a parameter.</p>
 
 
     </div>
@@ -4016,7 +4074,7 @@ and in <code>wyb run script.py</code>.</p>
 </tr>
 <tr>
 <td><code>COMPILER_TAG</code></td>
-<td>The optimization tag of cached compiled bytecode (<code>*.opt-wyb3.pyc</code>); it changes when the compiler's output does.</td>
+<td>The optimization tag of cached compiled bytecode (<code>*.opt-wyb4.pyc</code>); it changes when the compiler's output does.</td>
 </tr>
 </tbody>
 </table>

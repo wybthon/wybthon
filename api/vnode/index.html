@@ -2916,6 +2916,8 @@
       
         
       
+        
+      
     
     
     
@@ -3267,6 +3269,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3881,9 +3911,8 @@ position, and explicitly with <code>hole()</code> when you want a <code>key</cod
 
         <p>Anything that renders: what <code>html()</code>, <code>h()</code>, and a component call give you.</p>
 <p>Annotate component functions and node-holding variables with <code>Node</code>.
-A component call is typed as its props class (so a type checker checks
-its keywords), and every <code>Props</code> class is a <code>Node</code> to type checkers,
-so <code>-&gt; Node</code>, <code>list[Node]</code>, and <code>children: Node</code> accept it.</p>
+Item syntax sets a component call's children:
+<code>Card(title="Hi")[html(t"&lt;p&gt;Body&lt;/p&gt;")]</code>.</p>
 
 
 
@@ -4542,6 +4571,10 @@ forms, recursive trees, or a tag computed at run time. Templates and
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;A template inside: </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">),</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">)</span>
 </span></code></pre></div>
+<p>A <code>key</code> in <code>h()</code> props keys the node it builds, element or component,
+so the reconciler remounts it when the key changes. It's the low-level
+escape hatch: a component call takes no <code>key=</code> (use a keyed <code>Show</code> to
+remount a component, and <code>For</code> for lists).</p>
 <p><code>h()</code> evaluates its arguments before Wybthon sees them, so the compiler
 can't help here: pass an accessor (<code>name</code>) or a function
 (<code>lambda: name().upper()</code>) wherever a value should stay live. A

@@ -1503,10 +1503,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#callable-fields" class="md-nav__link">
+  <a href="#callable-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Callable fields
+        Callable parameters
       
     </span>
   </a>
@@ -1529,6 +1529,17 @@
     <span class="md-ellipsis">
       
         Children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forwarded-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forwarded props
       
     </span>
   </a>
@@ -2898,6 +2909,8 @@
       
         
       
+        
+      
     
     
     
@@ -3262,6 +3275,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3521,10 +3562,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#callable-fields" class="md-nav__link">
+  <a href="#callable-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Callable fields
+        Callable parameters
       
     </span>
   </a>
@@ -3547,6 +3588,17 @@
     <span class="md-ellipsis">
       
         Children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forwarded-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forwarded props
       
     </span>
   </a>
@@ -3699,85 +3751,74 @@
 <h1 id="typing">Typing<a class="headerlink" href="#typing" title="Permanent link">&para;</a></h1>
 <p>Wybthon requires Python 3.14. Its accessors, components, actions, and stores carry type information that both pyright (including Pylance) and mypy understand with no plugin or extra configuration.</p>
 <h2 id="component-props">Component props<a class="headerlink" href="#component-props" title="Permanent link">&para;</a></h2>
-<p>Components declare their inputs on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> subclass with plain annotations. <code>Props</code> is a <a href="https://peps.python.org/pep-0681/">PEP 681</a> <code>dataclass_transform</code> base, so a type checker treats each props class as a keyword-only constructor and checks every component call against it:</p>
+<p>A component declares its inputs as ordinary, annotated parameters. To a type checker, an <code>@component</code> is the function itself, returning a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Node&lt;/span&gt;" href="../../api/wybthon/#wybthon.Node"><code>Node</code></a>, so pyright, Pylance, and mypy check every call against the function's own signature, with no plugin:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">GreetingProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">copies</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">on_wave</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nd">@component</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">GreetingProps</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wave</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="k">if</span> <span class="n">props</span><span class="o">.</span><span class="n">on_wave</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            <span class="n">props</span><span class="o">.</span><span class="n">on_wave</span><span class="p">()</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p onclick=</span><span class="si">{</span><span class="n">wave</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">copies</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">)</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">copies</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">on_wave</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"hi"</span><span class="p">))</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">copies</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@component</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">copies</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">),</span> <span class="n">on_wave</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wave</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">if</span> <span class="n">on_wave</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="n">on_wave</span><span class="p">()</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p onclick=</span><span class="si">{</span><span class="n">wave</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">name</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">copies</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">)</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">copies</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">on_wave</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"hi"</span><span class="p">))</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">copies</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li>Inside the component, a field reads as its annotation: <code>props.name</code> is a <code>str</code>, and <code>props.copies</code> is an <code>int</code>. The read is tracked, so <code>{props.name * props.copies}</code> updates when either changes.</li>
+<li>Inside the component, a parameter has its annotated type: <code>name</code> is a <code>str</code>, and <code>copies</code> is an <code>int</code>. The compiler makes each read a tracked read of the parent's current value, so <code>{name * copies}</code> updates when either changes.</li>
 <li>A caller passes values of the declared types. In a template, <code>{Greeting(name=name())}</code> type-checks as <code>name: str</code>, and the compiler still passes a getter, so the prop stays reactive. In Python code outside a template, <code>Greeting(name=name)</code> passes the accessor itself, which works at run time (the read unwraps it) but is a type error, because an <code>Accessor[str]</code> isn't a <code>str</code>.</li>
-<li>A missing required prop, a value of the wrong type, and an unknown keyword are all type errors:</li>
+<li>A missing required prop, a value of the wrong type, and an unknown keyword are all type errors, and the messages name the component:</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>  <span class="c1"># incompatible type</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Greeting</span><span class="p">()</span>  <span class="c1"># missing "name"</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">typo</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># unexpected keyword "typo"</span>
 </span></code></pre></div>
+<p>mypy reports the last two as <code>Missing positional argument "name" in call to "Greeting"</code> and <code>Unexpected keyword argument "typo" for "Greeting"</code>. Positional arguments bind to parameters as in any call, so <code>Greeting("Ada")</code> is checked as <code>Greeting(name="Ada")</code>.</p>
 <p>At run time, dev mode raises <code>TypeError</code> for the same unknown and missing props, so code that isn't type checked still fails loudly.</p>
-<h3 id="callable-fields">Callable fields<a class="headerlink" href="#callable-fields" title="Permanent link">&para;</a></h3>
-<p>A field annotated as callable, with <code>Callable[...]</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor[T]</code></a>, alone or in a union with <code>None</code>, is returned exactly as the parent passed it. That's how callbacks work: reading <code>props.on_wave</code> never calls it, so <code>props.on_wave()</code> calls the parent's function. Every other field unwraps an accessor the parent passes, so a field that should hold a function must be annotated as one.</p>
-<p>Annotate a field <code>Accessor[T]</code> when the component needs the accessor itself, for example to hand it to <code>For</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accessor</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<h3 id="callable-parameters">Callable parameters<a class="headerlink" href="#callable-parameters" title="Permanent link">&para;</a></h3>
+<p>A parameter annotated as callable, with <code>Callable[...]</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor[T]</code></a>, alone or in a union with <code>None</code>, reads as exactly what the parent passed. That's how callbacks work: reading <code>on_wave</code> never calls it, so <code>on_wave()</code> calls the parent's function. Every other parameter unwraps an accessor the parent passes, so a parameter that should hold a function must be annotated as one.</p>
+<p>Annotate a parameter <code>Accessor[T]</code> when the component needs the accessor itself, for example to hand it to <code>For</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accessor</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TagListProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">items</span><span class="p">:</span> <span class="n">Accessor</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">tag</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Accessor</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">tag</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Accessor</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nd">@component</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">TagList</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">TagListProps</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">items</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">items</span>  <span class="c1"># the accessor itself</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nd">@component</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">TagList</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Accessor</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>  <span class="c1"># items is the accessor itself</span>
 </span></code></pre></div>
-<p>Reading a callable field returns what the parent passed without calling it, so reading it once at the top of the body freezes nothing. The parent passes the accessor by name, <code>{TagList(items=tags)}</code>; an expression such as <code>tags()</code> would hand the component a getter, which every read unwraps, even for a callable field.</p>
+<p>Reading a callable parameter returns what the parent passed without calling it, so reading it once at the top of the body freezes nothing. The parent passes the accessor by name, <code>{TagList(items=tags)}</code>; an expression such as <code>tags()</code> would hand the component a getter, which every read unwraps, even for a callable parameter.</p>
 <h3 id="defaults">Defaults<a class="headerlink" href="#defaults" title="Permanent link">&para;</a></h3>
-<p>Defaults work as in a dataclass (<code>copies: int = 1</code>, <code>on_wave: ... = None</code>). Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=list)</code></a> for a mutable value; the factory runs once per component instance. <code>prop(default=value)</code> also works, but type checkers only recognize a field specifier's default when it's passed by keyword, so a positional <code>prop(0)</code> isn't accepted.</p>
+<p>Defaults are ordinary parameter defaults (<code>copies: int = 1</code>, <code>on_wave: ... = None</code>). Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=list)</code></a> for a mutable value; the factory runs once per component instance. <code>prop()</code> is typed to return the factory's result, so <code>tags: list[str] = prop(default_factory=list)</code> checks.</p>
 <h3 id="children">Children<a class="headerlink" href="#children" title="Permanent link">&para;</a></h3>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> declares <code>children: Any</code>. Both the <code>children</code> keyword and item syntax are checked:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span><span class="p">,</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<p>Declare a <code>children</code> parameter, annotated with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-type_alias&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-type_alias-name&quot;&gt;Children&lt;/span&gt;" href="../../api/wybthon/#wybthon.Children"><code>Children</code></a>, to accept content. <code>Children</code> is an alias of <code>Any</code>, for documentation. Both the <code>children</code> keyword and item syntax are checked:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Children</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nd">@component</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h2&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h2&gt;</span><span class="si">{</span><span class="n">children</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nd">@component</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h2&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h2&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;b&lt;/p&gt;"</span><span class="p">)]</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;&lt;p&gt;b&lt;/p&gt;"</span><span class="p">))</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;b&lt;/p&gt;"</span><span class="p">)]</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;&lt;p&gt;b&lt;/p&gt;"</span><span class="p">))</span>
 </span></code></pre></div>
-<p>Positional children (<code>Card(html(t"&lt;p&gt;a&lt;/p&gt;"), title="Hi")</code>) work at run time, but checkers reject them because the props constructor is keyword-only.</p>
+<p>Positional arguments aren't children: they bind to parameters in order, so <code>Card(html(t"&lt;p&gt;a&lt;/p&gt;"))</code> passes the markup as <code>title</code> and is reported as an incompatible type. Item syntax on a call type-checks through <code>Node.__getitem__</code>.</p>
+<h3 id="forwarded-props">Forwarded props<a class="headerlink" href="#forwarded-props" title="Permanent link">&para;</a></h3>
+<p>A <code>**rest</code> parameter collects the props a component doesn't declare. Annotate it <code>**attrs: Any</code>: a checker then accepts any extra keyword, as the component does at run time, while the declared parameters stay checked.</p>
 <h3 id="what-a-component-call-returns">What a component call returns<a class="headerlink" href="#what-a-component-call-returns" title="Permanent link">&para;</a></h3>
-<p><code>@component</code> is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. To a type checker every props class is a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Node&lt;/span&gt;" href="../../api/wybthon/#wybthon.Node"><code>Node</code></a>, the type of anything that renders, so a component call can be returned from a function annotated <code>-&gt; Node</code>, kept in a <code>list[Node]</code>, or passed as children. At run time the call returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.VNode"><code>VNode</code></a>, which is a <code>Node</code> too. A component with no parameters is typed as a callable that takes only <code>key</code> and returns a <code>Node</code>.</p>
+<p><code>@component</code> is typed to return the function it decorates with its return type replaced by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Node&lt;/span&gt;" href="../../api/wybthon/#wybthon.Node"><code>Node</code></a>, the type of anything that renders. That's how the checker validates the arguments, and it's why a component call can be returned from a function annotated <code>-&gt; Node</code>, kept in a <code>list[Node]</code>, or passed as children. At run time the call returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.VNode"><code>VNode</code></a>, which is a <code>Node</code> too. A component with no parameters takes no arguments.</p>
 <p>Under <code>mypy --strict</code>, annotate component functions with <code>-&gt; Node</code>; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> returns a <code>Node</code> as well.</p>
 <h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
 <p>A template's interpolations are ordinary Python expressions, so the checker sees them like any other code, before the compiler turns the dynamic ones into getters. What's checked depends on where a value appears:</p>
@@ -3799,7 +3840,7 @@
 </tr>
 <tr>
 <td><code>&lt;{Card} title={user().name}&gt;...&lt;/{Card}&gt;</code></td>
-<td>The expression <code>user().name</code> is checked as code. A plain checker run doesn't check it against <code>Card</code>'s props, but <a href="#checking-tag-props-with-wyb-check"><code>wyb check</code></a> does. Without it, an unknown or missing prop raises <code>TypeError</code> at run time, in dev mode, when the template renders.</td>
+<td>The expression <code>user().name</code> is checked as code. A plain checker run doesn't check it against <code>Card</code>'s signature, but <a href="#checking-tag-props-with-wyb-check"><code>wyb check</code></a> does. Without it, an unknown or missing prop raises <code>TypeError</code> at run time, in dev mode, when the template renders.</td>
 </tr>
 <tr>
 <td>The HTML markup itself</td>
@@ -3807,7 +3848,7 @@
 </tr>
 </tbody>
 </table>
-<p>Type checkers can't see inside the template's static text, so on their own they don't check a component tag's attributes against its props class. Run them through <code>wyb check</code> (below) to check tags too, or use the call form inside an interpolation; use the tag form when passing nested markup as children reads better.</p>
+<p>Type checkers can't see inside the template's static text, so on their own they don't check a component tag's attributes against its parameters. Run them through <code>wyb check</code> (below) to check tags too, or use the call form inside an interpolation; use the tag form when passing nested markup as children reads better.</p>
 <p><code>html()</code> is annotated to take a <code>string.templatelib.Template</code>, so passing a plain string is a type error, and it raises <code>TypeError</code> at run time:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">html</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
@@ -3818,9 +3859,9 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>wyb<span class="w"> </span>check<span class="w">                      </span><span class="c1"># mypy on the current directory</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>wyb<span class="w"> </span>check<span class="w"> </span>app<span class="w"> </span>tests<span class="w"> </span>--checker<span class="w"> </span>pyright
 </span></code></pre></div>
-<p>For each <code>html(t"...")</code> call, it checks a call such as <code>Card(title=user().name, children=...)</code> per component tag, with each attribute as a keyword: a static value as its string, a bare attribute as <code>True</code>, an <code>{expression}</code> as itself, an attribute that mixes text and interpolations as a <code>str</code>, and a spread as <code>**expression</code>. Content between the tags is passed as <code>children</code>, so a component whose props have no <code>children</code> field is reported. Each error in a tag is reported at the tag's line, among the checker's other errors:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>app/pages.py:12: error: in &lt;{Card}&gt;: Unexpected keyword argument "bogus" for "CardProps"  [call-arg]
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>app/pages.py:14: error: in &lt;{Card}&gt;: Missing named argument "title" for "CardProps"  [call-arg]
+<p>For each <code>html(t"...")</code> call, it checks a call such as <code>Card(title=user().name, children=...)</code> per component tag, with each attribute as a keyword: a static value as its string, a bare attribute as <code>True</code>, an <code>{expression}</code> as itself, an attribute that mixes text and interpolations as a <code>str</code>, and a spread as <code>**expression</code>. Content between the tags is passed as <code>children</code>, so a component with no <code>children</code> parameter (and no <code>**rest</code> parameter) is reported. Each error in a tag is reported at the tag's line, among the checker's other errors:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>app/pages.py:12: error: in &lt;{Card}&gt;: Unexpected keyword argument "bogus" for "Card"  [call-arg]
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>app/pages.py:14: error: in &lt;{Card}&gt;: Missing positional argument "title" in call to "Card"  [call-arg]
 </span></code></pre></div>
 <p>The command exits with status 1 when there are errors and 2 when the checker isn't installed. It reads your project's checker configuration (<code>mypy.ini</code>, <code>setup.cfg</code>, <code>pyproject.toml</code>, or <code>pyrightconfig.json</code> in the current directory), and it skips <code>.venv</code>, <code>dist</code>, <code>build</code>, and hidden directories. Under mypy's defaults, the body of an unannotated function isn't checked, so neither are the tags in it.</p>
 <p>A few tags aren't checked as calls: built-ins imported from Wybthon (<code>Show</code>, <code>For</code>, <code>Loading</code>, <code>Portal</code>, <code>Link</code>, and the rest), contexts made with <code>create_context</code>, and a plain function in the same module that takes the props dictionary instead of keywords.</p>
@@ -3992,7 +4033,7 @@
 <ul>
 <li>Read <a href="../../concepts/components/">Components</a> for the full props model, and <a href="../../concepts/templates/">Templates</a> for template syntax.</li>
 <li>See <a href="../authoring-patterns/">Authoring patterns</a> for callbacks, children, and forwarding attributes.</li>
-<li>Browse the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reactivity&lt;/span&gt;" href="../../api/reactivity/#wybthon.reactivity"><code>reactivity</code></a> API for <code>Props</code>, <code>ParentProps</code>, and <code>prop</code>, and <a href="../../concepts/compiler/">The compiler</a> for what happens to template expressions.</li>
+<li>Browse the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>component</code></a> API for <code>Children</code> and <code>prop</code>, and <a href="../../concepts/compiler/">The compiler</a> for what happens to parameters and template expressions.</li>
 </ul>
 
 

@@ -772,6 +772,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Declaring a component with @component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters-are-read-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters are read-only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#components-must-be-compiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components must be compiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -881,10 +909,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#forwarding-with-merge-and-omit" class="md-nav__link">
+  <a href="#forwarding-with-rest-merge-and-omit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Forwarding with merge and omit
+        Forwarding with **rest, merge, and omit
       
     </span>
   </a>
@@ -914,10 +942,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keys-force-a-remount" class="md-nav__link">
+  <a href="#remounting-when-an-identity-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keys force a remount
+        Remounting when an identity changes
       
     </span>
   </a>
@@ -2970,6 +2998,8 @@
       
         
       
+        
+      
     
     
     
@@ -3334,6 +3364,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3589,6 +3647,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Declaring a component with @component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters-are-read-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters are read-only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#components-must-be-compiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components must be compiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3698,10 +3784,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#forwarding-with-merge-and-omit" class="md-nav__link">
+  <a href="#forwarding-with-rest-merge-and-omit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Forwarding with merge and omit
+        Forwarding with **rest, merge, and omit
       
     </span>
   </a>
@@ -3731,10 +3817,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keys-force-a-remount" class="md-nav__link">
+  <a href="#remounting-when-an-identity-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keys force a remount
+        Remounting when an identity changes
       
     </span>
   </a>
@@ -3845,74 +3931,95 @@
 <div class="admonition tip">
 <p class="admonition-title">Mental model</p>
 <p>A component body <strong>runs once</strong> when it mounts and returns its
-markup, usually a <a href="../templates/">template</a>. Inputs are declared on
-a typed <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class, and reading <code>props.title</code>
-returns the parent's value, tracked, as reading a property of
-Solid's props object does. In the returned template, <code>{props.title}</code>
-is a dynamic expression, so the <a href="../compiler/">compiler</a> makes it a
-binding and only that node updates when the value changes. See
-<a href="../primitives/#reactive-holes">Primitives</a> for the full story.</p>
+markup, usually a <a href="../templates/">template</a>. Its inputs are ordinary
+function parameters, and the <a href="../compiler/">compiler</a> turns every
+read of a parameter into a tracked read of the parent's current
+value, as reading a property of Solid's props object is. In the
+returned template, <code>{title}</code> is a dynamic expression, so the
+compiler makes it a binding and only that node updates when the
+value changes. See <a href="../primitives/#reactive-holes">Primitives</a> for
+the full story.</p>
 </div>
 <h2 id="declaring-a-component-with-component">Declaring a component with <code>@component</code><a class="headerlink" href="#declaring-a-component-with-component" title="Permanent link">&para;</a></h2>
 <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>component</code></a> decorator turns a function into a
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Component&lt;/span&gt;" href="../../api/wybthon/#wybthon.Component"><code>Component</code></a>. Declare inputs on a subclass of
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> as plain annotations, give defaults the way a
-dataclass does, and take one parameter annotated with that class:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Component&lt;/span&gt;" href="../../api/wybthon/#wybthon.Component"><code>Component</code></a>. The function's parameters are its
+props: declare each input as a parameter with an annotation and, when
+it's optional, a default:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">HelloProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"world"</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nd">@component</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">HelloProps</span><span class="p">):</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">!&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"world"</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Reading a field returns its value, tracked:</p>
+<p>The compiler rewrites every read of a parameter inside an <code>@component</code>
+body, so a parameter always reads as the parent's current value,
+tracked:</p>
 <ul>
-<li>In the template, <code>{props.name}</code> is dynamic, so the compiler turns it into a getter: a binding that updates when the parent's value changes.</li>
-<li>In a memo or effect, <code>props.name</code> subscribes to the parent's value like any other tracked read.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack(lambda: props.name)</code></a> reads it once without subscribing, for example to seed local state.</li>
+<li>In the template, <code>{name}</code> is dynamic. Other bare names are applied once, but a parameter is a read of a prop, so the compiler turns it into a getter: a binding that updates when the parent's value changes.</li>
+<li>In a memo or effect, <code>name</code> subscribes to the parent's value like any other tracked read.</li>
+<li>In an event handler, <code>name</code> reads the latest value when the handler runs.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack(lambda: name)</code></a> reads it once without subscribing, for example to seed local state.</li>
 </ul>
 <p>An ordinary default (<code>name: str = "world"</code>) needs nothing more. Use
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=...)</code></a> for a mutable default; the
-factory runs once per component instance. Type checkers only recognize
-a field specifier's default when it's passed by keyword. <code>Props</code> is a
-<a href="https://peps.python.org/pep-0681/">PEP 681</a> <code>dataclass_transform</code>
-base, so pyright and mypy check every call site with no plugin: a
-missing required prop, a wrong type, or an unknown name is a type
-error.</p>
+factory runs once per component instance, so instances never share a
+list.</p>
+<p>A type checker sees an <code>@component</code> as the function itself, returning
+a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Node&lt;/span&gt;" href="../../api/wybthon/#wybthon.Node"><code>Node</code></a>, so pyright, Pylance, and mypy check every call
+against the function's own signature with no plugin: a missing
+required prop, a wrong type, or an unknown name is a type error that
+names the component. Inside the body, a parameter has its annotated
+type. See the <a href="../../guides/typing/">Typing guide</a>.</p>
 <p>A component with no inputs takes no parameters:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@component</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;main&gt;</span><span class="si">{</span><span class="n">Hello</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'Wybthon'</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/main&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
+<h3 id="parameters-are-read-only">Parameters are read-only<a class="headerlink" href="#parameters-are-read-only" title="Permanent link">&para;</a></h3>
+<p>A parameter is the parent's prop, so the body can't rebind it.
+Assigning to a parameter, augmented assignment (<code>count += 1</code>), <code>del</code>,
+rebinding it with <code>for</code>, <code>import</code>, or <code>except ... as</code>, and declaring it
+<code>nonlocal</code> in a nested function are all compile-time errors:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>SyntaxError: 'title' is a component parameter, which is a read-only prop; assign to a new name
+</span></code></pre></div>
+<p>Give the value a new name instead (<code>label = title.upper()</code> reads it
+once, as any top-level read does). A nested function, lambda,
+comprehension, or class that binds the same name shadows the parameter,
+as Python's scoping rules say, so <code>[title for title in titles]</code> is
+fine.</p>
+<p>A component can't take <code>*args</code>; declare a <code>children</code> parameter for its
+content. It can't take positional-only parameters (<code>/</code>) either, since a
+tag passes every prop by name. A <code>**rest</code> parameter collects the props the component doesn't
+declare (see <a href="#forwarding-with-rest-merge-and-omit">Forwarding with <code>**rest</code></a>).</p>
+<h3 id="components-must-be-compiled">Components must be compiled<a class="headerlink" href="#components-must-be-compiled" title="Permanent link">&para;</a></h3>
+<p>The compiler gives parameters their meaning, so a component's module
+must be compiled, as a module with templates must be. The import hook
+that <code>import wybthon</code> installs compiles every module imported after it,
+and <code>wyb build</code>, <code>wyb dev</code>, <code>wyb run</code>, and Wybthon's pytest plugin
+compile the modules they load. In dev mode, calling an uncompiled
+component that has parameters raises <code>TypeError</code> with a message saying
+the component wasn't compiled. See <a href="../compiler/#where-it-runs">Where it runs</a>.</p>
 <h2 id="bodies-run-once">Bodies run once<a class="headerlink" href="#bodies-run-once" title="Permanent link">&para;</a></h2>
 <p>There's no re-render. The only things that update later are the
 bindings and holes in the returned markup and the effects created in
 the body.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">untrack</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CounterProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nd">@component</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="p">))</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">():</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="s2">      &lt;div&gt;</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+1&lt;/button&gt;</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="s2">      &lt;/div&gt;</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="s2">    """</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">untrack</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nd">@component</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">initial</span><span class="p">))</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">():</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="s2">      &lt;div&gt;</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+1&lt;/button&gt;</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="s2">      &lt;/div&gt;</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The compiler turns <code>{count()}</code> into a getter, so the renderer gives
 that slot one render effect and only that text node updates. The
@@ -3921,25 +4028,21 @@ or no arguments at all; prefer the zero-argument form when you don't
 use the event.</p>
 <h3 id="values-expressions-and-accessors">Values, expressions, and accessors<a class="headerlink" href="#values-expressions-and-accessors" title="Permanent link">&para;</a></h3>
 <p>A child never has to care how the parent produced a prop. The parent
-may pass a value, a template expression, or an accessor, and
-<code>props.count</code> returns the current value in every case:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">BadgeProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">count</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nd">@component</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Badge</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">BadgeProps</span><span class="p">):</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;count: </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">n</span><span class="p">,</span> <span class="n">set_n</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>  <span class="c1"># a value</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"</span><span class="si">{</span><span class="n">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># an expression: the compiler passes a getter</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">Badge</span><span class="si">}</span><span class="s2"> count=</span><span class="si">{</span><span class="n">n</span><span class="p">()</span><span class="si">}</span><span class="s2"> /&gt;"</span><span class="p">)</span>  <span class="c1"># the same, in tag form</span>
+may pass a value, a template expression, or an accessor, and <code>count</code>
+reads as the current value in every case:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nd">@component</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Badge</span><span class="p">(</span><span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">n</span><span class="p">,</span> <span class="n">set_n</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>  <span class="c1"># a value</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"</span><span class="si">{</span><span class="n">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># an expression: the compiler passes a getter</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">Badge</span><span class="si">}</span><span class="s2"> count=</span><span class="si">{</span><span class="n">n</span><span class="p">()</span><span class="si">}</span><span class="s2"> /&gt;"</span><span class="p">)</span>  <span class="c1"># the same, in tag form</span>
 </span></code></pre></div>
 <p>A dynamic expression in a component call or tag reaches the child as a
 getter, the counterpart of the property getters Solid's compiler puts
@@ -3948,117 +4051,118 @@ parent re-running. Passing an accessor directly (<code>Badge(count=n)</code>)
 works the same way at run time, but a type checker flags it against
 <code>count: int</code>, so prefer writing the call in a template.</p>
 <h3 id="top-level-reads-warn">Top-level reads warn<a class="headerlink" href="#top-level-reads-warn" title="Permanent link">&para;</a></h3>
-<p>Reading a reactive prop or signal at the top level of the body isn't
-tracked, so later updates never reach it. In dev mode Wybthon warns
-once per component and value. A constant can't change, so reading one
-doesn't warn:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">NameProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nd">@component</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Bad</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">NameProps</span><span class="p">):</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">greeting</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># warns when name is reactive: frozen at mount</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">greeting</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nd">@component</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">Good</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">NameProps</span><span class="p">):</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>  <span class="c1"># one reactive binding</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="nd">@component</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">AlsoFine</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">NameProps</span><span class="p">):</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">initial</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># explicit one-time read, no warning</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">initial</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+<p>Reading a parameter at the top level of the body reads it once, as
+destructuring props does in Solid: later updates never reach that
+value. The same goes for a signal. In dev mode Wybthon warns once per
+component and value. A constant can't change, so reading one doesn't
+warn:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@component</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Bad</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">greeting</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># warns when name is reactive: frozen at mount</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">greeting</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nd">@component</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">Good</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>  <span class="c1"># one reactive binding</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nd">@component</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">AlsoFine</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="n">initial</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># explicit one-time read, no warning</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">initial</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="using-a-component">Using a component<a class="headerlink" href="#using-a-component" title="Permanent link">&para;</a></h2>
 <p>There are two ways to use a component in a template.</p>
 <p><strong>The call form.</strong> Calling a <code>Component</code> returns a
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.VNode"><code>VNode</code></a>. Keyword arguments become props, and every
-component also accepts <code>key=</code>. Call it inside an interpolation and the
-type checker sees every prop, while the compiler still passes each
-dynamic argument as a getter:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s2">  &lt;main&gt;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s2">    </span><span class="si">{</span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s2">    </span><span class="si">{</span><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">project</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;one&lt;/p&gt;"</span><span class="p">),</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;two&lt;/p&gt;"</span><span class="p">)])</span><span class="si">}</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s2">    </span><span class="si">{</span><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"My card"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;one&lt;/p&gt;"</span><span class="p">),</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;two&lt;/p&gt;"</span><span class="p">)]</span><span class="si">}</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s2">  &lt;/main&gt;</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s2">"""</span><span class="p">)</span>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.VNode"><code>VNode</code></a>. Arguments bind to parameters as in an
+ordinary Python call: keyword arguments by name, and positional ones in
+order, so <code>Greeting("Ada")</code> is <code>Greeting(name="Ada")</code>. Call it inside an
+interpolation and the type checker sees every prop, while the compiler
+still passes each dynamic argument as a getter:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s2">  &lt;main&gt;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s2">    </span><span class="si">{</span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s2">    </span><span class="si">{</span><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">project</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;one&lt;/p&gt;"</span><span class="p">),</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;two&lt;/p&gt;"</span><span class="p">)])</span><span class="si">}</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s2">    </span><span class="si">{</span><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"My card"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;one&lt;/p&gt;"</span><span class="p">),</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;two&lt;/p&gt;"</span><span class="p">)]</span><span class="si">}</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s2">  &lt;/main&gt;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The last line uses item syntax for children, which reads well when the
-props are long.</p>
+props are long. Positional arguments are never children: content goes
+to the <code>children</code> parameter.</p>
 <p><strong>The tag form.</strong> <code>&lt;{Card} ...&gt;</code> reads like the rest of the markup and
 passes the nested markup as the <code>children</code> prop. Close it with
 <code>&lt;/{Card}&gt;</code>, or self-close it with <code>&lt;{Card} /&gt;</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2"> title="Settings"&gt;</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s2">    &lt;p&gt;Changes apply immediately.&lt;/p&gt;</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s2">    &lt;</span><span class="si">{</span><span class="n">Counter</span><span class="si">}</span><span class="s2"> initial=</span><span class="si">{</span><span class="mi">5</span><span class="si">}</span><span class="s2"> /&gt;</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s2">  &lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s2">"""</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2"> title="Settings"&gt;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s2">    &lt;p&gt;Changes apply immediately.&lt;/p&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s2">    &lt;</span><span class="si">{</span><span class="n">Counter</span><span class="si">}</span><span class="s2"> initial=</span><span class="si">{</span><span class="mi">5</span><span class="si">}</span><span class="s2"> /&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s2">  &lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Attributes become keyword props, and a hyphen becomes an underscore
-(<code>user-id</code> is <code>user_id</code>). A quoted value is a string; pass anything
+(<code>user-id</code> is <code>user_id</code>). A handler attribute takes the Python spelling
+of a callback parameter: <code>onclick={save}</code> and <code>onClick={save}</code> are
+<code>on_click</code>, <code>onValueChange</code> is <code>on_value_change</code>, and <code>on:confirm</code> is
+<code>on_confirm</code>. Lowercase <code>on</code> names count as handlers only for standard
+DOM events, so <code>online</code> and <code>once</code> stay props of those names; write a
+custom callback as <code>on:confirm</code> or <code>on_confirm</code>. A quoted value is a string; pass anything
 else, including numbers, expressions, and callbacks, with <code>{...}</code>. A
 dynamic value (<code>title={project().name}</code>) is passed as a getter. Type
-checkers can't see inside the template string, so the tag form's props
-are checked at run time in dev mode, like any component call. Use the
-call form when you want the checker's help.</p>
+checkers can't see inside the template string, so on their own they
+don't check the tag form's props; <a href="../../guides/typing/#checking-tag-props-with-wyb-check"><code>wyb check</code></a>
+does, by checking each tag as the equivalent call, and dev mode checks
+them at run time, like any component call.</p>
 <p>In dev mode (the default), calling a component with an undeclared prop
 or without a required one raises <code>TypeError</code> at the call:
 <code>Counter(bogus=1)</code> fails immediately instead of silently rendering.
-Statically, a type checker sees the call as constructing the props
-class, so the same mistakes show up in your editor.</p>
+Statically, a type checker checks the call against the component's
+signature, so the same mistakes show up in your editor.</p>
 <p>The low-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h</code></a> form still works (<code>h(Counter, {"initial": 5})</code>).</p>
 <h3 id="plain-functions-as-tags">Plain functions as tags<a class="headerlink" href="#plain-functions-as-tags" title="Permanent link">&para;</a></h3>
 <p>A function without <code>@component</code> whose only parameter is the props can be
 used as a tag too, with the tag form or <code>h(fn, props)</code>. It receives the
-props dictionary as it was passed, with no <code>Props</code> class, unwrapping, or
-validation: a dynamic attribute arrives as a getter. It can't observe
-later changes, so when a re-rendering hole patches it with changed
-props, it's remounted and its body runs again. Use <code>@component</code> when
-you want typed, reactive props.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">Note</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;p class="note"&gt;</span><span class="si">{</span><span class="n">props</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span><span class="si">}</span><span class="s1">&lt;/p&gt;'</span><span class="p">)</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;</span><span class="si">{</span><span class="n">Note</span><span class="si">}</span><span class="s1"> text="Saved" /&gt;'</span><span class="p">)</span>
+props dictionary as it was passed, with no unwrapping or validation: a
+dynamic attribute arrives as a getter. It can't observe later changes,
+so when a re-rendering hole patches it with changed props, it's
+remounted and its body runs again. Use <code>@component</code> when you want
+typed, reactive props.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">Note</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;p class="note"&gt;</span><span class="si">{</span><span class="n">props</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span><span class="si">}</span><span class="s1">&lt;/p&gt;'</span><span class="p">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;</span><span class="si">{</span><span class="n">Note</span><span class="si">}</span><span class="s1"> text="Saved" /&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="passing-callbacks">Passing callbacks<a class="headerlink" href="#passing-callbacks" title="Permanent link">&para;</a></h3>
-<p>Annotate a callback field as callable. A field whose annotation is
-<code>Callable[...]</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor[...]</code></a>, alone or in a
-union with <code>None</code>, returns exactly what the parent passed, and the read
-never calls it:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">PickerProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">on_pick</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">on_close</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="nd">@component</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">Picker</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">PickerProps</span><span class="p">):</span>
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">pick</span><span class="p">():</span>
-</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>        <span class="n">props</span><span class="o">.</span><span class="n">on_pick</span><span class="p">(</span><span class="s2">"apple"</span><span class="p">)</span>
-</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>        <span class="k">if</span> <span class="n">props</span><span class="o">.</span><span class="n">on_close</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>            <span class="n">props</span><span class="o">.</span><span class="n">on_close</span><span class="p">()</span>
-</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">pick</span><span class="si">}</span><span class="s2">&gt;Pick&lt;/button&gt;"</span><span class="p">)</span>
-</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
-</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
-</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">Picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="nb">print</span><span class="p">,</span> <span class="n">on_close</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"closed"</span><span class="p">))</span>
+<p>Annotate a callback parameter as callable. A parameter whose annotation
+is <code>Callable[...]</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor[...]</code></a>, alone or in a
+union with <code>None</code>, reads as exactly what the parent passed, and the
+read never calls it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nd">@component</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Picker</span><span class="p">(</span><span class="n">on_pick</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span> <span class="n">on_close</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">pick</span><span class="p">():</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="n">on_pick</span><span class="p">(</span><span class="s2">"apple"</span><span class="p">)</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="k">if</span> <span class="n">on_close</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>            <span class="n">on_close</span><span class="p">()</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">pick</span><span class="si">}</span><span class="s2">&gt;Pick&lt;/button&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="n">Picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="nb">print</span><span class="p">,</span> <span class="n">on_close</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"closed"</span><span class="p">))</span>
 </span></code></pre></div>
-<p>Reading a prop never calls a function the parent passed: a callback
-such as <code>on_close</code> comes back exactly as it was passed, whatever its
-field is annotated. What a read does unwrap is an expression: a getter
-the compiler made from markup (<code>title={user().name}</code>), or an accessor
-the parent passed (a signal or memo). A field annotated as callable, or
-as <code>Accessor[T]</code>, gets the accessor itself rather than its value.</p>
+<p>Reading a parameter never calls a function the parent passed: a
+callback such as <code>on_close</code> comes back exactly as it was passed,
+whatever its parameter is annotated. What a read does unwrap is an
+expression: a getter the compiler made from markup
+(<code>title={user().name}</code>), or an accessor the parent passed (a signal or
+memo). A parameter annotated as callable, or as <code>Accessor[T]</code>, gets the
+accessor itself rather than its value.</p>
 <p>Outside markup, pass an accessor to make a prop reactive:
 <code>Card(title=create_memo(lambda: user().name))</code>. A lambda is a value.</p>
 <h2 id="what-props-cost">What props cost<a class="headerlink" href="#what-props-cost" title="Permanent link">&para;</a></h2>
@@ -4067,70 +4171,78 @@ allocates anything depends on whether the component can ever receive
 new props, which the renderer knows when it mounts the component:</p>
 <ul>
 <li><strong>Most components can't be patched.</strong> A component mounted in another component's output, in a list row, in a <code>Show</code> branch, or anywhere else that's mounted once never receives new props. For these, reading a prop that the parent passed as a constant tracks nothing: there's no signal, no subscription, and nothing to dispose. A prop passed as an expression or an accessor is read through it, so the reader subscribes to that source directly.</li>
-<li><strong>A patchable component</strong> is part of the tree a reactive hole returns, or of the tree passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a>, and not inside another component's output. When the hole re-runs (or you <code>render</code> into the same container again), the reconciler patches the component with the new props instead of remounting it. Its prop reads track one version signal per props instance, created on the first tracked read, and a patch that changes a prop bumps it.</li>
+<li><strong>A patchable component</strong> is part of the tree a reactive hole returns, or of the tree passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a>, and not inside another component's output. When the hole re-runs (or you <code>render</code> into the same container again), the reconciler patches the component with the new props instead of remounting it. Its prop reads track one version signal per instance, created on the first tracked read, and a patch that changes a prop bumps it.</li>
 </ul>
 <p>The difference is only in what's allocated. Both kinds behave the same
 for every prop passed as an expression or changed through a patch, so
 you never need to think about which one you have.</p>
 <p>Bindings get the same treatment. A binding whose expression makes no
-calls, such as <code>{props.title}</code>, first runs under a lightweight probe:
-when it reads nothing reactive, because the parent passed a constant,
-the value is applied and no computation is ever allocated. Any other
-binding or hole that reads nothing reactive on its first run is
-dropped after that run, keeping only the DOM it produced.</p>
+calls, such as <code>{title}</code>, first runs under a lightweight probe: when it
+reads nothing reactive, because the parent passed a constant, the value
+is applied and no computation is ever allocated. Any other binding or
+hole that reads nothing reactive on its first run is dropped after that
+run, keeping only the DOM it produced.</p>
 <h3 id="checking-for-a-static-prop">Checking for a static prop<a class="headerlink" href="#checking-for-a-static-prop" title="Permanent link">&para;</a></h3>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(props, "name")</code></a> reports whether the
-parent passed a plain value rather than an expression, as Solid 2.0's
-<code>isStatic</code> does. Nothing is read or tracked. A component library can
-use it to take a cheaper path for a prop that can't change:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@component</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Icon</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">IconProps</span><span class="p">):</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="k">if</span> <span class="n">is_static</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">):</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;i class=</span><span class="si">{</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;&lt;/i&gt;"</span><span class="p">)</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;i class=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&gt;&lt;/i&gt;"</span><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="forwarding-with-merge-and-omit">Forwarding with <code>merge</code> and <code>omit</code><a class="headerlink" href="#forwarding-with-merge-and-omit" title="Permanent link">&para;</a></h2>
-<p>Every prop a component accepts is declared, and undeclared props can't
-be read. To forward props onto an element, combine sources with
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> and drop the ones you handle yourself with
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a>. Both return views that read like props
-(<code>view.title</code> is the tracked value), and spreading a view onto an
-element with <code>&lt;tag {attrs}&gt;</code> binds each key reactively:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">merge</span><span class="p">,</span> <span class="n">omit</span>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(name)</code></a> reports whether the parent
+passed a plain value rather than an expression, as Solid 2.0's
+<code>isStatic</code> does. Pass the parameter itself: the compiler turns the call
+into a question about the prop, not its value, so nothing is read or
+tracked. A component library can use it to take a cheaper path for a
+prop that can't change:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">is_static</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">ButtonProps</span><span class="p">(</span><span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">variant</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"solid"</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="nd">@component</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ButtonProps</span><span class="p">):</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">attrs</span> <span class="o">=</span> <span class="n">merge</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"button"</span><span class="p">},</span> <span class="n">omit</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="s2">"variant"</span><span class="p">,</span> <span class="s2">"children"</span><span class="p">))</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button </span><span class="si">{</span><span class="n">attrs</span><span class="si">}</span><span class="s1"> class="btn btn-</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">variant</span><span class="si">}</span><span class="s1">"&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span><span class="s1">&lt;/button&gt;'</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nd">@component</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Icon</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="k">if</span> <span class="n">is_static</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;i class=</span><span class="si">{</span><span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;&lt;/i&gt;"</span><span class="p">)</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;i class=</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&gt;&lt;/i&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>If the parent passes <code>disabled={is_busy()}</code>, the attribute follows the
-signal. <code>omit</code> also accepts a predicate, such as
-<code>omit(props, lambda key: key.startswith("on_"))</code>.</p>
-<h2 id="children">Children<a class="headerlink" href="#children" title="Permanent link">&para;</a></h2>
-<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> to accept children; it
-declares <code>children: Any = None</code>. Most layouts interpolate
-<code>props.children</code> where the content belongs:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<p>For a key of a <code>**rest</code>, <code>merge</code>, or <code>omit</code> view, pass the view and the
+key: <code>is_static(attrs, "title")</code>.</p>
+<h2 id="forwarding-with-rest-merge-and-omit">Forwarding with <code>**rest</code>, <code>merge</code>, and <code>omit</code><a class="headerlink" href="#forwarding-with-rest-merge-and-omit" title="Permanent link">&para;</a></h2>
+<p>A component accepts only the props it declares, unless it takes a
+<code>**rest</code> parameter. A <code>**rest</code> parameter (any name, such as
+<code>**attrs: Any</code>) collects the props the component doesn't declare as a
+reactive, read-only view. Reading a key of the view (<code>attrs.title</code>)
+returns the tracked value, and spreading the view onto an element with
+<code>&lt;tag {attrs}&gt;</code> binds each key reactively:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="nd">@component</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">):</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;section class="card"&gt;&lt;h3&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s1">&lt;/h3&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span><span class="s1">&lt;/section&gt;'</span><span class="p">)</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1"> title="Hi"&gt;&lt;p&gt;a&lt;/p&gt;&lt;p&gt;b&lt;/p&gt;&lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>  <span class="c1"># tag form</span>
-</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;b&lt;/p&gt;"</span><span class="p">)]</span>  <span class="c1"># item syntax</span>
-</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">)])</span>  <span class="c1"># children as a keyword</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">merge</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nd">@component</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">(</span><span class="n">variant</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"solid"</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">forwarded</span> <span class="o">=</span> <span class="n">merge</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"button"</span><span class="p">},</span> <span class="n">attrs</span><span class="p">)</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button </span><span class="si">{</span><span class="n">forwarded</span><span class="si">}</span><span class="s1"> class="btn btn-</span><span class="si">{</span><span class="n">variant</span><span class="si">}</span><span class="s1">"&gt;</span><span class="si">{</span><span class="n">children</span><span class="si">}</span><span class="s1">&lt;/button&gt;'</span><span class="p">)</span>
+</span></code></pre></div>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> combines sources (dicts, <code>**rest</code> views, and
+other views) into one reactive view; later sources win. Here the parent
+can override <code>type</code>, and every other prop it passes, such as
+<code>disabled={is_busy()}</code>, lands on the <code>&lt;button&gt;</code> and follows the signal.
+An event handler such as <code>on_click=save</code> is passed through as the
+callable itself.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> returns a view without some keys, for example to
+handle one of the forwarded props yourself: <code>omit(attrs, "title")</code>. It
+also accepts a predicate, such as
+<code>omit(attrs, lambda key: key.startswith("on_"))</code>.</p>
+<h2 id="children">Children<a class="headerlink" href="#children" title="Permanent link">&para;</a></h2>
+<p>Declare a <code>children</code> parameter to accept children, annotated with
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-type_alias&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-type_alias-name&quot;&gt;Children&lt;/span&gt;" href="../../api/wybthon/#wybthon.Children"><code>Children</code></a> (an alias of <code>Any</code>, for documentation)
+and defaulting to <code>None</code>. Most layouts interpolate <code>children</code> where the
+content belongs:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nd">@component</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;section class="card"&gt;&lt;h3&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s1">&lt;/h3&gt;</span><span class="si">{</span><span class="n">children</span><span class="si">}</span><span class="s1">&lt;/section&gt;'</span><span class="p">)</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1"> title="Hi"&gt;&lt;p&gt;a&lt;/p&gt;&lt;p&gt;b&lt;/p&gt;&lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>  <span class="c1"># tag form</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">)[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;b&lt;/p&gt;"</span><span class="p">)]</span>  <span class="c1"># item syntax</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;a&lt;/p&gt;"</span><span class="p">)])</span>  <span class="c1"># children as a keyword</span>
 </span></code></pre></div>
 <p>When you need to inspect or iterate children, resolve them with
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve_children&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve_children"><code>resolve_children</code></a>. It takes a getter for the children and
@@ -4139,77 +4251,73 @@ nested accessors, flattens lists, and drops <code>None</code> and booleans.
 Calling it returns the single child or a list; <code>to_array()</code> always
 returns a list. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flatten&lt;/span&gt;" href="../../api/wybthon/#wybthon.flatten"><code>flatten</code></a> is the unmemoized form,
 for a one-off resolution:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">resolve_children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nd">@component</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">List</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">kids</span> <span class="o">=</span> <span class="n">resolve_children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">():</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">kid</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span> <span class="k">for</span> <span class="n">kid</span> <span class="ow">in</span> <span class="n">kids</span><span class="o">.</span><span class="n">to_array</span><span class="p">()]</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">items</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
-</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>
-</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="n">List</span><span class="p">()[</span><span class="s2">"Apples"</span><span class="p">,</span> <span class="s2">"Pears"</span><span class="p">]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">resolve_children</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nd">@component</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">List</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">kids</span> <span class="o">=</span> <span class="n">resolve_children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">children</span><span class="p">)</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">():</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">kid</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span> <span class="k">for</span> <span class="n">kid</span> <span class="ow">in</span> <span class="n">kids</span><span class="o">.</span><span class="n">to_array</span><span class="p">()]</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">items</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="n">List</span><span class="p">()[</span><span class="s2">"Apples"</span><span class="p">,</span> <span class="s2">"Pears"</span><span class="p">]</span>
 </span></code></pre></div>
 <h2 id="what-a-component-may-return">What a component may return<a class="headerlink" href="#what-a-component-may-return" title="Permanent link">&para;</a></h2>
 <p>The body may return a template or any other <code>VNode</code>, a string, a list
 (mounted as a fragment), <code>None</code> (renders nothing), or a reactive
 expression (mounted as a single hole):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LabelProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nd">@component</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">LabelProps</span><span class="p">):</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="k">return</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>  <span class="c1"># a hole that tracks text</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nd">@component</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="k">return</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>  <span class="c1"># a hole that tracks text</span>
 </span></code></pre></div>
-<h2 id="keys-force-a-remount">Keys force a remount<a class="headerlink" href="#keys-force-a-remount" title="Permanent link">&para;</a></h2>
-<p>The reconciler patches a component in place when a hole re-renders it
-with the same tag and key: new props flow into the existing props
-instance and the body doesn't run again. Give it a different <code>key</code> to
-force a fresh instance with fresh local state:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">EditorProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nd">@component</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Editor</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">EditorProps</span><span class="p">):</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="n">draft</span><span class="p">,</span> <span class="n">set_draft</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>  <span class="c1"># reset when the key changes</span>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;textarea value=</span><span class="si">{</span><span class="n">draft</span><span class="p">()</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">update</span><span class="si">}</span><span class="s2">&gt;&lt;/textarea&gt;"</span><span class="p">)</span>
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">editor</span><span class="p">():</span>
-</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    <span class="k">return</span> <span class="n">Editor</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">current_id</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">current_id</span><span class="p">())</span>
-</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>
-</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>
-</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">editor</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
-</span></code></pre></div>
-<p><code>{editor()}</code> is a call with no arguments, so it's a reactive hole that
-re-runs when <code>current_id</code> changes.</p>
-<h2 id="refs-through-components">Refs through components<a class="headerlink" href="#refs-through-components" title="Permanent link">&para;</a></h2>
-<p>There's no <code>forward_ref</code>. Declare <code>ref</code> as a plain field and pass it
-on; an element's <code>ref</code> takes a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a>, a callback, or a
-list of either, so a component can forward the parent's ref and keep
-its own:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
+<h2 id="remounting-when-an-identity-changes">Remounting when an identity changes<a class="headerlink" href="#remounting-when-an-identity-changes" title="Permanent link">&para;</a></h2>
+<p>A component stays mounted while the value it depends on changes: a
+parameter reads the parent's current value, so <code>Editor</code> below keeps
+its local state (the draft) when its <code>doc_id</code> changes. When a different identity
+should get a fresh instance with fresh local state, show it through a
+keyed <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>, as in Solid:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">FancyInputProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nd">@component</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Editor</span><span class="p">(</span><span class="n">doc_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="n">draft</span><span class="p">,</span> <span class="n">set_draft</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>  <span class="c1"># fresh for each document</span>
 </span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="nd">@component</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">FancyInputProps</span><span class="p">):</span>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" class="fancy" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;textarea value=</span><span class="si">{</span><span class="n">draft</span><span class="p">()</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">update</span><span class="si">}</span><span class="s2">&gt;&lt;/textarea&gt;"</span><span class="p">)</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="nd">@component</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">Workspace</span><span class="p">():</span>
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="n">doc_id</span><span class="p">,</span> <span class="n">set_doc_id</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"intro"</span><span class="p">)</span>
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">doc_id</span><span class="p">(),</span><span class="w"> </span><span class="k">lambda</span><span class="w"> </span><span class="n">current</span><span class="p">:</span><span class="w"> </span><span class="n">Editor</span><span class="p">(</span><span class="n">doc_id</span><span class="o">=</span><span class="n">current</span><span class="p">),</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>With <code>keyed=True</code>, <code>Show</code> re-creates its branch every time the value
+changes and hands the callback the raw value: the old <code>Editor</code> is
+disposed (its cleanups run) and a new one mounts. Like any <code>Show</code>, it
+renders nothing while the value is falsy. To render a list with one
+instance per item, use <a href="#flow-control"><code>For</code></a>. Components don't take a
+<code>key</code>; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.h"><code>h(tag, {"key": ...})</code></a> still keys any node,
+as a low-level escape hatch.</p>
+<h2 id="refs-through-components">Refs through components<a class="headerlink" href="#refs-through-components" title="Permanent link">&para;</a></h2>
+<p>There's no <code>forward_ref</code>. Declare <code>ref</code> as an ordinary parameter and
+pass it on; an element's <code>ref</code> takes a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a>, a callback,
+or a list of either, so a component can forward the parent's ref and
+keep its own:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="nd">@component</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" class="fancy" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="fragments">Fragments<a class="headerlink" href="#fragments" title="Permanent link">&para;</a></h2>
 <p>A template with several top-level nodes returns a fragment, so you
@@ -4217,12 +4325,12 @@ rarely need a wrapper element. The reconciler mounts a fragment's
 children directly in the parent (between two empty comment markers, or,
 when the fragment fills a slot by itself, in front of the slot's
 placeholder), so fragments never disturb CSS selectors or layout.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="nd">@component</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">PageContent</span><span class="p">():</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;&lt;p&gt;Body text here.&lt;/p&gt;"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="nd">@component</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">PageContent</span><span class="p">():</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;&lt;p&gt;Body text here.&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When you build the children in code, group them with
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../../api/vnode/#wybthon.vnode.Fragment"><code>Fragment</code></a>: <code>Fragment(*sections)</code>.</p>
@@ -4231,64 +4339,70 @@ placeholder), so fragments never disturb CSS selectors or layout.</p>
 (an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a>, a CSS selector, or a kernel node id;
 the default is <code>"body"</code>) while keeping them in the current ownership
 tree, so context, signals, and cleanup work as usual:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Portal</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModalProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="nb">open</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="nd">@component</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ModalProps</span><span class="p">):</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="s2">      </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">open</span><span class="p">,</span><span class="w"> </span><span class="n">Portal</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="modal"&gt;&lt;p&gt;Modal content&lt;/p&gt;&lt;/div&gt;'</span><span class="p">),</span><span class="w"> </span><span class="n">mount</span><span class="o">=</span><span class="s2">"#modal-root"</span><span class="p">))</span><span class="si">}</span>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="s2">    """</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Portal</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="nd">@component</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">(</span><span class="nb">open</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="s2">      </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="nb">open</span><span class="p">,</span><span class="w"> </span><span class="n">Portal</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="modal"&gt;&lt;p&gt;Modal content&lt;/p&gt;&lt;/div&gt;'</span><span class="p">),</span><span class="w"> </span><span class="n">mount</span><span class="o">=</span><span class="s2">"#modal-root"</span><span class="p">))</span><span class="si">}</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Writing the <code>Show</code> call in the template matters: there, <code>props.open</code>
-is passed as a getter, while <code>Show(props.open, ...)</code> in the body would
-read the prop once.</p>
+<p>Writing the <code>Show</code> call in the template matters: there, <code>open</code> is
+passed as a getter, while <code>Show(open, ...)</code> in the body would read the
+prop once. The <code>Portal</code> call is the branch's content, so the compiler
+makes it lazy: the portal and its markup are built only when <code>open</code> is
+truthy.</p>
 <h2 id="flow-control">Flow control<a class="headerlink" href="#flow-control" title="Permanent link">&para;</a></h2>
 <p><code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> aren't components: they're native
 regions the renderer mounts directly, with no component context or
-props object of their own. Each one owns a scope, so only the relevant
+props of their own. Each one owns a scope, so only the relevant
 subtree updates when a condition or list changes. Called in a template,
 each dynamic argument arrives as a getter; <code>children</code> and <code>fallback</code>
 slots are nodes or callables evaluated inside the region's scope.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">Match</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">welcome</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Welcome, </span><span class="si">{</span><span class="n">u</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>  <span class="c1"># u is an accessor for the truthy value</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">todo_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">todo</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># matched by identity: the raw item</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">name_row</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># keyed=False: matched by position, name is an accessor</span>
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>
-</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">keyed_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">todo</span><span class="p">()</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># a key function: both are accessors</span>
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>
-</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>
-</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">star</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
-</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;*&lt;/span&gt;"</span><span class="p">)</span>
-</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>
-</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>
-</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a><span class="n">loading</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a><span class="n">ready</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Ready&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="n">unknown</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Unknown&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>
-</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a><span class="s2">  </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">user</span><span class="p">(),</span><span class="w"> </span><span class="n">welcome</span><span class="p">,</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Please log in&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
-</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">todos</span><span class="p">(),</span><span class="w"> </span><span class="n">todo_row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
-</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">names</span><span class="p">(),</span><span class="w"> </span><span class="n">name_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
-</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">todos</span><span class="p">(),</span><span class="w"> </span><span class="n">keyed_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
-</span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a><span class="s2">  </span><span class="si">{</span><span class="n">Repeat</span><span class="p">(</span><span class="n">rating</span><span class="p">(),</span><span class="w"> </span><span class="n">star</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a><span class="s2">  </span><span class="si">{</span><span class="n">Switch</span><span class="p">(</span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"loading"</span><span class="p">,</span><span class="w"> </span><span class="n">loading</span><span class="p">),</span><span class="w"> </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ready"</span><span class="p">,</span><span class="w"> </span><span class="n">ready</span><span class="p">),</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a><span class="s2">"""</span><span class="p">)</span>
+<p>The compiler makes the content and fallback of <code>Show</code>, <code>Match</code>,
+<code>Switch</code> (its fallback), <code>Loading</code>, <code>Errored</code>, and <code>client_only</code> lazy
+when they're written as markup (<code>html(t"...")</code>) or as a component call
+(a call whose callee name is capitalized, such as <code>Panel()</code>): each
+becomes a zero-argument function, so a branch's markup and components
+are built only when it shows, as JSX children are in Solid. A component
+call in a branch still receives getters for its dynamic props. Names,
+lambdas, and lowercase calls are passed as written.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">Match</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">welcome</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Welcome, </span><span class="si">{</span><span class="n">u</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>  <span class="c1"># u is an accessor for the truthy value</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">todo_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">todo</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># matched by identity: the raw item</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">name_row</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># keyed=False: matched by position, name is an accessor</span>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">keyed_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">todo</span><span class="p">()</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>  <span class="c1"># a key function: both are accessors</span>
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">star</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;*&lt;/span&gt;"</span><span class="p">)</span>
+</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>
+</span><span id="__span-19-23"><a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>
+</span><span id="__span-19-24"><a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a><span class="n">loading</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-19-25"><a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a><span class="n">ready</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Ready&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-19-26"><a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a><span class="n">unknown</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Unknown&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-19-27"><a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>
+</span><span id="__span-19-28"><a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a><span class="s2">  </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">user</span><span class="p">(),</span><span class="w"> </span><span class="n">welcome</span><span class="p">,</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Please log in&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
+</span><span id="__span-19-30"><a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">todos</span><span class="p">(),</span><span class="w"> </span><span class="n">todo_row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-19-31"><a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">names</span><span class="p">(),</span><span class="w"> </span><span class="n">name_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-19-32"><a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a><span class="s2">  &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">todos</span><span class="p">(),</span><span class="w"> </span><span class="n">keyed_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a><span class="s2">  </span><span class="si">{</span><span class="n">Repeat</span><span class="p">(</span><span class="n">rating</span><span class="p">(),</span><span class="w"> </span><span class="n">star</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a><span class="s2">  </span><span class="si">{</span><span class="n">Switch</span><span class="p">(</span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"loading"</span><span class="p">,</span><span class="w"> </span><span class="n">loading</span><span class="p">),</span><span class="w"> </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ready"</span><span class="p">,</span><span class="w"> </span><span class="n">ready</span><span class="p">),</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The callbacks are typed. With a <code>todos: Accessor[list[Todo]]</code>, the
 default <code>For</code> infers <code>todo: Todo</code> and <code>i: Accessor[int]</code>; <code>keyed=False</code>
@@ -4310,22 +4424,25 @@ page and in <a href="../primitives/#map_array">Primitives</a>.</p>
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode</code></a>), Wybthon reports the common
 footguns:</p>
 <ul>
-<li><strong>Unknown or missing props</strong>: calling a component with an undeclared prop, or without a required one, raises <code>TypeError</code>. This covers the tag form too.</li>
+<li><strong>Unknown or missing props</strong>: calling a component with an undeclared prop (when it has no <code>**rest</code> parameter), or without a required one, raises <code>TypeError</code>. This covers the tag form too.</li>
+<li><strong><code>key=</code> on a component</strong>: components take no <code>key</code>, so passing one raises <code>TypeError</code> that points to a keyed <code>Show</code>.</li>
+<li><strong>Uncompiled component</strong>: calling a component with parameters whose module wasn't compiled raises <code>TypeError</code>.</li>
 <li><strong>Top-level reactive read</strong> in a component body (warned once per component and value).</li>
 <li><strong>Write in a tracking scope</strong>: writing a signal or store from a memo, a tracked effect, or a hole raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../../api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>.</li>
 <li><strong>Plain list in <code>For</code></strong>: the list renders once.</li>
 <li><strong>Uncompiled template</strong>: a template that reached <code>html()</code> without the compiler, with a dynamic expression that was evaluated once, raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a>. See <a href="../compiler/#templates-that-werent-compiled">Templates that weren't compiled</a>.</li>
 </ul>
-<p>Template markup errors aren't dev-only: markup the HTML parser would
-rewrite is an error in every mode, reported when the module is
-compiled. See <a href="../templates/#markup-the-parser-would-rewrite-is-an-error">Templates</a>.</p>
+<p>Template markup errors and writes to a parameter aren't dev-only: markup
+the HTML parser would rewrite, and a body that rebinds a parameter, are
+errors in every mode, reported when the module is compiled. See
+<a href="../templates/#markup-the-parser-would-rewrite-is-an-error">Templates</a>.</p>
 <p>Production builds made with <code>wyb build</code> turn dev mode off before your
 application imports. Call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode</code></a> to
 change it yourself, for example in tests.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../templates/">Templates</a>, <a href="../compiler/">The compiler</a>, <a href="../mental-model/">Mental model</a>, and <a href="../lifecycle/">Lifecycle and ownership</a>.</li>
-<li>Browse the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>component</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> API references.</li>
+<li>Browse the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>component</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-type_alias&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-type_alias-name&quot;&gt;Children&lt;/span&gt;" href="../../api/wybthon/#wybthon.Children"><code>Children</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop</code></a> API references.</li>
 <li>See <a href="../../guides/authoring-patterns/">Authoring patterns</a> for recipes.</li>
 </ul>
 

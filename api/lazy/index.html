@@ -2895,6 +2895,8 @@
       
         
       
+        
+      
     
     
     
@@ -3246,6 +3248,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3840,7 +3870,7 @@ fallback, and a load failure raises into the nearest
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Component&lt;/span&gt; (&lt;code&gt;wybthon.component.Component&lt;/code&gt;)" href="../component/#wybthon.component.Component">Component</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Component&lt;/span&gt; (&lt;code&gt;wybthon.component.Component&lt;/code&gt;)" href="../component/#wybthon.component.Component">Component</a>[...]</code></p>
 
 
 
@@ -4345,7 +4375,9 @@ Python's import system.</p>
 <li>The loader runs at most once; the resolved component is cached across
   unmounts.</li>
 <li>Props and children passed to the lazy component are forwarded to the
-  loaded component unchanged.</li>
+  loaded component unchanged. As a route's component, it gets only the
+  route props (<code>params</code>, <code>search</code>, <code>data</code>, <code>children</code>) that the loaded
+  component declares as parameters.</li>
 <li>A lazy route component is preloaded when the pointer rests on (or
   focus reaches) a link to its route, so <code>&lt;a href="/chart"&gt;</code> above
   starts the import before the click. Call <code>.preload()</code> yourself for

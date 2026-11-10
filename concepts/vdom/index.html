@@ -2981,6 +2981,8 @@
       
         
       
+        
+      
     
     
     
@@ -3332,6 +3334,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -4027,7 +4057,7 @@ freed at once by reference counting rather than by Python's cycle
 collector; see the
 <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md">engine v5 evaluation</a>.</p>
 <p><strong>A static probe before a computation.</strong> A binding whose expression
-makes no calls (<code>{props.title}</code>, <code>{row["label"]}</code>) first runs under a
+makes no calls (a parameter such as <code>{title}</code>, or <code>{row["label"]}</code>) first runs under a
 lightweight observer. If it reads nothing reactive, creates nothing,
 and returns synchronously, the value is applied and no computation is
 ever allocated. The probe stops at the first reactive read, and the
@@ -4075,14 +4105,14 @@ longest-increasing-subsequence pass, so a reorder emits only the
 inserts that are strictly necessary.</p>
 <h3 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h3>
 <p>Give siblings a stable <code>key</code> when their order can change and they carry
-state (form inputs, components with local signals). Every component
-accepts <code>key=</code>. A component re-rendered with a different key remounts
-with fresh state:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">editor</span><span class="p">():</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">return</span> <span class="n">Editor</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">current_id</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">current_id</span><span class="p">())</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">editor</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
+state (form inputs, components with local signals). In code that builds
+nodes with <code>h()</code>, the <code>key</code> prop keys any node, including a component:
+<code>h(Editor, {"user_id": uid, "key": uid})</code>.</p>
+<p>Components called from templates don't take <code>key=</code>. To remount a
+component with fresh state when a value changes, use a keyed
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>, as in Solid. It rebuilds its content whenever
+the value changes, and passes the value to the content function:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">current_id</span><span class="p">(),</span><span class="w"> </span><span class="k">lambda</span><span class="w"> </span><span class="n">uid</span><span class="p">:</span><span class="w"> </span><span class="n">Editor</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">uid</span><span class="p">),</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prefer <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a> for lists: it caches each row's node and
 scope, so rows are moved rather than re-diffed at all.</p>

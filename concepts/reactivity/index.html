@@ -2887,6 +2887,8 @@
       
         
       
+        
+      
     
     
     
@@ -3238,6 +3240,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3739,13 +3769,13 @@ mounted DOM on its first run, and refs are already assigned. Render
 effects, by contrast, run immediately at creation.</p>
 <h2 id="reading-without-tracking">Reading without tracking<a class="headerlink" href="#reading-without-tracking" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a> runs a function with tracking suppressed;
-every accessor's <code>.peek()</code> does the same for a single read. Props have
-no <code>.peek()</code>, because <code>props.initial</code> is already the value: wrap the
-read in <code>untrack</code>:</p>
+every accessor's <code>.peek()</code> does the same for a single read. A
+component parameter has no <code>.peek()</code>, because reading <code>initial</code> already
+returns the value: wrap the read in <code>untrack</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">a</span><span class="p">(),</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"a changed:"</span><span class="p">,</span> <span class="n">pair</span><span class="p">))</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">initial</span><span class="p">)</span>  <span class="c1"># in a component with an `initial` parameter</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">count</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
 </span></code></pre></div>
 <p>Without a function, <code>untrack()</code> is a context manager, for several reads
@@ -3753,7 +3783,7 @@ in a row:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">untrack</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">with</span> <span class="n">untrack</span><span class="p">():</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">start</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">step</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">start</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">a</span><span class="p">(),</span> <span class="n">b</span><span class="p">()</span>
 </span></code></pre></div>
 <p>For explicit dependencies prefer the <strong>split effect</strong>: the compute stage
 tracks, and the apply stage runs untracked with the computed value (and
@@ -3851,32 +3881,28 @@ after the <code>await</code> are tracked exactly like reads before it.</p>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TimerProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nd">@component</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nd">@component</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">TimerProps</span><span class="p">):</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="c1"># Body effect: lives until the component unmounts.</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="c1"># Binding: re-runs only when count changes.</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="c1"># Body effect: lives until the component unmounts.</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="c1"># Binding: re-runs only when count changes.</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A binding or hole whose first run reads nothing reactive, and creates
 no children, cleanups, or async work, can never run again. The renderer
 disposes it right away and keeps only the DOM it produced. A binding
-whose expression makes no calls goes further: <code>{props.label}</code> first
-runs under a lightweight probe, and when it reads nothing reactive
-(the parent passed a constant), the value is applied and no
-computation is allocated at all. So <code>{props.label}</code> over a constant
-prop costs no computation, and <code>{props.label.upper()}</code> costs nothing
-after its first run.</p>
+whose expression makes no calls goes further: a parameter such as
+<code>{label}</code> first runs under a lightweight probe, and when it reads
+nothing reactive (the parent passed a constant), the value is applied
+and no computation is allocated at all. So <code>{label}</code> over a constant
+prop costs no computation, and <code>{label.upper()}</code> costs nothing after
+its first run.</p>
 <h2 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h2>
 <p>Calling <code>.dispose()</code> on a computation unsubscribes it from every source
 and drops it as a source for its own observers; a disposed effect

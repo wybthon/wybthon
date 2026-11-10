@@ -2820,6 +2820,8 @@
       
         
       
+        
+      
     
     
     
@@ -3171,6 +3173,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3556,15 +3586,16 @@
 <p>Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so the engine's fast paths target the Python side.</p>
 <ul>
 <li><strong>Templates are compiled ahead of time.</strong> Wybthon's <a href="../../concepts/compiler/">compiler</a> parses and validates each <code>html(t"...")</code> literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. It also replaces the call, so an instance is the literal's entry given a tuple of values: no t-string is built and nothing is parsed per instance. <code>wyb build</code> turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. The kernel registers only the nodes Python can address (the root, slot nodes, and handler nodes). No VNode tree is built for static parts. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
-<li><strong>Bindings that read nothing cost nothing.</strong> The compiler's rule is syntactic, so <code>{item["label"]}</code> or <code>{props.title}</code> becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.</li>
+<li><strong>Bindings that read nothing cost nothing.</strong> The compiler's rule is syntactic, so <code>{item["label"]}</code> or a component parameter such as <code>{title}</code> becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.</li>
 <li><strong>Bindings are made in one step.</strong> A hole, a text slot, or an attribute binding is a small computation whose apply stage is a module function and whose data is its node id. It's built, run, and applied by one straight-line routine; the general scheduler takes over only while a transition, an action, a server render, or an unpublished preparation is involved. Fields only effects and async work use live in a separate record, and a computation that reads one source (or a source with one reader) links to it directly instead of through a dictionary. A node with one delegated handler stores it directly in the handler table.</li>
 <li><strong>SVG and MathML clone too.</strong> A template containing <code>&lt;svg&gt;</code> or <code>&lt;math&gt;</code>, or mounted under an SVG parent (a component that returns a <code>&lt;circle&gt;</code>), clones like any other: the kernel parses it inside a wrapper of that namespace. Only an SVG name whose capitals the HTML parser wouldn't restore (outside the specification's list, such as a custom <code>dataPoint</code> attribute) makes a template mount node by node.</li>
 <li><strong>Text slots stay text.</strong> A child slot whose expression returns text writes it into the slot's placeholder, filling the clone command on the first run. It becomes a hole region, able to hold nodes, only if the expression ever returns something other than text.</li>
 <li><strong>Disposal frees memory at once.</strong> Unmounting breaks every reference cycle the engine creates (a row and its node, a hole and its binding, a region and its node), so a removed subtree is freed by reference counting immediately instead of waiting for Python's cycle collector. Fewer live objects, and no cyclic garbage, mean less work for the collector, which matters most in Pyodide.</li>
 <li><strong>The collector runs when the page is idle.</strong> A flush or mount pauses Python's cyclic garbage collector, as allocating thousands of long-lived nodes would otherwise trigger collections in the middle of the work. In the browser, the collection that the paused work owes runs from <code>requestIdleCallback</code>, after the committed DOM has painted, and large disposals are freed there too, instead of inside the event handler that caused them.</li>
-<li><strong>Components mount straight into their slot.</strong> A component tag in a template builds its node directly, runs its body once under one owner, and mounts the template it returns in front of the slot's placeholder: one clone command for the component and one for its children, with no hole region, fragment, or markers of its own. In a template that's never re-rendered (a component's output, a list row), a child slot holding a list of one node mounts that node without a fragment; a component that returns a list, <code>props.children</code> included, still mounts it as a fragment between two markers. Natively, a list row that's a component costs about twice the same markup inlined, where it used to cost three times as much and six times the commands (see <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v9.md"><code>engine-v9.md</code></a>).</li>
+<li><strong>Components mount straight into their slot.</strong> A component tag in a template builds its node directly, runs its body once under one owner, and mounts the template it returns in front of the slot's placeholder: one clone command for the component and one for its children, with no hole region, fragment, or markers of its own. In a template that's never re-rendered (a component's output, a list row), a child slot holding a list of one node mounts that node without a fragment; a component that returns a list, its <code>children</code> included, still mounts it as a fragment between two markers. Natively, a list row that's a component costs about twice the same markup inlined, where it used to cost three times as much and six times the commands (see <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v9.md"><code>engine-v9.md</code></a>).</li>
 <li><strong>Constant props are free.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.</li>
 <li><strong>Native control flow.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. One that fills a slot or a hole by itself ends at the slot's placeholder, so it creates no DOM nodes of its own. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.</li>
+<li><strong>Hidden branches cost nothing.</strong> The compiler makes the content and fallback of <code>Show</code>, <code>Match</code>, <code>Switch</code>, <code>Loading</code>, <code>Errored</code>, and <code>client_only</code> lazy when they're written as markup or a component call, so a branch's markup and components are built only when it shows. A <code>Show</code> whose condition is false, a <code>Match</code> that doesn't match, and a fallback that never appears create no nodes, owners, or computations. See <a href="../../concepts/compiler/#lazy-branches">Lazy branches</a>.</li>
 <li><strong>Hydration costs what a clone does.</strong> A server-rendered template instance is claimed with one command, as a client render clones it with one; only slots that hold nodes add a command each. See <a href="../../concepts/server-rendering/#hydration">Server rendering</a>.</li>
 <li><strong>Probes learn.</strong> A template expression that read something reactive once (<code>{row["label"]}</code> over a store) isn't probed again for later instances of the template: its bindings become computations at once, instead of reading the field twice.</li>
 <li><strong>Rows are cheap.</strong> A list row is its own owner and its own index accessor. Its index is a plain integer until something reads <code>index()</code> in a tracking scope; only then is a signal created for it, so a row that never reads its index allocates nothing for it.</li>
@@ -3584,7 +3615,7 @@
 <p>Use templates for markup you write by hand, and especially for list rows. Use <code>h()</code> where markup is built by code.</p>
 <h2 id="use-the-incremental-paths">Use the incremental paths<a class="headerlink" href="#use-the-incremental-paths" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Bind values where they're shown.</strong> Write the read where it's used (<code>&lt;b title={role()}&gt;{name()}&lt;/b&gt;</code>), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (<code>{user_card(user())}</code>) is such a hole, so make it a component instead: <code>{UserCard(name=user().name)}</code> mounts once and receives a getter, so a change updates only the text that reads <code>props.name</code>.</li>
+<li><strong>Bind values where they're shown.</strong> Write the read where it's used (<code>&lt;b title={role()}&gt;{name()}&lt;/b&gt;</code>), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (<code>{user_card(user())}</code>) is such a hole, so make it a component instead: <code>{UserCard(name=user().name)}</code> mounts once and receives a getter, so a change updates only the text that reads its <code>name</code> parameter.</li>
 <li><strong>Keep holes small.</strong> A hole around a single text node patches one node.</li>
 <li><strong>Pass a store list directly to <code>For</code>.</strong> Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.</li>
 <li><strong>Use a shallow store for data you replace wholesale.</strong> <code>create_store(initial, shallow=True)</code> makes only the top level reactive, so a large value under it, such as an API response, is stored as plain data and never wrapped. Replace it to change it.</li>

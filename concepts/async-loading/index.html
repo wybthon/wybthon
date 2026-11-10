@@ -2971,6 +2971,8 @@
       
         
       
+        
+      
     
     
     
@@ -3322,6 +3324,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -4059,33 +4089,29 @@ It's Solid 2.0's <code>createDeferred</code>.</p>
 <p><code>Loading</code> watches its subtree for async reads that aren't ready. While
 any registered computation has no value yet it shows <code>fallback</code>; once
 everything has a first value it reveals the content.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">html</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProfileProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nd">@component</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Profile</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ProfileProps</span><span class="p">):</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/api/users/</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># tracked: refetches on change</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>        <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="s2">          &lt;div&gt;</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="s2">            &lt;p&gt;Name: &lt;span&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="s2">            &lt;p&gt;Email: &lt;span&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s2">"email"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="s2">          &lt;/div&gt;</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="s2">        """</span><span class="p">),</span>
-</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>        <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">),</span>
-</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nd">@component</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Profile</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/api/users/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># tracked: refetches on change</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>        <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="s2">          &lt;div&gt;</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="s2">            &lt;p&gt;Name: &lt;span&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="s2">            &lt;p&gt;Email: &lt;span&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s2">"email"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="s2">          &lt;/div&gt;</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="s2">        """</span><span class="p">),</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">),</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>children</code> may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass nodes directly: the compiler turns <code>{user()["name"]}</code> into a getter, so the read doesn't run until the boundary mounts it. <code>fallback</code> may be a node, a string, or a callable.</li>
-<li>Reading <code>props.user_id</code> inside the memo tracks it like any signal, so the parent passing a new id (<code>&lt;{Profile} user_id={selected()} /&gt;</code>) refetches without remounting <code>Profile</code>.</li>
+<li><code>children</code> may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass markup directly: the compiler makes content written as <code>html(t"...")</code> or a component call into a zero-argument function, so it's built when the boundary builds it, and it turns <code>{user()["name"]}</code> into a getter, so the read doesn't run until the content mounts. <code>fallback</code> may be a node, a string, or a callable; written as markup or a component call, it's lazy too, so it costs nothing unless it shows.</li>
+<li>Reading the <code>user_id</code> parameter inside the memo tracks it like any signal, so the parent passing a new id (<code>&lt;{Profile} user_id={selected()} /&gt;</code>) refetches without remounting <code>Profile</code>.</li>
 <li>Any read that raises <code>NotReadyError</code> under the boundary registers its computation automatically; there's no manual wiring.</li>
 <li><strong>Content stays mounted.</strong> The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.</li>
 <li><strong>Refreshes don't re-trigger the boundary.</strong> Once the content has shown, a recompute is a transition (the old content stays put), not a return to the fallback.</li>

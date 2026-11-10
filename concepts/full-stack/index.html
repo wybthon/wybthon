@@ -2910,6 +2910,8 @@
       
         
       
+        
+      
     
     
     
@@ -3261,6 +3263,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3923,7 +3953,7 @@
 </span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        pricing.py    /pricing
 </span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    [...404].py       anything else
 </span></code></pre></div>
-<p>A page module defines a <code>Page</code> component and may define <code>preload(args)</code>. A <code>_layout.py</code> defines a <code>Layout</code> component, which receives the matched page as <code>props.children</code>. Other files starting with <code>_</code> are private to the directory, and a module without a <code>Page</code> isn't a route. Pages load lazily, so a page's startup imports only what it shows.</p>
+<p>A page module defines a <code>Page</code> component and may define <code>preload(args)</code>. A <code>_layout.py</code> defines a <code>Layout</code> component, which receives the matched page through its <code>children</code> parameter. Like any route component, a <code>Page</code> or <code>Layout</code> declares the route props it needs (<code>params</code>, <code>search</code>, <code>data</code>, <code>children</code>) as parameters. Other files starting with <code>_</code> are private to the directory, and a module without a <code>Page</code> isn't a route. Pages load lazily, so a page's startup imports only what it shows.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_router</span><span class="p">,</span> <span class="n">file_routes</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">(</span><span class="n">file_routes</span><span class="p">(</span><span class="s2">"app.routes"</span><span class="p">))</span>

@@ -2853,6 +2853,8 @@
       
         
       
+        
+      
     
     
     
@@ -3204,6 +3206,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3608,8 +3638,8 @@
 
 <h1 id="router">Router<a class="headerlink" href="#router" title="Permanent link">&para;</a></h1>
 <p>Routing with path params, search params, nested layouts, plain-anchor navigation, and preloading, as in Solid Router 2.0. Import it from <code>wybthon.router</code>; its names aren't exported from the top-level <code>wybthon</code> package.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">RouteProps</span><span class="p">,</span> <span class="n">create_router</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@component</span>
@@ -3618,8 +3648,8 @@
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nd">@component</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">User</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">RouteProps</span><span class="p">):</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;User </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">User</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;User </span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;"</span><span class="p">)</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nd">@component</span>
@@ -3628,10 +3658,10 @@
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="nd">@component</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="nf">Shell</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">ParentProps</span><span class="p">):</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="nf">Shell</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="s2">      &lt;nav&gt;&lt;a href="/"&gt;Home&lt;/a&gt; &lt;a href="/users/1"&gt;Ada&lt;/a&gt;&lt;/nav&gt;</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="s2">      &lt;main&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span><span class="s2">&lt;/main&gt;</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="s2">      &lt;main&gt;</span><span class="si">{</span><span class="n">children</span><span class="si">}</span><span class="s2">&lt;/main&gt;</span>
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="s2">    """</span><span class="p">)</span>
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
@@ -3649,7 +3679,7 @@
 </span></code></pre></div>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_router&lt;/span&gt;" href="../../api/router/#wybthon.router.create_router"><code>create_router(routes, *, base="", preload_links=True)</code></a> makes the router from its route tree. Call it once, at module level, and call the result to render it.</li>
-<li><code>router(root=Shell)</code> renders the matched route inside <code>Shell</code>, a root layout that stays mounted on every page and receives the route as <code>props.children</code>. <code>router()</code> renders the route alone.</li>
+<li><code>router(root=Shell)</code> renders the matched route inside <code>Shell</code>, a root layout that stays mounted on every page and receives the route as its <code>children</code> parameter. <code>router()</code> renders the route alone.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
 
@@ -3699,41 +3729,43 @@
 <p>A bare <code>*</code> captures into <code>params["wildcard"]</code>. A catch-all must be a pattern's last segment. When several routes match, literals win over parameters, which win over catch-alls, so a <code>*404</code> route can sit anywhere in the list. Parameter values are URL-decoded.</p>
 <p>When no route matches, the router renders nothing, and a server render answers with status 404. A catch-all route is the not-found page; call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_status"><code>http_status</code></a> in it to say so explicitly.</p>
 <h2 id="params-and-search-params">Params and search params<a class="headerlink" href="#params-and-search-params" title="Permanent link">&para;</a></h2>
-<p>A routed component declares its inputs with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteProps&lt;/span&gt;" href="../../api/router/#wybthon.router.RouteProps"><code>RouteProps</code></a>, which has four fields:</p>
+<p>A route's component declares the route props it needs as parameters. There are four:</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Parameter</th>
 <th>Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>params</code></td>
-<td>The matched path parameters, a <code>dict[str, str]</code>.</td>
+<td><code>params: dict[str, str]</code></td>
+<td>The matched path parameters.</td>
 </tr>
 <tr>
-<td><code>search</code></td>
-<td>The parsed query string, a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParams&lt;/span&gt;" href="../../api/router/#wybthon.router.SearchParams"><code>SearchParams</code></a>.</td>
+<td><code>search: SearchParams</code></td>
+<td>The parsed query string, a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SearchParams&lt;/span&gt;" href="../../api/router/#wybthon.router.SearchParams"><code>SearchParams</code></a> (import it from <code>wybthon.router</code>).</td>
 </tr>
 <tr>
-<td><code>data</code></td>
+<td><code>data: Any</code></td>
 <td>What the route's <code>preload</code> returned, once it resolved.</td>
 </tr>
 <tr>
-<td><code>children</code></td>
+<td><code>children: Children</code></td>
 <td>The matched child route, for a layout.</td>
 </tr>
 </tbody>
 </table>
-<p>They're plain props: <code>props.params["id"]</code> is a tracked read of the current value. <code>params</code> and <code>search</code> update in place: navigating from <code>/users/1</code> to <code>/users/2</code> pushes a new <code>params</code> value into the mounted component instead of remounting it, so its local state survives. A route component that doesn't need them can take no parameters, like <code>Home</code> above.</p>
+<p>The router passes only the ones the component declares, so <code>User</code> above takes <code>params</code> alone, and a route component that needs none of them, like <code>Home</code>, takes no parameters. A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> component gets the same filtering once its code has loaded.</p>
+<p>They're ordinary props: <code>params["id"]</code> is a tracked read of the current value. <code>params</code> and <code>search</code> update in place: navigating from <code>/users/1</code> to <code>/users/2</code> pushes a new <code>params</code> value into the mounted component instead of remounting it, so its local state survives.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Route</span><span class="p">(</span><span class="s2">"/users/:id"</span><span class="p">,</span> <span class="n">User</span><span class="p">)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># /users/42?tab=activity -&gt; props.params["id"] == "42", props.search["tab"] == "activity"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># /users/42?tab=activity -&gt; params["id"] == "42", search["tab"] == "activity"</span>
 </span></code></pre></div>
-<p>Read them where they can update: in the template (<code>{props.params['id']}</code> is dynamic, so the compiler makes it a getter), or in a memo, an effect, or an async memo's body. Reading one at the top level of the component body reads it once, and dev mode warns.</p>
-<p>Subclass <code>RouteProps</code> to add fields of your own, with defaults:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserProps</span><span class="p">(</span><span class="n">RouteProps</span><span class="p">):</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">show_avatar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<p>Read them where they can update: in the template (<code>{params['id']}</code> is dynamic, so the compiler makes it a getter), or in a memo, an effect, or an async memo's body. Reading one at the top level of the component body reads it once, and dev mode warns.</p>
+<p>A route component can declare parameters of its own too, as long as they have defaults, since the router never passes them:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@component</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">User</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">show_avatar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;User </span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>SearchParams</code> is a <code>dict</code> of each name's last value; <code>search.get_all("tag")</code> keeps repeated parameters in URL order.</p>
 <p>Any component under the router can read the same state with these functions:</p>
@@ -3776,12 +3808,12 @@
 <h2 id="nested-routes-and-layouts">Nested routes and layouts<a class="headerlink" href="#nested-routes-and-layouts" title="Permanent link">&para;</a></h2>
 <p>A route with <code>children</code> is a layout. Child paths continue the parent's path, even when they start with <code>/</code>, as in Solid. The layout renders when one of its children matches, with that child as its <code>children</code> prop; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Outlet&lt;/span&gt;" href="../../api/router/#wybthon.router.Outlet"><code>Outlet()</code></a> renders the same thing anywhere in the layout. Only a change in <em>which</em> route matches remounts it, so a layout stays mounted while its children change.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@component</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">UserLayout</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">RouteProps</span><span class="p">):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">UserLayout</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span><span class="p">):</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s2">      &lt;section&gt;</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s2">        &lt;h1&gt;User </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s2">        &lt;nav&gt;&lt;a href="/users/</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">"&gt;Overview&lt;/a&gt; &lt;a href="/users/</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">/settings"&gt;Settings&lt;/a&gt;&lt;/nav&gt;</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s2">        </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s2">        &lt;h1&gt;User </span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s2">        &lt;nav&gt;&lt;a href="/users/</span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">"&gt;Overview&lt;/a&gt; &lt;a href="/users/</span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span><span class="si">}</span><span class="s2">/settings"&gt;Settings&lt;/a&gt;&lt;/nav&gt;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s2">        </span><span class="si">{</span><span class="n">children</span><span class="si">}</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s2">      &lt;/section&gt;</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s2">    """</span><span class="p">)</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
@@ -3810,18 +3842,14 @@
 </ul>
 <p>Hrefs are ordinary URLs: a path starting with <code>/</code> is a full path, and the router's <code>base</code> isn't added to it.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_link_state&lt;/span&gt;" href="../../api/router/#wybthon.router.use_link_state"><code>use_link_state(href, *, end=False)</code></a> says whether a link is active, for styling navigation. <code>active()</code> is true on the link's path and below it (only on the path itself with <code>end=True</code>); the base path only matches exactly. <code>current()</code> is true when the path and the query both match, which is what <code>aria-current="page"</code> means:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">NavLinkProps</span><span class="p">(</span><span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">href</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nd">@component</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">NavLink</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">NavLinkProps</span><span class="p">):</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">state</span> <span class="o">=</span> <span class="n">use_link_state</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">href</span><span class="p">)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="s2">      &lt;a href=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">href</span><span class="si">}</span><span class="s2"> class=</span><span class="si">{</span><span class="s2">"active"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">active</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">""</span><span class="si">}</span><span class="s2"> aria-current=</span><span class="si">{</span><span class="s2">"page"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">current</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="s2">        </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="si">}</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="s2">      &lt;/a&gt;</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="s2">    """</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@component</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">NavLink</span><span class="p">(</span><span class="n">href</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n">Children</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">state</span> <span class="o">=</span> <span class="n">use_link_state</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">href</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s2">      &lt;a href=</span><span class="si">{</span><span class="n">href</span><span class="si">}</span><span class="s2"> class=</span><span class="si">{</span><span class="s2">"active"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">active</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">""</span><span class="si">}</span><span class="s2"> aria-current=</span><span class="si">{</span><span class="s2">"page"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">current</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s2">        </span><span class="si">{</span><span class="n">children</span><span class="si">}</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s2">      &lt;/a&gt;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="preloading">Preloading<a class="headerlink" href="#preloading" title="Permanent link">&para;</a></h2>
 <p>A route's <code>preload</code> runs when the route is about to show, and when the pointer rests on (or focus moves to) a link to it, so its data is already loading by the time the user clicks. It receives <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;PreloadArgs&lt;/span&gt;

@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/meta/style-guide/">
       
       
-        <link rel="prev" href="../../rfcs/0010-engine-v9/">
+        <link rel="prev" href="../../rfcs/0011-engine-v10/">
       
       
         <link rel="next" href="../contributing/">
@@ -2693,6 +2693,8 @@
       
         
       
+        
+      
     
     
     
@@ -3044,6 +3046,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3867,15 +3897,19 @@ typically enough; autorefs picks them up via signature annotations
   it or the markup is built by code. The element helpers (<code>div(...)</code>,
   <code>p(...)</code>, <code>wybthon.elements</code>, <code>wybthon.svg</code>) no longer exist.</li>
 <li>Write reactive expressions directly; the compiler makes each one a
-  getter: <code>{count() * 2}</code>, <code>{props.title}</code>, <code>{row["label"]}</code>,
+  getter: <code>{count() * 2}</code>, <code>{title}</code>, <code>{row["label"]}</code>,
   <code>class={"on" if active() else ""}</code>, <code>{Show(count() &gt; 5, ...)}</code>. Don't
   wrap them in <code>{(lambda: ...)}</code>.</li>
 <li>Prefer <code>{count()}</code> to <code>{count}</code> (both work): it reads like the value
   and matches Solid. Place the accessor itself only where passing it is
   the point.</li>
-<li>Declare props with plain annotations (<code>title: str</code>) and read them as
-  values (<code>props.title</code>). Annotate callbacks as <code>Callable[...]</code>. For a
-  one-time read, use <code>untrack(lambda: props.initial)</code>.</li>
+<li>Declare props as the component's parameters, with plain annotations
+  and defaults (<code>def Card(title: str, body: str = "")</code>), and read them by
+  name (<code>{title}</code>). Annotate callbacks as <code>Callable[...]</code> and a
+  <code>children</code> parameter as <code>Children</code>. Collect extra attributes with a
+  <code>**rest</code> parameter rather than <code>omit</code>. Don't pass <code>key=</code> to components;
+  use a keyed <code>Show</code>. For a one-time read, use
+  <code>untrack(lambda: initial)</code>.</li>
 <li>Give event handlers a name. Never put a bare <code>lambda</code> inside a
   t-string interpolation; it's a <code>SyntaxError</code>. When an inline handler
   is clearer, wrap it in parentheses: <code>onclick={(lambda: set_open(False))}</code>.</li>

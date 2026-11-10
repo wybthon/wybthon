@@ -2693,6 +2693,8 @@
       
         
       
+        
+      
     
     
     
@@ -3044,6 +3046,34 @@
     
   
     0010: Engine v9
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0011-engine-v10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Engine v10
   
 
     
@@ -3543,7 +3573,7 @@
 </details>
 <details class="question">
 <summary>Do I need to wrap expressions in lambdas to keep them reactive?</summary>
-<p>No. Wybthon's compiler does what Solid's does for JSX: an interpolation that contains a call, an attribute access, or a subscript (<code>{count() * 2}</code>, <code>{props.title}</code>, <code>{row["label"]}</code>, <code>class={"on" if active() else ""}</code>) becomes a getter, so it updates when what it reads changes. Names, constants, and lambdas are passed as they are, and event handlers and refs are never wrapped. The compiler runs when a module is imported after <code>wybthon</code>, in <code>wyb build</code> and <code>wyb dev</code>, under pytest, and for scripts run with <code>wyb run script.py</code>. See <a href="../../concepts/compiler/">The compiler</a>.</p>
+<p>No. Wybthon's compiler does what Solid's does for JSX: an interpolation that contains a call, an attribute access, or a subscript (<code>{count() * 2}</code>, <code>{user.name}</code>, <code>{row["label"]}</code>, <code>class={"on" if active() else ""}</code>) becomes a getter, so it updates when what it reads changes. A component's parameter is a prop, so <code>{title}</code> is a getter too. Other names, constants, and lambdas are passed as they are, and event handlers and refs are never wrapped. The compiler runs when a module is imported after <code>wybthon</code>, in <code>wyb build</code> and <code>wyb dev</code>, under pytest, and for scripts run with <code>wyb run script.py</code>. See <a href="../../concepts/compiler/">The compiler</a>.</p>
 <p>You still can't write a bare <code>lambda</code> in an interpolation: Python's grammar treats its <code>:</code> as the start of a format spec. Name an inline event handler, or wrap it in parentheses: <code>onclick={(lambda: set_open(False))}</code>.</p>
 </details>
 <details class="question">
@@ -3596,54 +3626,67 @@
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>How do I declare a component's props?</summary>
-<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a>, annotate its fields as you would a dataclass, and take one parameter annotated with it. Reading <code>props.label</code> returns the parent's value, tracked, as in Solid:</p>
+<p>As the component function's parameters, with ordinary annotations and defaults. Reading a parameter returns the parent's current value, tracked, as reading a prop does in Solid:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveButtonProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Save"</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">on_save</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@component</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">SaveButton</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">SaveButtonProps</span><span class="p">):</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">on_save</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nd">@component</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">SaveButton</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Save"</span><span class="p">,</span> <span class="n">on_save</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">on_save</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>In the template, the compiler turns <code>{props.label}</code> into a getter, so the text updates when the parent passes an expression that changes. A component with no inputs takes no parameters. See <a href="../../guides/authoring-patterns/">Authoring patterns</a>.</p>
+<p>Wybthon's compiler rewrites every read of a parameter inside an <code>@component</code> body, so <code>{label}</code> in the template is a getter, and the text updates when the parent passes an expression that changes. A handler, memo, or effect that reads a parameter gets the latest value too. Only a read at the top level of the body, such as <code>text = label.upper()</code>, reads once. Parameters are read-only, so assigning to one is a compile-time <code>SyntaxError</code>. A component with no inputs takes no parameters. See <a href="../../guides/authoring-patterns/">Authoring patterns</a>.</p>
 </details>
 <details class="question">
 <summary>How do I pass a callback to a component?</summary>
-<p>Annotate the field as a callable, such as <code>on_save: Callable[[], None] | None = None</code>. Reading <code>props.on_save</code> returns the function exactly as the parent passed it. Fields with other annotations unwrap accessors and zero-argument functions on read, so a callback annotated <code>Any</code> would be called by the read itself.</p>
+<p>Annotate the parameter as a callable, such as <code>on_save: Callable[[], None] | None = None</code>. Reading <code>on_save</code> returns the function exactly as the parent passed it. Parameters with other annotations (or none) unwrap accessors and zero-argument functions on read, so a callback annotated <code>Any</code> would be called by the read itself.</p>
 </details>
 <details class="question">
-<summary>Why does my type checker reject <code>prop(0)</code>?</summary>
-<p>Most fields don't need <code>prop()</code>: write an ordinary default (<code>count: int = 0</code>). For a mutable value, use <code>prop(default_factory=list)</code>, passed by keyword; type checkers only recognize a field specifier's default when it's given by keyword.</p>
+<summary>How do I accept extra attributes and forward them?</summary>
+<p>Add a <code>**rest</code> parameter (any name). It collects the props the component doesn't declare as a reactive, read-only view that you can spread onto an element:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nd">@component</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button </span><span class="si">{</span><span class="n">attrs</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> work on these views, too: <code>omit(attrs, "title")</code>, <code>merge({"type": "button"}, attrs)</code>.</p>
+</details>
+<details class="question">
+<summary>Why does my type checker reject <code>prop(0)</code> or <code>prop(default=0)</code>?</summary>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop</code></a> takes one keyword argument, <code>default_factory=</code>. Most parameters don't need it: write an ordinary default (<code>count: int = 0</code>). For a mutable value, use <code>prop(default_factory=list)</code>, which runs once per component instance: <code>def TagList(tags: list[str] = prop(default_factory=list))</code>.</p>
 </details>
 <details class="question">
 <summary>How do I pass children?</summary>
-<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> and place <code>props.children</code> in the template. Callers nest markup inside a component tag, <code>&lt;{Card} title="Hi"&gt;&lt;p&gt;Body&lt;/p&gt;&lt;/{Card}&gt;</code>, or pass it with item syntax, <code>Card(title="Hi")[html(t"&lt;p&gt;Body&lt;/p&gt;")]</code>, or the <code>children=</code> keyword.</p>
+<p>Declare a <code>children</code> parameter, annotated with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-type_alias&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-type_alias-name&quot;&gt;Children&lt;/span&gt;" href="../../api/wybthon/#wybthon.Children"><code>Children</code></a> (<code>children: Children = None</code>), and place <code>{children}</code> in the template. Callers nest markup inside a component tag, <code>&lt;{Card} title="Hi"&gt;&lt;p&gt;Body&lt;/p&gt;&lt;/{Card}&gt;</code>, or pass it with item syntax, <code>Card(title="Hi")[html(t"&lt;p&gt;Body&lt;/p&gt;")]</code>, or the <code>children=</code> keyword. Positional arguments aren't children: they bind to parameters as in any Python call, so <code>Card("Hi")</code> is <code>Card(title="Hi")</code>.</p>
+</details>
+<details class="question">
+<summary>How do I give a component a <code>key</code>?</summary>
+<p>Components don't take <code>key=</code>, as in Solid. To remount a component when a value changes, show it with a keyed <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a>: <code>{Show(doc_id(), lambda id: DocumentView(doc_id=id), keyed=True)}</code>. For lists, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>, which keys rows for you.</p>
 </details>
 <details class="question">
 <summary>Is the <code>&lt;{Card}&gt;</code> tag form type-checked?</summary>
-<p>Not statically. Type checkers can't see inside a template string, so dev mode checks a tag's props when it runs, like any component call. When you want the checker's help, call the component inside an interpolation instead: <code>{Card(title=user().name)}</code> is checked against <code>CardProps</code> like any other call, and the compiler still passes <code>title</code> as a getter, so it stays reactive.</p>
+<p>Not by a type checker on its own, which can't see inside a template string. <code>wyb check</code> type-checks tag props by checking each <code>&lt;{Card} title=...&gt;</code> as a <code>Card(title=...)</code> call, and dev mode checks a tag's props when it runs, like any component call. You can also call the component inside an interpolation: <code>{Card(title=user().name)}</code> is checked against <code>Card</code>'s signature like any other call, and the compiler still passes <code>title</code> as a getter, so it stays reactive.</p>
 </details>
 <details class="question">
 <summary>Do I need a mypy plugin?</summary>
-<p>No. <code>Props</code> uses PEP 681 <code>dataclass_transform</code>, so pyright, Pylance, and mypy check component calls out of the box. See the <a href="../../guides/typing/">typing guide</a>.</p>
+<p>No. Pyright, Pylance, and mypy see an <code>@component</code> as the function itself, returning a <code>Node</code>, so a call is checked against the function's own signature, and errors name the component. Under <code>mypy --strict</code>, annotate component functions <code>-&gt; Node</code>. See the <a href="../../guides/typing/">typing guide</a>.</p>
 </details>
 <details class="question">
 <summary>Where are the router and forms?</summary>
 <p>The core lives in <code>wybthon</code>; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>. Links are plain <code>&lt;a href&gt;</code> elements, as in Solid Router 2.0:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind_text</span><span class="p">,</span> <span class="n">form_state</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span><span class="p">,</span> <span class="n">navigate</span><span class="p">,</span> <span class="n">use_link_state</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind_text</span><span class="p">,</span> <span class="n">form_state</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span><span class="p">,</span> <span class="n">navigate</span><span class="p">,</span> <span class="n">use_link_state</span>
 </span></code></pre></div>
 </details>
 <h2 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Why didn't my component re-run after a signal changed?</summary>
-<p>Because components run <strong>once</strong> by design. A read in the component body captures the value at setup time. To stay reactive, read it in the template, where the compiler turns the expression into a getter (<code>&lt;span&gt;{count()} items&lt;/span&gt;</code>, <code>&lt;h2&gt;{props.title}&lt;/h2&gt;</code>), or derive it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a> (<code>untrack(lambda: props.initial)</code>) when a one-time read is what you want.</p>
+<p>Because components run <strong>once</strong> by design. A read in the component body captures the value at setup time. To stay reactive, read it in the template, where the compiler turns the expression into a getter (<code>&lt;span&gt;{count()} items&lt;/span&gt;</code>, <code>&lt;h2&gt;{title.upper()}&lt;/h2&gt;</code>), or derive it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a> (<code>create_signal(untrack(lambda: initial))</code>) when a one-time read is what you want.</p>
 </details>
 <details class="question">
 <summary>Why does my signal still show the old value right after I set it?</summary>
@@ -3652,9 +3695,9 @@
 <details class="question">
 <summary>How do I batch multiple signal updates?</summary>
 <p>You don't need to; everything batches. Consecutive writes in one handler (or one synchronous block) coalesce into a single flush, so an effect that reads both fields runs once:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">set_first</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">set_last</span><span class="p">(</span><span class="s2">"Lovelace"</span><span class="p">)</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># the name effect runs once, not twice</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">set_first</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">set_last</span><span class="p">(</span><span class="s2">"Lovelace"</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># the name effect runs once, not twice</span>
 </span></code></pre></div>
 <p>There is no <code>batch()</code> function.</p>
 </details>
@@ -3669,11 +3712,11 @@
 <details class="question">
 <summary>How do I highlight the selected row without re-running every row?</summary>
 <p>Use a projection keyed by the selection. Each row reads only its own key, so a change notifies the old and new rows:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># In a row: html(t"&lt;tr class={'active' if is_selected.get(row_id) else ''}&gt;...&lt;/tr&gt;")</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># In a row: html(t"&lt;tr class={'active' if is_selected.get(row_id) else ''}&gt;...&lt;/tr&gt;")</span>
 </span></code></pre></div>
 </details>
 <details class="question">
